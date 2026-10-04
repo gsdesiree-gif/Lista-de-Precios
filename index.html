@@ -26,14 +26,14 @@
       </div>
     </div>
 
-    <!-- DATOS DE LA EMPRESA Y COMERCIAL -->
+    <!-- DATOS DE LA EMPRESA Y COMERCIAL (AUTOGUARDADOS) -->
     <div class="bg-white rounded-xl shadow-md p-6 space-y-4">
       <h2 class="text-lg font-bold text-slate-800 mb-2">🏢 Datos de Empresa y Comercial (Guardados permanentemente)</h2>
       
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre de la Empresa / Marca:</label>
-          <input type="text" id="nombre-empresa" placeholder="Ej. No Cocino Más" onchange="guardarDatosConfiguracion()" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500">
+          <input type="text" id="nombre-empresa" placeholder="Ej. Tu Empresa" onchange="guardarDatosConfiguracion()" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500">
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Logo de la Empresa:</label>
@@ -135,7 +135,7 @@
   </div>
 
   <script>
-    const STORAGE_KEY = 'mi_catalogo_ncm_v2';
+    const STORAGE_KEY = 'mi_catalogo_ncm_v3';
     let catalogo = [];
     let logoEmpresaBase64 = null;
 
