@@ -39,7 +39,7 @@
           <label class="block text-xs font-semibold text-slate-600 mb-1">Logo de la Empresa:</label>
           <input type="file" id="logo-empresa" accept="image/*" onchange="cargarLogo(event)" class="w-full border rounded-lg p-1 text-sm bg-white">
         </div>
-        <div id="vista-previa-logo" class="flex items-center space-x-3 h-10">
+        <div id="vista-previa-logo" class="flex items-center space-x-3 h-12">
           <span class="text-xs text-slate-400">Sin logo cargado</span>
         </div>
       </div>
@@ -132,11 +132,39 @@
 
     </div>
 
+    <!-- 3. HISTORIAL DE LISTAS CREADAS -->
+    <div class="bg-white rounded-xl shadow-md p-6">
+      <div class="flex justify-between items-center mb-4">
+        <div>
+          <h2 class="text-lg font-bold text-slate-800">📜 Historial de Listas y Ofertas Creadas</h2>
+          <p class="text-slate-500 text-xs">Registro de listas enviadas a clientes con la fecha de emisión.</p>
+        </div>
+        <button onclick="borrarHistorial()" class="text-xs text-red-500 hover:underline">Limpiar historial</button>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+          <thead>
+            <tr class="bg-slate-100 text-slate-600 text-xs uppercase">
+              <th class="p-3">Fecha y Hora</th>
+              <th class="p-3">Cliente</th>
+              <th class="p-3">Tipo</th>
+              <th class="p-3 text-center">Nº Productos</th>
+            </tr>
+          </thead>
+          <tbody id="tabla-historial" class="divide-y divide-slate-100 text-xs">
+            <!-- Registro de listas creadas -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
   </div>
 
   <script>
-    const STORAGE_KEY = 'mi_catalogo_ncm_v3';
+    const STORAGE_KEY = 'mi_catalogo_ncm_v4';
     let catalogo = [];
+    let historial = [];
     let logoEmpresaBase64 = null;
 
     window.onload = function() {
@@ -184,7 +212,7 @@
     function mostrarLogoVistaPrevia() {
       const cont = document.getElementById('vista-previa-logo');
       if (logoEmpresaBase64) {
-        cont.innerHTML = `<img src="${logoEmpresaBase64}" class="h-10 object-contain rounded border p-1 bg-white"> <button onclick="borrarLogo()" class="text-xs text-red-500 hover:underline">Quitar</button>`;
+        cont.innerHTML = `<img src="${logoEmpresaBase64}" class="h-12 object-contain rounded border p-1 bg-white"> <button onclick="borrarLogo()" class="text-xs text-red-500 hover:underline">Quitar</button>`;
       } else {
         cont.innerHTML = `<span class="text-xs text-slate-400">Sin logo cargado</span>`;
       }
@@ -206,8 +234,9 @@
         });
         if (res.ok) {
           const data = await res.json();
-          if (data.record && Array.isArray(data.record.catalogo)) {
-            catalogo = data.record.catalogo;
+          if (data.record) {
+            if (Array.isArray(data.record.catalogo)) catalogo = data.record.catalogo;
+            if (Array.isArray(data.record.historial)) historial = data.record.historial;
             if (data.record.empresa) {
               document.getElementById('nombre-empresa').value = data.record.empresa;
               localStorage.setItem('nombre_empresa_ncm', data.record.empresa);
@@ -222,7 +251,7 @@
             }
             if (data.record.logo) {
               logoEmpresaBase64 = data.record.logo;
-              localStorage.setItem('logo_empresa_ncm', logoEmpresaBase64);
+              localStorage.setItem('logo_empresa_ncm', data.record.logo);
               mostrarLogoVistaPrevia();
             }
           }
@@ -234,6 +263,7 @@
       
       actualizarEstado('Sincronizado 🟢', 'ok');
       actualizarTabla();
+      actualizarHistorial();
     }
 
     async function guardarEnNube() {
@@ -242,6 +272,7 @@
 
       const payload = {
         catalogo: catalogo,
+        historial: historial,
         empresa: document.getElementById('nombre-empresa').value || '',
         comercial: document.getElementById('nombre-comercial').value || '',
         telefono: document.getElementById('telefono-comercial').value || '',
@@ -325,6 +356,35 @@
       });
     }
 
+    function actualizarHistorial() {
+      const tbody = document.getElementById('tabla-historial');
+      tbody.innerHTML = '';
+
+      if (historial.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400 text-xs">Aún no se ha generado ninguna lista. Descarga una para empezar el historial.</td></tr>`;
+        return;
+      }
+
+      historial.slice().reverse().forEach((item) => {
+        tbody.innerHTML += `
+          <tr class="hover:bg-slate-50">
+            <td class="p-3 text-slate-500">${item.fecha}</td>
+            <td class="p-3 font-bold text-slate-800">${item.cliente}</td>
+            <td class="p-3"><span class="px-2 py-0.5 rounded text-xs font-medium ${item.tipo === 'Catálogo (Con fotos)' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'}">${item.tipo}</span></td>
+            <td class="p-3 text-center font-semibold text-slate-700">${item.cantidad}</td>
+          </tr>
+        `;
+      });
+    }
+
+    function borrarHistorial() {
+      if (confirm("¿Quieres borrar todo el historial de listas creadas?")) {
+        historial = [];
+        actualizarHistorial();
+        guardarEnNube();
+      }
+    }
+
     function cambiarSeleccion(index, valor) {
       catalogo[index].incluir = valor;
     }
@@ -357,16 +417,17 @@
       const doc = new jsPDF();
 
       const nombreEmpresa = document.getElementById('nombre-empresa').value || '';
-      const nombreCliente = document.getElementById('nombre-cliente').value || '';
+      const nombreCliente = document.getElementById('nombre-cliente').value || 'Sin nombre cliente';
       const nombreComercial = document.getElementById('nombre-comercial').value || '';
       const telefonoComercial = document.getElementById('telefono-comercial').value || '';
 
-      let startYPos = 25;
+      // Encabezado ampliado con espacio holgado para el logo (30mm)
+      let headerTextX = 14;
 
       if (logoEmpresaBase64) {
         try {
-          doc.addImage(logoEmpresaBase64, 'PNG', 14, 12, 30, 15);
-          startYPos = 32;
+          doc.addImage(logoEmpresaBase64, 'PNG', 14, 10, 45, 22, undefined, 'FAST');
+          headerTextX = 65;
         } catch(e) {}
       }
 
@@ -374,23 +435,21 @@
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(30, 41, 59);
-        doc.text(nombreEmpresa.toUpperCase(), logoEmpresaBase64 ? 48 : 14, 18);
+        doc.text(nombreEmpresa.toUpperCase(), headerTextX, 16);
       }
 
-      doc.setFontSize(16);
+      doc.setFontSize(15);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(51, 65, 85);
-      doc.text(tipo === 'catalogo' ? "CATÁLOGO DE PRODUCTOS" : "OFERTA / LISTA DE PRECIOS", logoEmpresaBase64 ? 48 : 14, logoEmpresaBase64 ? 26 : 28);
+      doc.text(tipo === 'catalogo' ? "CATÁLOGO DE PRODUCTOS" : "OFERTA / LISTA DE PRECIOS", headerTextX, 24);
 
-      doc.setFontSize(10);
+      doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(100);
 
-      let infoPosY = startYPos + 6;
-      if (nombreCliente) {
-        doc.text(`Cliente: ${nombreCliente}`, 14, infoPosY);
-        infoPosY += 5;
-      }
+      let infoPosY = 38;
+      doc.text(`Cliente: ${nombreCliente}`, 14, infoPosY);
+      infoPosY += 5;
       
       let comercialInfo = '';
       if (nombreComercial) comercialInfo += `Comercial: ${nombreComercial}`;
@@ -401,9 +460,21 @@
         infoPosY += 5;
       }
 
-      doc.text(`Fecha de emisión: ${new Date().toLocaleDateString('es-ES')}`, 14, infoPosY);
+      const ahora = new Date();
+      const fechaTexto = ahora.toLocaleDateString('es-ES') + ' ' + ahora.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+      doc.text(`Fecha de emisión: ${fechaTexto}`, 14, infoPosY);
 
       const tablaStartY = infoPosY + 6;
+
+      // Registrar en el historial de listas
+      historial.push({
+        fecha: fechaTexto,
+        cliente: nombreCliente,
+        tipo: tipo === 'catalogo' ? 'Catálogo (Con fotos)' : 'Lista de Precios',
+        cantidad: seleccionados.length
+      });
+      actualizarHistorial();
+      guardarEnNube();
 
       if (tipo === 'corta') {
         const filas = seleccionados.map(p => [p.nombre, p.formato, `${p.precio} €`]);
@@ -414,7 +485,7 @@
           headStyles: { fillColor: [51, 65, 85] },
           columnStyles: { 2: { halign: 'right', fontStyle: 'bold' } }
         });
-        doc.save(`lista_${nombreCliente ? nombreCliente.replace(/\s+/g, '_') : 'cliente'}.pdf`);
+        doc.save(`lista_${nombreCliente.replace(/\s+/g, '_')}.pdf`);
       } else {
         const filas = seleccionados.map(p => ['', p.nombre, p.formato, `${p.precio} €`]);
         doc.autoTable({
@@ -436,7 +507,7 @@
             }
           }
         });
-        doc.save(`catalogo_${nombreCliente ? nombreCliente.replace(/\s+/g, '_') : 'cliente'}.pdf`);
+        doc.save(`catalogo_${nombreCliente.replace(/\s+/g, '_')}.pdf`);
       }
     }
   </script>
