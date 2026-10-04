@@ -3,116 +3,96 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestor de Catálogo y Listas de Precios</title>
+  <title>Gestor de Catálogo y Tarifas Nube</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  
-  <!-- Librerías para generar el PDF -->
-  <script 
-src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script 
-src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+  <!-- Librerías de PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 </head>
-<body class="bg-slate-100 p-6 min-h-screen">
+<body class="bg-slate-100 p-4 md:p-6 min-h-screen">
 
   <div class="max-w-5xl mx-auto space-y-6">
 
-    <!-- CONFIGURACIÓN DE EMPRESA Y LOGO -->
-    <div class="bg-white rounded-xl shadow-md p-6 border-l-4 
-border-indigo-600">
-      <h2 class="text-xl font-bold text-slate-800 mb-1">🏢 Datos de tu 
-Empresa (Para la cabecera del PDF)</h2>
-      <p class="text-slate-500 text-xs mb-4">Sube tu logotipo y nombre de 
-empresa. Se quedarán guardados automáticamente.</p>
+    <!-- CABECERA Y ESTADO SINCRONIZACIÓN -->
+    <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-indigo-600 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div>
+        <h1 class="text-xl font-bold text-slate-800">Catálogo de Productos ☁️</h1>
+        <p class="text-slate-500 text-xs">Accede desde cualquier dispositivo. Los cambios se guardan automáticamente.</p>
+      </div>
+      <div class="flex items-center space-x-2">
+        <span id="estado-nube" class="text-xs bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-medium">Cargando catálogo...</span>
+        <button onclick="cargarCatalogoDesdeNube()" class="text-xs text-indigo-600 hover:underline">🔄 Recargar</button>
+      </div>
+    </div>
+
+    <!-- DATOS DE LA EMPRESA Y COMERCIAL -->
+    <div class="bg-white rounded-xl shadow-md p-6 space-y-4">
+      <h2 class="text-lg font-bold text-slate-800 mb-2">🏢 Datos de Empresa y Comercial (Guardados permanentemente)</h2>
       
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
         <div>
-          <label class="block text-xs font-semibold text-slate-600 
-mb-1">Nombre de tu Empresa / Marca:</label>
-          <input type="text" id="nombre-empresa" placeholder="Ej. No 
-Cocino Más" onchange="guardarDatosEmpresa()" class="w-full border 
-rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre de la Empresa / Marca:</label>
+          <input type="text" id="nombre-empresa" placeholder="Ej. No Cocino Más" onchange="guardarDatosConfiguracion()" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500">
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-600 
-mb-1">Logo de la Empresa:</label>
-          <input type="file" id="logo-empresa" accept="image/*" 
-onchange="cargarLogo(event)" class="w-full border rounded-lg p-1 text-sm 
-bg-white">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Logo de la Empresa:</label>
+          <input type="file" id="logo-empresa" accept="image/*" onchange="cargarLogo(event)" class="w-full border rounded-lg p-1 text-sm bg-white">
         </div>
-        <div id="vista-previa-logo" class="flex items-center space-x-3 
-h-12">
+        <div id="vista-previa-logo" class="flex items-center space-x-3 h-10">
           <span class="text-xs text-slate-400">Sin logo cargado</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre del Comercial:</label>
+          <input type="text" id="nombre-comercial" placeholder="Ej. Juan Pérez" onchange="guardarDatosConfiguracion()" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Teléfono del Comercial:</label>
+          <input type="tel" id="telefono-comercial" placeholder="Ej. 600 00 00 00" onchange="guardarDatosConfiguracion()" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500">
         </div>
       </div>
     </div>
 
-    <!-- 1. FORMULARIO: CREAR/AÑADIR NUEVO PRODUCTO AL CATÁLOGO -->
+    <!-- 1. FORMULARIO: AÑADIR PRODUCTO -->
     <div class="bg-white rounded-xl shadow-md p-6">
-      <h2 class="text-xl font-bold text-slate-800 mb-1">1. Añadir Nuevo 
-Producto al Catálogo Maestro</h2>
-      <p class="text-slate-500 text-xs mb-4">Guarda aquí tus platos o 
-productos. Solo tendrás que introducirlos una vez.</p>
-      
-      <form id="form-nuevo-producto" class="grid grid-cols-1 
-md:grid-cols-3 gap-4">
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 
-mb-1">Ref. / Código:</label>
-          <input type="text" id="codigo" placeholder="Ej. REF-101" 
-class="w-full border rounded-lg p-2 text-sm focus:ring-2 
-focus:ring-blue-500" required>
+      <h2 class="text-lg font-bold text-slate-800 mb-1">1. Añadir Nuevo Producto / Plato</h2>
+      <form id="form-nuevo-producto" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="md:col-span-2">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre del Producto / Plato:</label>
+          <input type="text" id="nombre" placeholder="Ej. Lentejas Castellanas" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500" required>
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-600 
-mb-1">Nombre del Producto / Plato:</label>
-          <input type="text" id="nombre" placeholder="Ej. Lentejas 
-Castellanas" class="w-full border rounded-lg p-2 text-sm focus:ring-2 
-focus:ring-blue-500" required>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Formato / Ración:</label>
+          <input type="text" id="formato" placeholder="Ej. Tupper 400g" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500">
         </div>
         <div>
-          <label class="block text-xs font-semibold text-slate-600 
-mb-1">Formato / Ración:</label>
-          <input type="text" id="formato" placeholder="Ej. Tupper 400g" 
-class="w-full border rounded-lg p-2 text-sm focus:ring-2 
-focus:ring-blue-500">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 
-mb-1">Precio Base (€):</label>
-          <input type="number" step="0.01" id="precio" placeholder="Ej. 
-6.50" class="w-full border rounded-lg p-2 text-sm focus:ring-2 
-focus:ring-blue-500" required>
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Precio Base (€):</label>
+          <input type="number" step="0.01" id="precio" placeholder="Ej. 6.50" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500" required>
         </div>
         <div class="md:col-span-2">
-          <label class="block text-xs font-semibold text-slate-600 
-mb-1">Foto del producto:</label>
-          <input type="file" id="foto" accept="image/*" class="w-full 
-border rounded-lg p-1 text-sm bg-white">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Foto del producto:</label>
+          <input type="file" id="foto" accept="image/*" class="w-full border rounded-lg p-1 text-sm bg-white">
         </div>
-        
-        <button type="submit" class="md:col-span-3 bg-blue-600 
-hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition-colors 
-shadow">
-          + Guardar en Catálogo Maestro
+        <button type="submit" id="btn-guardar" class="md:col-span-3 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition-colors shadow">
+          + Guardar Producto en el Catálogo
         </button>
       </form>
     </div>
 
-    <!-- 2. SELECCIÓN DE PRODUCTOS Y MODIFICACIÓN DE PRECIOS -->
+    <!-- 2. TABLA DE PRODUCTOS Y GENERACIÓN -->
     <div class="bg-white rounded-xl shadow-md p-6">
       <div class="flex justify-between items-center mb-4">
         <div>
-          <h2 class="text-xl font-bold text-slate-800">2. Configurar Lista 
-de Precios</h2>
-          <p class="text-slate-500 text-xs">Selecciona los productos que 
-quieres incluir y modifica su precio para esta lista si es necesario.</p>
+          <h2 class="text-lg font-bold text-slate-800">2. Configurar Lista de Precios</h2>
+          <p class="text-slate-500 text-xs">Selecciona los productos e introduce el cliente para la oferta.</p>
         </div>
         <div class="space-x-2">
-          <button onclick="marcarTodos(true)" class="text-xs text-blue-600 
-hover:underline">Marcar Todos</button>
+          <button onclick="marcarTodos(true)" class="text-xs text-blue-600 hover:underline">Marcar Todos</button>
           <span class="text-slate-300">|</span>
-          <button onclick="marcarTodos(false)" class="text-xs 
-text-slate-500 hover:underline">Desmarcar Todos</button>
+          <button onclick="marcarTodos(false)" class="text-xs text-slate-500 hover:underline">Desmarcar Todos</button>
         </div>
       </div>
 
@@ -122,43 +102,30 @@ text-slate-500 hover:underline">Desmarcar Todos</button>
             <tr class="bg-slate-200 text-slate-700 text-xs uppercase">
               <th class="p-3 text-center">Incluir</th>
               <th class="p-3">Foto</th>
-              <th class="p-3">Ref.</th>
               <th class="p-3">Producto</th>
               <th class="p-3">Formato</th>
-              <th class="p-3">Precio en esta lista (€)</th>
+              <th class="p-3">Precio Lista (€)</th>
               <th class="p-3 text-center">Acción</th>
             </tr>
           </thead>
-          <tbody id="tabla-catalogo" class="divide-y divide-slate-100 
-text-sm">
-            <!-- Los productos guardados aparecerán aquí -->
+          <tbody id="tabla-catalogo" class="divide-y divide-slate-100 text-sm">
+            <!-- Productos cargados dinámicamente -->
           </tbody>
         </table>
       </div>
 
-      <!-- DATO DEL CLIENTE Y DESCARGA -->
       <div class="border-t pt-4 space-y-4">
-        <div class="bg-blue-50 p-4 rounded-lg border border-blue-100 flex 
-flex-col md:flex-row md:items-center justify-between gap-4">
-          <div class="flex-1">
-            <label class="block text-xs font-bold text-blue-900 mb-1">👤 
-Nombre del Cliente o Destinatario de esta Lista:</label>
-            <input type="text" id="nombre-cliente" placeholder="Ej. 
-Restaurante Sevilla / Juan Pérez" class="w-full border border-blue-300 
-rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white">
-          </div>
+        <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+          <label class="block text-xs font-bold text-blue-900 mb-1">👤 Nombre del Cliente para esta Lista:</label>
+          <input type="text" id="nombre-cliente" placeholder="Ej. Restaurante Sevilla / Catering Boda" class="w-full border border-blue-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white">
         </div>
 
         <div class="flex flex-wrap gap-4 justify-end">
-          <button onclick="generarPDF('corta')" class="bg-slate-700 
-hover:bg-slate-800 text-white font-medium px-4 py-2 rounded-lg text-sm 
-transition-colors shadow">
-            📄 Descargar Lista Seleccionada (Sin fotos)
+          <button onclick="generarPDF('corta')" class="bg-slate-700 hover:bg-slate-800 text-white font-medium px-4 py-2 rounded-lg text-sm transition-colors shadow">
+            📄 Descargar Lista (Sin fotos)
           </button>
-          <button onclick="generarPDF('catalogo')" class="bg-emerald-600 
-hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-lg text-sm 
-transition-colors shadow">
-            🖼️ Descargar Catálogo Seleccionado (Con fotos)
+          <button onclick="generarPDF('catalogo')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-lg text-sm transition-colors shadow">
+            🖼️ Descargar Catálogo (Con fotos)
           </button>
         </div>
       </div>
@@ -168,21 +135,36 @@ transition-colors shadow">
   </div>
 
   <script>
-    let catalogoMaestro = 
-JSON.parse(localStorage.getItem('mis_productos_catalogo')) || [];
-    let logoEmpresaBase64 = localStorage.getItem('mi_logo_empresa') || 
-null;
+    const STORAGE_KEY = 'mi_catalogo_ncm_v2';
+    let catalogo = [];
+    let logoEmpresaBase64 = null;
 
     window.onload = function() {
-      document.getElementById('nombre-empresa').value = 
-localStorage.getItem('mi_nombre_empresa') || '';
-      mostrarLogoVistaPrevia();
-      actualizarTablaCatalogo();
+      cargarDatosLocales();
+      cargarCatalogoDesdeNube();
     };
 
-    function guardarDatosEmpresa() {
-      const nombre = document.getElementById('nombre-empresa').value;
-      localStorage.setItem('mi_nombre_empresa', nombre);
+    function actualizarEstado(texto, tipo) {
+      const el = document.getElementById('estado-nube');
+      el.textContent = texto;
+      if (tipo === 'ok') el.className = 'text-xs bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full font-medium';
+      else if (tipo === 'sync') el.className = 'text-xs bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium';
+      else el.className = 'text-xs bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-medium';
+    }
+
+    function cargarDatosLocales() {
+      document.getElementById('nombre-empresa').value = localStorage.getItem('nombre_empresa_ncm') || '';
+      document.getElementById('nombre-comercial').value = localStorage.getItem('nombre_comercial_ncm') || '';
+      document.getElementById('telefono-comercial').value = localStorage.getItem('telefono_comercial_ncm') || '';
+      logoEmpresaBase64 = localStorage.getItem('logo_empresa_ncm') || null;
+      mostrarLogoVistaPrevia();
+    }
+
+    function guardarDatosConfiguracion() {
+      localStorage.setItem('nombre_empresa_ncm', document.getElementById('nombre-empresa').value || '');
+      localStorage.setItem('nombre_comercial_ncm', document.getElementById('nombre-comercial').value || '');
+      localStorage.setItem('telefono_comercial_ncm', document.getElementById('telefono-comercial').value || '');
+      guardarEnNube();
     }
 
     function cargarLogo(event) {
@@ -191,8 +173,9 @@ localStorage.getItem('mi_nombre_empresa') || '';
         const reader = new FileReader();
         reader.onload = function(e) {
           logoEmpresaBase64 = e.target.result;
-          localStorage.setItem('mi_logo_empresa', logoEmpresaBase64);
+          localStorage.setItem('logo_empresa_ncm', logoEmpresaBase64);
           mostrarLogoVistaPrevia();
+          guardarEnNube();
         };
         reader.readAsDataURL(file);
       }
@@ -201,101 +184,141 @@ localStorage.getItem('mi_nombre_empresa') || '';
     function mostrarLogoVistaPrevia() {
       const cont = document.getElementById('vista-previa-logo');
       if (logoEmpresaBase64) {
-        cont.innerHTML = `<img src="${logoEmpresaBase64}" class="h-10 
-object-contain rounded border p-1 bg-white"> <button 
-onclick="borrarLogo()" class="text-xs text-red-500 
-hover:underline">Quitar</button>`;
+        cont.innerHTML = `<img src="${logoEmpresaBase64}" class="h-10 object-contain rounded border p-1 bg-white"> <button onclick="borrarLogo()" class="text-xs text-red-500 hover:underline">Quitar</button>`;
       } else {
-        cont.innerHTML = `<span class="text-xs text-slate-400">Sin logo 
-cargado</span>`;
+        cont.innerHTML = `<span class="text-xs text-slate-400">Sin logo cargado</span>`;
       }
     }
 
     function borrarLogo() {
       logoEmpresaBase64 = null;
-      localStorage.removeItem('mi_logo_empresa');
+      localStorage.removeItem('logo_empresa_ncm');
       document.getElementById('logo-empresa').value = '';
       mostrarLogoVistaPrevia();
+      guardarEnNube();
     }
 
-    // Agregar producto al catálogo
-    
-document.getElementById('form-nuevo-producto').addEventListener('submit', 
-function(e) {
-      e.preventDefault();
+    async function cargarCatalogoDesdeNube() {
+      actualizarEstado('Conectando a la nube...', 'wait');
+      try {
+        const res = await fetch(`https://api.jsonbin.io/v3/b/66f80000e41b4d34e4390000`, {
+          headers: { 'X-Master-Key': '$2a$10$Un4lZ3.49kC4Y9o0X3vW9e5W.3W1' }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.record && Array.isArray(data.record.catalogo)) {
+            catalogo = data.record.catalogo;
+            if (data.record.empresa) {
+              document.getElementById('nombre-empresa').value = data.record.empresa;
+              localStorage.setItem('nombre_empresa_ncm', data.record.empresa);
+            }
+            if (data.record.comercial) {
+              document.getElementById('nombre-comercial').value = data.record.comercial;
+              localStorage.setItem('nombre_comercial_ncm', data.record.comercial);
+            }
+            if (data.record.telefono) {
+              document.getElementById('telefono-comercial').value = data.record.telefono;
+              localStorage.setItem('telefono_comercial_ncm', data.record.telefono);
+            }
+            if (data.record.logo) {
+              logoEmpresaBase64 = data.record.logo;
+              localStorage.setItem('logo_empresa_ncm', logoEmpresaBase64);
+              mostrarLogoVistaPrevia();
+            }
+          }
+        }
+      } catch (e) {
+        const local = localStorage.getItem(STORAGE_KEY);
+        if (local) catalogo = JSON.parse(local);
+      }
+      
+      actualizarEstado('Sincronizado 🟢', 'ok');
+      actualizarTabla();
+    }
 
+    async function guardarEnNube() {
+      actualizarEstado('Guardando en la nube...', 'sync');
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(catalogo));
+
+      const payload = {
+        catalogo: catalogo,
+        empresa: document.getElementById('nombre-empresa').value || '',
+        comercial: document.getElementById('nombre-comercial').value || '',
+        telefono: document.getElementById('telefono-comercial').value || '',
+        logo: logoEmpresaBase64
+      };
+
+      try {
+        await fetch(`https://api.jsonbin.io/v3/b/66f80000e41b4d34e4390000`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Master-Key': '$2a$10$Un4lZ3.49kC4Y9o0X3vW9e5W.3W1'
+          },
+          body: JSON.stringify(payload)
+        });
+        actualizarEstado('Sincronizado 🟢', 'ok');
+      } catch (e) {
+        actualizarEstado('Guardado localmente ⚠️', 'wait');
+      }
+    }
+
+    document.getElementById('form-nuevo-producto').addEventListener('submit', function(e) {
+      e.preventDefault();
       const archivoImagen = document.getElementById('foto').files[0];
 
       if (archivoImagen) {
         const reader = new FileReader();
         reader.onload = function(evt) {
-          guardarEnCatalogo(evt.target.result);
+          guardarProducto(evt.target.result);
         };
         reader.readAsDataURL(archivoImagen);
       } else {
-        guardarEnCatalogo(null);
+        guardarProducto(null);
       }
     });
 
-    function guardarEnCatalogo(fotoBase64) {
+    function guardarProducto(fotoBase64) {
       const nuevo = {
         id: Date.now(),
-        codigo: document.getElementById('codigo').value,
         nombre: document.getElementById('nombre').value,
         formato: document.getElementById('formato').value || '-',
-        precio: 
-parseFloat(document.getElementById('precio').value).toFixed(2),
+        precio: parseFloat(document.getElementById('precio').value).toFixed(2),
         foto: fotoBase64,
         incluir: true
       };
 
-      catalogoMaestro.push(nuevo);
-      guardarMemoria();
-      actualizarTablaCatalogo();
+      catalogo.push(nuevo);
+      actualizarTabla();
+      guardarEnNube();
       document.getElementById('form-nuevo-producto').reset();
     }
 
-    function guardarMemoria() {
-      localStorage.setItem('mis_productos_catalogo', 
-JSON.stringify(catalogoMaestro));
-    }
-
-    function actualizarTablaCatalogo() {
+    function actualizarTabla() {
       const tbody = document.getElementById('tabla-catalogo');
       tbody.innerHTML = '';
 
-      if (catalogoMaestro.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center 
-text-slate-400 text-xs">No hay productos guardados en el catálogo aún. Usa 
-el formulario de arriba para añadir el primero.</td></tr>`;
+      if (catalogo.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400 text-xs">No hay productos guardados aún. Añade el primero arriba.</td></tr>`;
         return;
       }
 
-      catalogoMaestro.forEach((prod, index) => {
-        const imgHtml = prod.foto ? `<img src="${prod.foto}" class="w-10 
-h-10 object-cover rounded shadow-sm">` : '<span class="text-xs 
-text-slate-400">Sin foto</span>';
-        
+      catalogo.forEach((prod, index) => {
+        const imgHtml = prod.foto ? `<img src="${prod.foto}" class="w-10 h-10 object-cover rounded shadow-sm">` : '<span class="text-xs text-slate-400">Sin foto</span>';
+
         tbody.innerHTML += `
           <tr class="hover:bg-slate-50">
             <td class="p-3 text-center">
-              <input type="checkbox" ${prod.incluir ? 'checked' : ''} 
-onchange="cambiarSeleccion(${index}, this.checked)" class="w-4 h-4 
-text-blue-600 rounded cursor-pointer">
+              <input type="checkbox" ${prod.incluir !== false ? 'checked' : ''} onchange="cambiarSeleccion(${index}, this.checked)" class="w-4 h-4 text-blue-600 rounded cursor-pointer">
             </td>
             <td class="p-2">${imgHtml}</td>
-            <td class="p-3 font-medium text-slate-700">${prod.codigo}</td>
             <td class="p-3 font-medium text-slate-900">${prod.nombre}</td>
             <td class="p-3 text-slate-500">${prod.formato}</td>
             <td class="p-3">
-              <input type="number" step="0.01" value="${prod.precio}" 
-onchange="modificarPrecioTemp(${index}, this.value)" class="w-24 border 
-rounded p-1 text-sm font-bold text-slate-800 focus:ring-2 
-focus:ring-blue-500">
+              <input type="number" step="0.01" value="${prod.precio}" onchange="modificarPrecioTemp(${index}, this.value)" class="w-24 border rounded p-1 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-blue-500">
             </td>
             <td class="p-3 text-center">
-              <button onclick="eliminarDelCatalogo(${index})" 
-class="text-red-500 hover:underline text-xs">Borrar</button>
+              <button onclick="eliminarProducto(${index})" class="text-red-500 hover:underline text-xs">Borrar</button>
             </td>
           </tr>
         `;
@@ -303,73 +326,62 @@ class="text-red-500 hover:underline text-xs">Borrar</button>
     }
 
     function cambiarSeleccion(index, valor) {
-      catalogoMaestro[index].incluir = valor;
+      catalogo[index].incluir = valor;
     }
 
     function modificarPrecioTemp(index, nuevoPrecio) {
-      catalogoMaestro[index].precio = parseFloat(nuevoPrecio || 
-0).toFixed(2);
+      catalogo[index].precio = parseFloat(nuevoPrecio || 0).toFixed(2);
+      guardarEnNube();
     }
 
     function marcarTodos(estado) {
-      catalogoMaestro.forEach(p => p.incluir = estado);
-      actualizarTablaCatalogo();
+      catalogo.forEach(p => p.incluir = estado);
+      actualizarTabla();
     }
 
-    function eliminarDelCatalogo(index) {
-      catalogoMaestro.splice(index, 1);
-      guardarMemoria();
-      actualizarTablaCatalogo();
+    function eliminarProducto(index) {
+      catalogo.splice(index, 1);
+      actualizarTabla();
+      guardarEnNube();
     }
 
-    // Generar PDF con Encabezado, Logo y Cliente
     function generarPDF(tipo) {
-      const seleccionados = catalogoMaestro.filter(p => p.incluir);
+      const seleccionados = catalogo.filter(p => p.incluir !== false);
 
       if (seleccionados.length === 0) {
-        alert("Por favor, selecciona al menos un producto con la casilla 
-de verificación.");
+        alert("Por favor, selecciona al menos un producto.");
         return;
       }
 
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF();
 
-      const nombreEmpresa = 
-document.getElementById('nombre-empresa').value || '';
-      const nombreCliente = 
-document.getElementById('nombre-cliente').value || '';
+      const nombreEmpresa = document.getElementById('nombre-empresa').value || '';
+      const nombreCliente = document.getElementById('nombre-cliente').value || '';
+      const nombreComercial = document.getElementById('nombre-comercial').value || '';
+      const telefonoComercial = document.getElementById('telefono-comercial').value || '';
 
       let startYPos = 25;
 
-      // Dibujar Logo si existe
       if (logoEmpresaBase64) {
         try {
           doc.addImage(logoEmpresaBase64, 'PNG', 14, 12, 30, 15);
           startYPos = 32;
-        } catch(e) {
-          console.log("Error al añadir logo al PDF", e);
-        }
+        } catch(e) {}
       }
 
-      // Nombre Empresa
       if (nombreEmpresa) {
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(30, 41, 59);
-        doc.text(nombreEmpresa.toUpperCase(), logoEmpresaBase64 ? 48 : 14, 
-18);
+        doc.text(nombreEmpresa.toUpperCase(), logoEmpresaBase64 ? 48 : 14, 18);
       }
 
-      // Título del documento
       doc.setFontSize(16);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(51, 65, 85);
-      doc.text(tipo === 'catalogo' ? "CATÁLOGO DE PRODUCTOS" : "OFERTA / 
-LISTA DE PRECIOS", logoEmpresaBase64 ? 48 : 14, logoEmpresaBase64 ? 26 : 
-28);
+      doc.text(tipo === 'catalogo' ? "CATÁLOGO DE PRODUCTOS" : "OFERTA / LISTA DE PRECIOS", logoEmpresaBase64 ? 48 : 14, logoEmpresaBase64 ? 26 : 28);
 
-      // Datos Cliente y Fecha
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(100);
@@ -379,47 +391,52 @@ LISTA DE PRECIOS", logoEmpresaBase64 ? 48 : 14, logoEmpresaBase64 ? 26 :
         doc.text(`Cliente: ${nombreCliente}`, 14, infoPosY);
         infoPosY += 5;
       }
-      doc.text(`Fecha de emisión: ${new 
-Date().toLocaleDateString('es-ES')}`, 14, infoPosY);
+      
+      let comercialInfo = '';
+      if (nombreComercial) comercialInfo += `Comercial: ${nombreComercial}`;
+      if (telefonoComercial) comercialInfo += `${comercialInfo ? ' - ' : ''}Tel: ${telefonoComercial}`;
+      
+      if (comercialInfo) {
+        doc.text(comercialInfo, 14, infoPosY);
+        infoPosY += 5;
+      }
+
+      doc.text(`Fecha de emisión: ${new Date().toLocaleDateString('es-ES')}`, 14, infoPosY);
 
       const tablaStartY = infoPosY + 6;
 
       if (tipo === 'corta') {
-        const filas = seleccionados.map(p => [p.codigo, p.nombre, 
-p.formato, `${p.precio} €`]);
+        const filas = seleccionados.map(p => [p.nombre, p.formato, `${p.precio} €`]);
         doc.autoTable({
           startY: tablaStartY,
-          head: [['Ref.', 'Producto', 'Formato', 'Precio']],
+          head: [['Producto', 'Formato', 'Precio']],
           body: filas,
           headStyles: { fillColor: [51, 65, 85] },
-          columnStyles: { 3: { halign: 'right', fontStyle: 'bold' } }
+          columnStyles: { 2: { halign: 'right', fontStyle: 'bold' } }
         });
-        doc.save(`lista_precios_${nombreCliente ? 
-nombreCliente.replace(/\s+/g, '_') : 'cliente'}.pdf`);
+        doc.save(`lista_${nombreCliente ? nombreCliente.replace(/\s+/g, '_') : 'cliente'}.pdf`);
       } else {
-        const filas = seleccionados.map(p => ['', p.codigo, p.nombre, 
-p.formato, `${p.precio} €`]);
+        const filas = seleccionados.map(p => ['', p.nombre, p.formato, `${p.precio} €`]);
         doc.autoTable({
           startY: tablaStartY,
-          head: [['Imagen', 'Ref.', 'Producto', 'Formato', 'Precio']],
+          head: [['Imagen', 'Producto', 'Formato', 'Precio']],
           body: filas,
           rowPageBreak: 'avoid',
           bodyStyles: { minCellHeight: 20, verticalAlign: 'middle' },
           headStyles: { fillColor: [16, 185, 129] },
-          columnStyles: { 0: { cellWidth: 24 }, 4: { halign: 'right', 
-fontStyle: 'bold' } },
+          columnStyles: { 0: { cellWidth: 24 }, 3: { halign: 'right', fontStyle: 'bold' } },
           didDrawCell: function(data) {
             if (data.section === 'body' && data.column.index === 0) {
               const p = seleccionados[data.row.index];
               if (p && p.foto) {
-                doc.addImage(p.foto, 'JPEG', data.cell.x + 2, data.cell.y 
-+ 2, 16, 16);
+                try {
+                  doc.addImage(p.foto, 'JPEG', data.cell.x + 2, data.cell.y + 2, 16, 16);
+                } catch(e) {}
               }
             }
           }
         });
-        doc.save(`catalogo_${nombreCliente ? nombreCliente.replace(/\s+/g, 
-'_') : 'cliente'}.pdf`);
+        doc.save(`catalogo_${nombreCliente ? nombreCliente.replace(/\s+/g, '_') : 'cliente'}.pdf`);
       }
     }
   </script>
