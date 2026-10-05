@@ -221,4 +221,109 @@
       let urlFoto = '';
 
       if (archivoFoto) {
-        const nombreArchivo = Date.now() + '_' + archivoFoto.name.
+        const nombreArchivo = Date.now() + '_' + archivoFoto.name.replace(/\s+/g, '_');
+        const { data: uploadData, error: uploadError } = await _supabase
+          .storage
+          .from('productos-fotos')
+          .upload(nombreArchivo, archivoFoto);
+
+        if (uploadError) {
+          alert('Error al subir la imagen: ' + uploadError.message);
+          return;
+        }
+
+        const { data: publicUrlData } = _supabase
+          .storage
+          .from('productos-fotos')
+          .getPublicUrl(nombreArchivo);
+
+        urlFoto = publicUrlData.publicUrl;
+      }
+
+      const { error } = await _supabase.from('productos').insert([
+        { nombre: nombre, precio: precio, url_foto: urlFoto }
+      ]);
+
+      if (error) {
+        alert('Error al guardar: ' + error.message);
+      } else {
+        alert('¡Producto guardado exitosamente!');
+        document.getElementById('prodNombre').value = '';
+        document.getElementById('prodPrecio').value = '';
+        document.getElementById('prodFoto').value = '';
+        cargarProductos();
+      }
+    }
+
+    // Guardar lista en el histórico
+    async function generarLista() {
+      const cliente = document.getElementById('clienteNombre').value;
+      if (!cliente) {
+        alert('Escribe el nombre del cliente.');
+        return;
+      }
+
+      const checkboxes = document.querySelectorAll('.prod-checkbox:checked');
+      const seleccionados = Array.from(checkboxes).map(function(cb) { return parseInt(cb.value); });
+
+      if (seleccionados.length === 0) {
+        alert('Selecciona al menos un producto.');
+        return;
+      }
+
+      const { error } = await _supabase.from('listas_generadas').insert([
+        { cliente_nombre: cliente, productos_ids: seleccionados }
+      ]);
+
+      if (error) {
+        alert('Error al guardar la lista: ' + error.message);
+      } else {
+        alert('¡Lista para ' + cliente + ' guardada correctamente!');
+        document.getElementById('clienteNombre').value = '';
+        cargarHistoricoListas();
+      }
+    }
+
+    // Cargar histórico de listas generadas
+    async function cargarHistoricoListas() {
+      if (!_supabase) return;
+      const { data, error } = await _supabase.from('listas_generadas').select('*').order('id', { ascending: false });
+      const tbody = document.getElementById('tablaHistorico');
+
+      if (error) {
+        tbody.innerHTML = '<tr><td colspan="4">Error al cargar el histórico: ' + error.message + '</td></tr>';
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4">No hay listas generadas registradas.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = data.map(function(lista) {
+        var fechaFormateada = new Date(lista.fecha).toLocaleString('es-ES');
+        return '<tr>' +
+          '<td>' + lista.id + '</td>' +
+          '<td><strong>' + lista.cliente_nombre + '</strong></td>' +
+          '<td>' + fechaFormateada + '</td>' +
+          '<td><button class="btn-delete" onclick="borrarLista(' + lista.id + ', \'' + lista.cliente_nombre.replace(/'/g, "\\'") + '\')">🗑️ Eliminar Lista</button></td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    // Borrar una lista del histórico
+    async function borrarLista(id, cliente) {
+      if (!confirm('¿Deseas borrar la lista histórica del cliente "' + cliente + '"?')) return;
+
+      const { error } = await _supabase.from('listas_generadas').delete().eq('id', id);
+
+      if (error) {
+        alert('Error al borrar la lista: ' + error.message);
+      } else {
+        alert('Lista eliminada del histórico.');
+        cargarHistoricoListas();
+      }
+    }
+  </script>
+</body>
+</html>
