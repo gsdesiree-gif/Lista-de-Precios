@@ -30,7 +30,7 @@
     .img-preview { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; }
     .logo-preview { max-height: 60px; margin-top: 10px; display: none; }
 
-    /* ESTILO MARCA DE AGUA EN EL DOCUMENTO */
+    /* ESTILOS DE MARCA DE AGUA */
     .watermark-container {
       position: relative;
       overflow: hidden;
@@ -44,6 +44,16 @@
       opacity: 0.08;
       pointer-events: none;
       z-index: 1;
+    }
+
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      font-weight: normal;
+      margin-top: 10px;
+      color: #2b6cb0;
     }
 
     @media print {
@@ -88,6 +98,14 @@
           <input type="text" id="comercialTelefono" placeholder="Ej: +34 600 000 000">
         </div>
       </div>
+      
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="usarMarcaAgua" checked>
+          <span>Mostrar logo como marca de agua en el documento</span>
+        </label>
+      </div>
+
       <button onclick="guardarEncabezadoNube()" style="background: #2b6cb0;">💾 Guardar Encabezado en la Nube</button>
     </div>
 
@@ -157,7 +175,7 @@
     </div>
   </div>
 
-  <!-- VISTA DOCUMENTO IMPRIMIBLE CON MARCA DE AGUA Y DISEÑO REFINADO -->
+  <!-- VISTA DOCUMENTO IMPRIMIBLE -->
   <div id="vistaDocumento" style="display:none;" class="card watermark-container">
     <button onclick="cerrarVistaDocumento()" class="no-print" style="background:#6c757d; margin-bottom:15px;">⬅️ Volver al Panel</button>
     <button onclick="window.print()" class="no-print" style="background:#28a745; margin-bottom:15px;">📥 Imprimir / Descargar PDF</button>
@@ -416,13 +434,14 @@
       const comercial = document.getElementById('comercialNombre').value || '';
       const telefono = document.getElementById('comercialTelefono').value || '';
       const logoUrl = document.getElementById('empresaLogoUrl').value;
+      const usarMarcaAgua = document.getElementById('usarMarcaAgua').checked;
 
       const idsGuardados = lista.productos_ids || [];
       const productosSeleccionados = _productosCache.filter(p => idsGuardados.includes(p.id));
 
       let htmlDoc = `
-        <!-- MARCA DE AGUA EN EL FONDO -->
-        ${logoUrl ? `<img src="${logoUrl}" crossorigin="anonymous" class="watermark-bg">` : ''}
+        <!-- MARCA DE AGUA CONDICIONAL -->
+        ${(logoUrl && usarMarcaAgua) ? `<img src="${logoUrl}" crossorigin="anonymous" class="watermark-bg">` : ''}
 
         <div style="border-bottom: 2px solid #1a365d; padding-bottom: 20px; margin-bottom: 25px; display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 2;">
           <!-- LADO IZQUIERDO: LOGO -->
@@ -430,7 +449,7 @@
             ${logoUrl ? `<img src="${logoUrl}" crossorigin="anonymous" style="max-height: 95px; max-width: 100%; object-fit: contain;">` : ''}
           </div>
 
-          <!-- CENTRO: TÍTULO Y COMERCIAL EN NEGRITA -->
+          <!-- CENTRO: TÍTULO Y COMERCIAL -->
           <div style="width: 55%; text-align: center;">
             <h1 style="margin: 0; font-family: 'Oswald', sans-serif; font-size: 38px; color: #1a365d; letter-spacing: 2px; text-transform: uppercase; font-weight: 700;">${empresa}</h1>
             ${comercial ? `
@@ -440,7 +459,7 @@
             ` : ''}
           </div>
 
-          <!-- LADO DERECHO: CLIENTE EN OSWALD REGULAR (SIN NEGRITA) Y FECHA -->
+          <!-- LADO DERECHO: CLIENTE Y FECHA -->
           <div style="width: 25%; text-align: right; font-size: 14px; color: #2d3748;">
             <p style="margin: 0; font-family: 'Oswald', sans-serif; font-size: 17px; color: #2b6cb0; font-weight: 400; letter-spacing: 0.5px;">
               CLIENTE: ${lista.cliente_nombre.toUpperCase()}
