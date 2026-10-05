@@ -14,8 +14,10 @@
     input[type="text"], input[type="number"], input[type="file"] { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
     .row { display: flex; gap: 15px; }
     .col { flex: 1; }
-    button { background: #0066cc; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+    button { background: #0066cc; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 14px; }
     button:hover { background: #004999; }
+    .btn-delete { background: #dc3545; color: white; padding: 5px 10px; font-size: 12px; border: none; border-radius: 4px; cursor: pointer; }
+    .btn-delete:hover { background: #bd2130; }
     table { width: 100%; border-collapse: collapse; margin-top: 15px; }
     th, td { border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: middle; }
     th { background: #f0f4f8; }
@@ -89,19 +91,38 @@
           <th>Foto</th>
           <th>Producto</th>
           <th>Precio</th>
+          <th>Acciones</th>
         </tr>
       </thead>
       <tbody id="tablaProductos">
-        <tr><td colspan="4">Cargando productos...</td></tr>
+        <tr><td colspan="5">Cargando productos...</td></tr>
       </tbody>
     </table>
 
     <br>
-    <button onclick="generarLista()" style="background: #28a745;">🚀 Guardar Lista de Precios</button>
+    <button onclick="generarLista()" style="background: #28a745; font-size: 16px; padding: 10px 18px;">🚀 Guardar Lista de Precios</button>
+  </div>
+
+  <!-- SECCIÓN 4: HISTÓRICO Y BORRADO DE LISTAS -->
+  <div class="card">
+    <h3>📜 Histórico de Listas Generadas</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Cliente</th>
+          <th>Fecha de Creación</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tablaHistorico">
+        <tr><td colspan="4">Cargando histórico de listas...</td></tr>
+      </tbody>
+    </table>
   </div>
 
   <script>
-    // URL Y KEY VINCULADAS AL MISMO PROYECTO
+    // URL Y KEY DE SUPABASE
     const SUPABASE_URL = 'https://irjwegtxvoxhbnfvhnvv.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyandlZ3R4dm94aGJuZnZobnZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMDM0NTgsImV4cCI6MjEwNjc3OTQ1OH0.Eb5A-HaTLLzFV_unn9b-QjCQLVT41x8rxMBOCINLpMg'; 
     
@@ -111,11 +132,13 @@
       try {
         _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         cargarProductos();
+        cargarHistoricoListas();
       } catch (e) {
         console.error("Error inicializando Supabase:", e);
       }
     };
 
+    // Subir logo corporativo
     async function subirLogoProcesado() {
       const archivoLogo = document.getElementById('empresaLogoFile').files[0];
       if (!archivoLogo || !_supabase) return;
@@ -142,18 +165,19 @@
       preview.style.display = 'block';
     }
 
+    // Cargar productos
     async function cargarProductos() {
       if (!_supabase) return;
       const { data, error } = await _supabase.from('productos').select('*').order('id', { ascending: true });
       const tbody = document.getElementById('tablaProductos');
       
       if (error) {
-        tbody.innerHTML = '<tr><td colspan="4">Error al cargar productos: ' + error.message + '</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5">Error al cargar productos: ' + error.message + '</td></tr>';
         return;
       }
 
       if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4">No hay productos guardados aún.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5">No hay productos guardados aún.</td></tr>';
         return;
       }
 
@@ -164,10 +188,26 @@
           '<td>' + fotoHtml + '</td>' +
           '<td>' + prod.nombre + '</td>' +
           '<td>' + parseFloat(prod.precio).toFixed(2) + ' €</td>' +
+          '<td><button class="btn-delete" onclick="borrarProducto(' + prod.id + ', \'' + prod.nombre.replace(/'/g, "\\'") + '\')">🗑️ Borrar</button></td>' +
         '</tr>';
       }).join('');
     }
 
+    // Borrar un producto
+    async function borrarProducto(id, nombre) {
+      if (!confirm('¿Estás segura de que deseas borrar el producto "' + nombre + '"?')) return;
+
+      const { error } = await _supabase.from('productos').delete().eq('id', id);
+
+      if (error) {
+        alert('Error al eliminar el producto: ' + error.message);
+      } else {
+        alert('Producto eliminado correctamente.');
+        cargarProductos();
+      }
+    }
+
+    // Guardar nuevo producto
     async function guardarProducto() {
       const nombre = document.getElementById('prodNombre').value;
       const precio = parseFloat(document.getElementById('prodPrecio').value);
@@ -181,65 +221,4 @@
       let urlFoto = '';
 
       if (archivoFoto) {
-        const nombreArchivo = Date.now() + '_' + archivoFoto.name.replace(/\s+/g, '_');
-        const { data: uploadData, error: uploadError } = await _supabase
-          .storage
-          .from('productos-fotos')
-          .upload(nombreArchivo, archivoFoto);
-
-        if (uploadError) {
-          alert('Error al subir la imagen: ' + uploadError.message);
-          return;
-        }
-
-        const { data: publicUrlData } = _supabase
-          .storage
-          .from('productos-fotos')
-          .getPublicUrl(nombreArchivo);
-
-        urlFoto = publicUrlData.publicUrl;
-      }
-
-      const { error } = await _supabase.from('productos').insert([
-        { nombre: nombre, precio: precio, url_foto: urlFoto }
-      ]);
-
-      if (error) {
-        alert('Error al guardar: ' + error.message);
-      } else {
-        alert('¡Producto guardado exitosamente en la nube!');
-        document.getElementById('prodNombre').value = '';
-        document.getElementById('prodPrecio').value = '';
-        document.getElementById('prodFoto').value = '';
-        cargarProductos();
-      }
-    }
-
-    async function generarLista() {
-      const cliente = document.getElementById('clienteNombre').value;
-      if (!cliente) {
-        alert('Escribe el nombre del cliente.');
-        return;
-      }
-
-      const checkboxes = document.querySelectorAll('.prod-checkbox:checked');
-      const seleccionados = Array.from(checkboxes).map(function(cb) { return parseInt(cb.value); });
-
-      if (seleccionados.length === 0) {
-        alert('Selecciona al menos un producto.');
-        return;
-      }
-
-      const { error } = await _supabase.from('listas_generadas').insert([
-        { cliente_nombre: cliente, productos_ids: seleccionados }
-      ]);
-
-      if (error) {
-        alert('Error al guardar lista: ' + error.message);
-      } else {
-        alert('¡Lista para ' + cliente + ' guardada correctamente en la nube!');
-      }
-    }
-  </script>
-</body>
-</html>
+        const nombreArchivo = Date.now() + '_' + archivoFoto.name.
