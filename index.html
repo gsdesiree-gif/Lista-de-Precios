@@ -8,21 +8,21 @@
   <style>
     body { font-family: Arial, sans-serif; max-width: 900px; margin: 20px auto; padding: 20px; background: #f4f6f8; }
     .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
-    h1, h3 { color: #333; margin-top: 0; }
+    h1, h3 { color: #1a365d; margin-top: 0; }
     .form-group { margin-bottom: 15px; }
     label { display: block; font-weight: bold; margin-bottom: 5px; }
     input[type="text"], input[type="number"], input[type="file"] { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
     .row { display: flex; gap: 15px; }
     .col { flex: 1; }
-    button { background: #0066cc; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 14px; margin-right: 5px; }
-    button:hover { background: #004999; }
-    .btn-view { background: #17a2b8; color: white; }
-    .btn-view:hover { background: #117a8b; }
+    button { background: #1a365d; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 14px; margin-right: 5px; }
+    button:hover { background: #0f233f; }
+    .btn-view { background: #2b6cb0; color: white; }
+    .btn-view:hover { background: #1c4ed8; }
     .btn-delete { background: #dc3545; color: white; }
     .btn-delete:hover { background: #bd2130; }
     table { width: 100%; border-collapse: collapse; margin-top: 15px; }
     th, td { border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: middle; }
-    th { background: #f0f4f8; }
+    th { background: #ebf8ff; color: #1a365d; }
     .img-preview { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; }
     .logo-preview { max-height: 60px; margin-top: 10px; display: none; }
 
@@ -31,8 +31,9 @@
       .card, button, h1 { box-shadow: none; border: none; padding: 0; }
       .no-print { display: none !important; }
       .print-only { display: block !important; }
-      table { border: 1px solid #000; width: 100%; }
-      th, td { border: 1px solid #000; }
+      table { border: 1px solid #1a365d; width: 100%; }
+      th, td { border: 1px solid #cbd5e0; }
+      th { background-color: #ebf8ff !important; -webkit-print-color-adjust: exact; }
     }
   </style>
 </head>
@@ -47,10 +48,10 @@
       <div class="row">
         <div class="col form-group">
           <label>Nombre de la Empresa:</label>
-          <input type="text" id="empresaNombre" placeholder="Ej: Mi Empresa S.L.">
+          <input type="text" id="empresaNombre" placeholder="Ej: El Ancla">
         </div>
         <div class="col form-group">
-          <label>Imagen del Logo:</label>
+          <label>Imagen del Logo / Ancla:</label>
           <input type="file" id="empresaLogoFile" accept="image/*" onchange="subirLogoProcesado()">
           <input type="hidden" id="empresaLogoUrl">
           <img id="logoPreviewImg" class="logo-preview" alt="Vista previa del logo">
@@ -66,7 +67,7 @@
           <input type="text" id="comercialTelefono" placeholder="Ej: +34 600 000 000">
         </div>
       </div>
-      <button onclick="guardarEncabezadoNube()" style="background: #17a2b8;">💾 Guardar Encabezado en la Nube</button>
+      <button onclick="guardarEncabezadoNube()" style="background: #2b6cb0;">💾 Guardar Encabezado en la Nube</button>
     </div>
 
     <!-- SECCIÓN 2: AÑADIR NUEVO PRODUCTO CON FOTO -->
@@ -135,15 +136,318 @@
     </div>
   </div>
 
-  <!-- VISTA DOCUMENTO IMPRIMIBLE / PDF -->
+  <!-- VISTA DOCUMENTO IMPRIMIBLE / PDF CON DISEÑO ELEGANTE Y AZULADO -->
   <div id="vistaDocumento" style="display:none;" class="card">
     <button onclick="cerrarVistaDocumento()" class="no-print" style="background:#6c757d; margin-bottom:15px;">⬅️ Volver al Panel</button>
-    <button onclick="window.print()" class="no-print" style="background:#28a745; margin-bottom:15px;">No, la frase **«oferta de precios»** no es gramaticalmente incorrecta ni «imposible», pero **suena redundante o poco natural** en la mayoría de los contextos comerciales habituales. 
+    <button onclick="window.print()" class="no-print" style="background:#28a745; margin-bottom:15px;">📥 Imprimir / Descargar PDF</button>
 
-La razón es que una **oferta** ya implica por sí misma una reducción o un precio especial. Por eso, según lo que quieras expresar, resulta más natural utilizar otras fórmulas:
+    <div id="contenidoImprimible">
+      <!-- Se maqueta dinámicamente -->
+    </div>
+  </div>
 
-* **Para indicar rebajas o descuentos:** Es mejor decir **«oferta»**, **«oferta de lanzamiento»**, **«descuento»** o **«precios rebajados»**.
-* **Para referirse a la lista de precios vigente:** Se suele usar **«tarifa de precios»**, **«lista de precios»** o **«catalogo de precios»**.
-* **Para un presupuesto enviado a un cliente:** Se utiliza **«propuesta económica»**, **«oferta comercial»** o simplemente **«presupuesto»**.
+  <script>
+    const SUPABASE_URL = 'https://irjwegtxvoxhbnfvhnvv.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyandlZ3R4dm94aGJuZnZobnZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMDM0NTgsImV4cCI6MjEwNjc3OTQ1OH0.Eb5A-HaTLLzFV_unn9b-QjCQLVT41x8rxMBOCINLpMg'; 
+    
+    let _supabase = null;
+    let _productosCache = [];
 
-Si estás diseñando un cartel, una tarifa o una sección web, **«Oferta»**, **«Precios en oferta»** o **«Tarifa especial»** suelen ser opciones mucho más directas y claras.
+    window.onload = function() {
+      try {
+        _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        cargarEncabezadoNube();
+        cargarProductos();
+        cargarHistoricoListas();
+      } catch (e) {
+        console.error("Error inicializando Supabase:", e);
+      }
+    };
+
+    async function guardarEncabezadoNube() {
+      if (!_supabase) return;
+
+      const empresa = document.getElementById('empresaNombre').value;
+      const comercial = document.getElementById('comercialNombre').value;
+      const telefono = document.getElementById('comercialTelefono').value;
+      const logoUrl = document.getElementById('empresaLogoUrl').value;
+
+      const { error } = await _supabase.from('configuracion').upsert([
+        { id: 'fija', empresa: empresa, comercial: comercial, telefono: telefono, logo_url: logoUrl }
+      ]);
+
+      if (error) {
+        alert('Error al guardar encabezado: ' + error.message);
+      } else {
+        alert('¡Encabezado corporativo guardado en la nube!');
+      }
+    }
+
+    async function cargarEncabezadoNube() {
+      if (!_supabase) return;
+
+      const { data, error } = await _supabase.from('configuracion').select('*').eq('id', 'fija').single();
+      if (data) {
+        document.getElementById('empresaNombre').value = data.empresa || '';
+        document.getElementById('comercialNombre').value = data.comercial || '';
+        document.getElementById('comercialTelefono').value = data.telefono || '';
+        document.getElementById('empresaLogoUrl').value = data.logo_url || '';
+
+        if (data.logo_url) {
+          const preview = document.getElementById('logoPreviewImg');
+          preview.src = data.logo_url;
+          preview.style.display = 'block';
+        }
+      }
+    }
+
+    async function subirLogoProcesado() {
+      const archivoLogo = document.getElementById('empresaLogoFile').files[0];
+      if (!archivoLogo || !_supabase) return;
+
+      const nombreArchivo = 'logo_' + Date.now() + '_' + archivoLogo.name.replace(/\s+/g, '_');
+      const { data: uploadData, error: uploadError } = await _supabase
+        .storage
+        .from('productos-fotos')
+        .upload(nombreArchivo, archivoLogo);
+
+      if (uploadError) {
+        alert('Error al subir el logo: ' + uploadError.message);
+        return;
+      }
+
+      const { data: publicUrlData } = _supabase
+        .storage
+        .from('productos-fotos')
+        .getPublicUrl(nombreArchivo);
+
+      const urlFinal = publicUrlData.publicUrl;
+      document.getElementById('empresaLogoUrl').value = urlFinal;
+      const preview = document.getElementById('logoPreviewImg');
+      preview.src = urlFinal;
+      preview.style.display = 'block';
+
+      guardarEncabezadoNube();
+    }
+
+    async function cargarProductos() {
+      if (!_supabase) return;
+      const { data, error } = await _supabase.from('productos').select('*').order('id', { ascending: true });
+      const tbody = document.getElementById('tablaProductos');
+      
+      if (error) {
+        tbody.innerHTML = '<tr><td colspan="5">Error al cargar productos: ' + error.message + '</td></tr>';
+        return;
+      }
+
+      _productosCache = data || [];
+
+      if (_productosCache.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5">No hay productos guardados aún.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = _productosCache.map(function(prod) {
+        var fotoHtml = prod.url_foto ? '<img src="' + prod.url_foto + '" class="img-preview" crossorigin="anonymous">' : 'Sin foto';
+        return '<tr>' +
+          '<td><input type="checkbox" class="prod-checkbox" value="' + prod.id + '"></td>' +
+          '<td>' + fotoHtml + '</td>' +
+          '<td>' + prod.nombre + '</td>' +
+          '<td>' + parseFloat(prod.precio).toFixed(2) + ' €</td>' +
+          '<td><button class="btn-delete" onclick="borrarProducto(' + prod.id + ', \'' + prod.nombre.replace(/'/g, "\\'") + '\')">🗑️ Borrar</button></td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    async function borrarProducto(id, nombre) {
+      if (!confirm('¿Estás segura de que deseas borrar el producto "' + nombre + '"?')) return;
+      const { error } = await _supabase.from('productos').delete().eq('id', id);
+      if (error) {
+        alert('Error al eliminar el producto: ' + error.message);
+      } else {
+        cargarProductos();
+      }
+    }
+
+    async function guardarProducto() {
+      const nombre = document.getElementById('prodNombre').value;
+      const precio = parseFloat(document.getElementById('prodPrecio').value);
+      const archivoFoto = document.getElementById('prodFoto').files[0];
+
+      if (!nombre || isNaN(precio)) {
+        alert('Por favor, introduce un nombre y un precio válido.');
+        return;
+      }
+
+      let urlFoto = '';
+
+      if (archivoFoto) {
+        const nombreArchivo = Date.now() + '_' + archivoFoto.name.replace(/\s+/g, '_');
+        const { data: uploadData, error: uploadError } = await _supabase
+          .storage
+          .from('productos-fotos')
+          .upload(nombreArchivo, archivoFoto);
+
+        if (uploadError) {
+          alert('Error al subir la imagen: ' + uploadError.message);
+          return;
+        }
+
+        const { data: publicUrlData } = _supabase
+          .storage
+          .from('productos-fotos')
+          .getPublicUrl(nombreArchivo);
+
+        urlFoto = publicUrlData.publicUrl;
+      }
+
+      const { error } = await _supabase.from('productos').insert([
+        { nombre: nombre, precio: precio, url_foto: urlFoto }
+      ]);
+
+      if (error) {
+        alert('Error al guardar: ' + error.message);
+      } else {
+        alert('¡Producto guardado exitosamente!');
+        document.getElementById('prodNombre').value = '';
+        document.getElementById('prodPrecio').value = '';
+        document.getElementById('prodFoto').value = '';
+        cargarProductos();
+      }
+    }
+
+    async function generarLista() {
+      const cliente = document.getElementById('clienteNombre').value;
+      if (!cliente) {
+        alert('Escribe el nombre del cliente.');
+        return;
+      }
+
+      const checkboxes = document.querySelectorAll('.prod-checkbox:checked');
+      const seleccionados = Array.from(checkboxes).map(function(cb) { return parseInt(cb.value); });
+
+      if (seleccionados.length === 0) {
+        alert('Selecciona al menos un producto.');
+        return;
+      }
+
+      const { error } = await _supabase.from('listas_generadas').insert([
+        { cliente_nombre: cliente, productos_ids: seleccionados }
+      ]);
+
+      if (error) {
+        alert('Error al guardar la lista: ' + error.message);
+      } else {
+        alert('¡Lista para ' + cliente + ' guardada correctamente!');
+        document.getElementById('clienteNombre').value = '';
+        cargarHistoricoListas();
+      }
+    }
+
+    async function cargarHistoricoListas() {
+      if (!_supabase) return;
+      const { data, error } = await _supabase.from('listas_generadas').select('*').order('id', { ascending: false });
+      const tbody = document.getElementById('tablaHistorico');
+
+      if (error) {
+        tbody.innerHTML = '<tr><td colspan="4">Error al cargar el histórico: ' + error.message + '</td></tr>';
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4">No hay listas generadas registradas.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = data.map(function(lista) {
+        var fechaFormateada = new Date(lista.fecha).toLocaleString('es-ES');
+        return '<tr>' +
+          '<td>' + lista.id + '</td>' +
+          '<td><strong>' + lista.cliente_nombre + '</strong></td>' +
+          '<td>' + fechaFormateada + '</td>' +
+          '<td>' +
+            '<button class="btn-view" onclick="verListaDocumento(' + lista.id + ')">👁️ Ver / Imprimir</button>' +
+            '<button class="btn-delete" onclick="borrarLista(' + lista.id + ', \'' + lista.cliente_nombre.replace(/'/g, "\\'") + '\')">🗑️ Borrar</button>' +
+          '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    // MAQUETACIÓN ELEGANTE: LOGO A UN LADO Y EL ANCLA EN EL CENTRO Y AZUL
+    async function verListaDocumento(id) {
+      const { data: lista, error } = await _supabase.from('listas_generadas').select('*').eq('id', id).single();
+      if (error || !lista) {
+        alert('No se pudo cargar la lista seleccionada.');
+        return;
+      }
+
+      const empresa = document.getElementById('empresaNombre').value || 'El Ancla';
+      const comercial = document.getElementById('comercialNombre').value || '';
+      const telefono = document.getElementById('comercialTelefono').value || '';
+      const logoUrl = document.getElementById('empresaLogoUrl').value;
+
+      const idsGuardados = lista.productos_ids || [];
+      const productosSeleccionados = _productosCache.filter(p => idsGuardados.includes(p.id));
+
+      let htmlDoc = `
+        <div style="border-bottom: 2px solid #1a365d; padding-bottom: 20px; margin-bottom: 25px; display: flex; align-items: center; justify-content: space-between;">
+          <!-- LADO IZQUIERDO: LOGO/ANCLA -->
+          <div style="width: 20%; text-align: left;">
+            ${logoUrl ? `<img src="${logoUrl}" crossorigin="anonymous" style="max-height: 90px; max-width: 100%; object-fit: contain;">` : ''}
+          </div>
+
+          <!-- CENTRO: NOMBRE ELEGANTE Y GRANDE EN TONO AZUL -->
+          <div style="width: 55%; text-align: center;">
+            <h1 style="margin: 0; font-family: 'Georgia', 'Times New Roman', serif; font-size: 34px; color: #1a365d; letter-spacing: 1px; text-transform: uppercase;">${empresa}</h1>
+            ${comercial ? `<p style="margin: 6px 0 0 0; color: #4a5568; font-size: 14px;"><strong>Comercial:</strong> ${comercial}${telefono ? `| 📞 ${telefono}` : ''}</p>` : ''}
+          </div>
+
+          <!-- LADO DERECHO: CLIENTE Y FECHA -->
+          <div style="width: 25%; text-align: right; font-size: 14px; color: #2d3748;">
+            <p style="margin: 0;"><strong>Cliente:</strong> ${lista.cliente_nombre}</p>
+            <p style="margin: 4px 0 0 0; color: #718096;"><strong>Fecha:</strong> ${new Date(lista.fecha).toLocaleDateString('es-ES')}</p>
+          </div>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background-color: #ebf8ff;">
+              <th style="width: 80px; text-align: center; color: #1a365d; border-bottom: 2px solid #2b6cb0;">Foto</th>
+              <th style="text-align: left; color: #1a365d; border-bottom: 2px solid #2b6cb0;">Producto</th>
+              <th style="width: 120px; text-align: right; color: #1a365d; border-bottom: 2px solid #2b6cb0;">Precio</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${productosSeleccionados.map(p => `
+              <tr>
+                <td style="text-align: center; padding: 10px;">${p.url_foto ? `<img src="${p.url_foto}" crossorigin="anonymous" style="width: 55px; height: 55px; object-fit: cover; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">` : 'Sin foto'}</td>
+                <td style="padding: 10px; font-size: 15px; color: #2d3748;"><strong>${p.nombre}</strong></td>
+                <td style="text-align: right; padding: 10px; font-size: 16px; color: #1a365d;"><strong>${parseFloat(p.precio).toFixed(2)} €</strong></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+
+      document.getElementById('contenidoImprimible').innerHTML = htmlDoc;
+      document.querySelector('.no-print').style.display = 'none';
+      document.getElementById('vistaDocumento').style.display = 'block';
+    }
+
+    function cerrarVistaDocumento() {
+      document.getElementById('vistaDocumento').style.display = 'none';
+      document.querySelector('.no-print').style.display = 'block';
+    }
+
+    async function borrarLista(id, cliente) {
+      if (!confirm('¿Deseas borrar la lista histórica del cliente "' + cliente + '"?')) return;
+      const { error } = await _supabase.from('listas_generadas').delete().eq('id', id);
+      if (error) {
+        alert('Error al borrar la lista: ' + error.message);
+      } else {
+        cargarHistoricoListas();
+      }
+    }
+  </script>
+</body>
+</html>
