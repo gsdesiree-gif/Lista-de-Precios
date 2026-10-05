@@ -450,14 +450,19 @@
       const idsGuardados = lista.productos_ids || [];
       const productosSeleccionados = _productosCache.filter(p => idsGuardados.includes(p.id));
 
+      // SI SE USA MARCA DE AGUA, SE OCULTA EL LOGO LATERAL
+      const mostrarLogoLateral = logoUrl && !usarMarcaAgua;
+
       let htmlDoc = `
         ${(logoUrl && usarMarcaAgua) ? `<img src="${logoUrl}" crossorigin="anonymous" class="watermark-bg">` : ''}
 
         <div style="border-bottom: 2px solid #1a365d; padding-bottom: 20px; margin-bottom: 25px; display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 2;">
+          <!-- LADO IZQUIERDO: LOGO (Solo si NO hay marca de agua) -->
           <div style="width: 20%; text-align: left;">
-            ${logoUrl ? `<img src="${logoUrl}" crossorigin="anonymous" style="max-height: 95px; max-width: 100%; object-fit: contain;">` : ''}
+            ${mostrarLogoLateral ? `<img src="${logoUrl}" crossorigin="anonymous" style="max-height: 95px; max-width: 100%; object-fit: contain;">` : ''}
           </div>
 
+          <!-- CENTRO: TÍTULO Y COMERCIAL -->
           <div style="width: 55%; text-align: center;">
             <h1 style="margin: 0; font-family: 'Oswald', sans-serif; font-size: 38px; color: #1a365d; letter-spacing: 2px; text-transform: uppercase; font-weight: 700;">${empresa}</h1>
             ${comercial ? `
@@ -467,6 +472,7 @@
             ` : ''}
           </div>
 
+          <!-- LADO DERECHO: CLIENTE Y FECHA -->
           <div style="width: 25%; text-align: right; font-size: 14px; color: #2d3748;">
             <p style="margin: 0; font-family: 'Oswald', sans-serif; font-size: 17px; color: #2b6cb0; font-weight: 400; letter-spacing: 0.5px;">
               CLIENTE: ${lista.cliente_nombre.toUpperCase()}
