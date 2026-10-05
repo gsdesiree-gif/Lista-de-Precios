@@ -3,491 +3,148 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestor de Catálogo y Tarifas</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Librerías de PDF -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+  <title>Catálogo de Precios</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 800px; margin: 20px auto; padding: 0 15px; background: #f8f9fa; }
+    h1 { color: #333; text-align: center; }
+    .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
+    input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+    button { background: #007aff; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-size: 16px; cursor: pointer; width: 100%; font-weight: bold; }
+    button:hover { background: #0056b3; }
+    table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
+    th { background: #f1f3f5; color: #333; }
+    .btn-delete { background: #ff3b30; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; width: auto; font-size: 14px; }
+    .status { text-align: center; margin-top: 10px; font-size: 14px; color: #666; }
+  </style>
 </head>
-<body class="bg-slate-100 p-4 md:p-6 min-h-screen">
+<body>
 
-  <div class="max-w-5xl mx-auto space-y-6">
+  <h1>📋 Catálogo de Precios</h1>
 
-    <!-- CABECERA Y ACCIONES DE COPIA DE SEGURIDAD -->
-    <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-indigo-600 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-      <div>
-        <h1 class="text-xl font-bold text-slate-800">Catálogo de Productos y Tarifas</h1>
-        <p class="text-slate-500 text-xs">Tus datos se guardan en este dispositivo. Puedes pasarlos a otro con 1 clic.</p>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <button onclick="exportarBackup()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3 py-2 rounded-lg border border-indigo-200 transition-colors">
-          📥 Guardar Copia del Catálogo
-        </button>
-        <label class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-2 rounded-lg border border-slate-300 cursor-pointer transition-colors">
-          📤 Cargar Catálogo
-          <input type="file" id="input-importar" accept=".json" onchange="importarBackup(event)" class="hidden">
-        </label>
-      </div>
+  <div class="card">
+    <h3>Añadir Nuevo Producto</h3>
+    <div class="form-group">
+      <label for="nombre">Nombre del Producto / Plato:</label>
+      <input type="text" id="nombre" placeholder="Ej: Lasaña de verduras">
     </div>
-
-    <!-- DATOS DE LA EMPRESA Y COMERCIAL (AUTOGUARDADOS) -->
-    <div class="bg-white rounded-xl shadow-md p-6 space-y-4">
-      <h2 class="text-lg font-bold text-slate-800 mb-2">🏢 Datos de Empresa y Comercial (Guardados permanentemente)</h2>
-      
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre de la Empresa / Marca:</label>
-          <input type="text" id="nombre-empresa" placeholder="Ej. Tu Empresa" oninput="guardarDatosConfiguracion()" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Logo de la Empresa:</label>
-          <input type="file" id="logo-empresa" accept="image/*" onchange="cargarLogo(event)" class="w-full border rounded-lg p-1 text-sm bg-white">
-        </div>
-        <div id="vista-previa-logo" class="flex items-center space-x-3 h-12">
-          <span class="text-xs text-slate-400">Sin logo cargado</span>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t">
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre del Comercial:</label>
-          <input type="text" id="nombre-comercial" placeholder="Ej. Juan Pérez" oninput="guardarDatosConfiguracion()" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Teléfono del Comercial:</label>
-          <input type="tel" id="telefono-comercial" placeholder="Ej. 600 00 00 00" oninput="guardarDatosConfiguracion()" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500">
-        </div>
-      </div>
+    <div class="form-group">
+      <label for="precio">Precio (€):</label>
+      <input type="number" step="0.01" id="precio" placeholder="Ej: 8.50">
     </div>
-
-    <!-- 1. FORMULARIO: AÑADIR PRODUCTO -->
-    <div class="bg-white rounded-xl shadow-md p-6">
-      <h2 class="text-lg font-bold text-slate-800 mb-1">1. Añadir Nuevo Producto / Plato</h2>
-      <form id="form-nuevo-producto" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="md:col-span-2">
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre del Producto / Plato:</label>
-          <input type="text" id="nombre" placeholder="Ej. Lentejas Castellanas" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500" required>
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Formato / Ración:</label>
-          <input type="text" id="formato" placeholder="Ej. Tupper 400g" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500">
-        </div>
-        <div>
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Precio Base (€):</label>
-          <input type="number" step="0.01" id="precio" placeholder="Ej. 6.50" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500" required>
-        </div>
-        <div class="md:col-span-2">
-          <label class="block text-xs font-semibold text-slate-600 mb-1">Foto del producto:</label>
-          <input type="file" id="foto" accept="image/*" class="w-full border rounded-lg p-1 text-sm bg-white">
-        </div>
-        <button type="submit" id="btn-guardar" class="md:col-span-3 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition-colors shadow">
-          + Guardar Producto en el Catálogo
-        </button>
-      </form>
+    <div class="form-group">
+      <label for="cliente">Cliente (Opcional):</label>
+      <input type="text" id="cliente" placeholder="Ej: Juan Pérez">
     </div>
+    <button onclick="guardarProducto()">💾 Guardar en la Nube</button>
+    <div id="status" class="status"></div>
+  </div>
 
-    <!-- 2. TABLA DE PRODUCTOS Y GENERACIÓN -->
-    <div class="bg-white rounded-xl shadow-md p-6">
-      <div class="flex justify-between items-center mb-4">
-        <div>
-          <h2 class="text-lg font-bold text-slate-800">2. Configurar Lista de Precios</h2>
-          <p class="text-slate-500 text-xs">Selecciona los productos e introduce el cliente para la oferta.</p>
-        </div>
-        <div class="space-x-2">
-          <button onclick="marcarTodos(true)" class="text-xs text-blue-600 hover:underline">Marcar Todos</button>
-          <span class="text-slate-300">|</span>
-          <button onclick="marcarTodos(false)" class="text-xs text-slate-500 hover:underline">Desmarcar Todos</button>
-        </div>
-      </div>
-
-      <div class="overflow-x-auto mb-6">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="bg-slate-200 text-slate-700 text-xs uppercase">
-              <th class="p-3 text-center">Incluir</th>
-              <th class="p-3">Foto</th>
-              <th class="p-3">Producto</th>
-              <th class="p-3">Formato</th>
-              <th class="p-3">Precio Lista (€)</th>
-              <th class="p-3 text-center">Acción</th>
-            </tr>
-          </thead>
-          <tbody id="tabla-catalogo" class="divide-y divide-slate-100 text-sm">
-            <!-- Productos cargados dinámicamente -->
-          </tbody>
-        </table>
-      </div>
-
-      <div class="border-t pt-4 space-y-4">
-        <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
-          <label class="block text-xs font-bold text-blue-900 mb-1">👤 Nombre del Cliente para esta Lista:</label>
-          <input type="text" id="nombre-cliente" placeholder="Ej. Restaurante Sevilla / Catering Boda" class="w-full border border-blue-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 bg-white">
-        </div>
-
-        <div class="flex flex-wrap gap-4 justify-end">
-          <button onclick="generarPDF('corta')" class="bg-slate-700 hover:bg-slate-800 text-white font-medium px-4 py-2 rounded-lg text-sm transition-colors shadow">
-            📄 Descargar Lista (Sin fotos)
-          </button>
-          <button onclick="generarPDF('catalogo')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-lg text-sm transition-colors shadow">
-            🖼️ Descargar Catálogo (Con fotos)
-          </button>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- 3. HISTORIAL DE LISTAS CREADAS -->
-    <div class="bg-white rounded-xl shadow-md p-6">
-      <div class="flex justify-between items-center mb-4">
-        <div>
-          <h2 class="text-lg font-bold text-slate-800">📜 Historial de Listas y Ofertas Creadas</h2>
-          <p class="text-slate-500 text-xs">Registro de listas enviadas a clientes con la fecha de emisión.</p>
-        </div>
-        <button onclick="borrarHistorial()" class="text-xs text-red-500 hover:underline">Limpiar historial</button>
-      </div>
-
-      <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="bg-slate-100 text-slate-600 text-xs uppercase">
-              <th class="p-3">Fecha y Hora</th>
-              <th class="p-3">Cliente</th>
-              <th class="p-3">Tipo</th>
-              <th class="p-3 text-center">Nº Productos</th>
-            </tr>
-          </thead>
-          <tbody id="tabla-historial" class="divide-y divide-slate-100 text-xs">
-            <!-- Registro de listas creadas -->
-          </tbody>
-        </table>
-      </div>
-    </div>
-
+  <div class="card">
+    <h3>Lista de Productos</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th>Precio</th>
+          <th>Cliente</th>
+          <th>Acción</th>
+        </tr>
+      </thead>
+      <tbody id="tablaProductos">
+        <tr><td colspan="4" style="text-align:center;">Cargando productos...</td></tr>
+      </tbody>
+    </table>
   </div>
 
   <script>
-    const STORAGE_KEY = 'mi_catalogo_completo_v1';
-    let catalogo = [];
-    let historial = [];
-    let logoEmpresaBase64 = null;
+    const SUPABASE_URL = "https://irjwegtxvoxhbnfvhnvv.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_856GEZ6hKugVBCDyaN1vhA_61JxV2oo";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    window.onload = function() {
-      cargarTodo();
-    };
+    async function cargarProductos() {
+      const { data, error } = await supabaseClient
+        .from('productos')
+        .select('*')
+        .order('id', { ascending: false });
 
-    function guardarTodo() {
-      const estado = {
-        catalogo: catalogo,
-        historial: historial,
-        empresa: document.getElementById('nombre-empresa').value || '',
-        comercial: document.getElementById('nombre-comercial').value || '',
-        telefono: document.getElementById('telefono-comercial').value || '',
-        logo: logoEmpresaBase64
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(estado));
-    }
-
-    function cargarTodo() {
-      const dataStr = localStorage.getItem(STORAGE_KEY);
-      if (dataStr) {
-        try {
-          const data = JSON.parse(dataStr);
-          catalogo = data.catalogo || [];
-          historial = data.historial || [];
-          document.getElementById('nombre-empresa').value = data.empresa || '';
-          document.getElementById('nombre-comercial').value = data.comercial || '';
-          document.getElementById('telefono-comercial').value = data.telefono || '';
-          logoEmpresaBase64 = data.logo || null;
-        } catch(e) {}
-      }
-      mostrarLogoVistaPrevia();
-      actualizarTabla();
-      actualizarHistorial();
-    }
-
-    function guardarDatosConfiguracion() {
-      guardarTodo();
-    }
-
-    function cargarLogo(event) {
-      const file = event.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          logoEmpresaBase64 = e.target.result;
-          mostrarLogoVistaPrevia();
-          guardarTodo();
-        };
-        reader.readAsDataURL(file);
-      }
-    }
-
-    function mostrarLogoVistaPrevia() {
-      const cont = document.getElementById('vista-previa-logo');
-      if (logoEmpresaBase64) {
-        cont.innerHTML = `<img src="${logoEmpresaBase64}" class="h-12 object-contain rounded border p-1 bg-white"> <button onclick="borrarLogo()" class="text-xs text-red-500 hover:underline">Quitar</button>`;
-      } else {
-        cont.innerHTML = `<span class="text-xs text-slate-400">Sin logo cargado</span>`;
-      }
-    }
-
-    function borrarLogo() {
-      logoEmpresaBase64 = null;
-      document.getElementById('logo-empresa').value = '';
-      mostrarLogoVistaPrevia();
-      guardarTodo();
-    }
-
-    document.getElementById('form-nuevo-producto').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const archivoImagen = document.getElementById('foto').files[0];
-
-      if (archivoImagen) {
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          guardarProducto(evt.target.result);
-        };
-        reader.readAsDataURL(archivoImagen);
-      } else {
-        guardarProducto(null);
-      }
-    });
-
-    function guardarProducto(fotoBase64) {
-      const nuevo = {
-        id: Date.now(),
-        nombre: document.getElementById('nombre').value,
-        formato: document.getElementById('formato').value || '-',
-        precio: parseFloat(document.getElementById('precio').value).toFixed(2),
-        foto: fotoBase64,
-        incluir: true
-      };
-
-      catalogo.push(nuevo);
-      actualizarTabla();
-      guardarTodo();
-      document.getElementById('form-nuevo-producto').reset();
-    }
-
-    function actualizarTabla() {
-      const tbody = document.getElementById('tabla-catalogo');
+      const tbody = document.getElementById('tablaProductos');
       tbody.innerHTML = '';
 
-      if (catalogo.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400 text-xs">No hay productos guardados aún. Añade el primero arriba.</td></tr>`;
+      if (error) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red;">Error al cargar datos</td></tr>';
+        console.error(error);
         return;
       }
 
-      catalogo.forEach((prod, index) => {
-        const imgHtml = prod.foto ? `<img src="${prod.foto}" class="w-10 h-10 object-cover rounded shadow-sm">` : '<span class="text-xs text-slate-400">Sin foto</span>';
+      if (!data || data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No hay productos guardados aún.</td></tr>';
+        return;
+      }
 
-        tbody.innerHTML += `
-          <tr class="hover:bg-slate-50">
-            <td class="p-3 text-center">
-              <input type="checkbox" ${prod.incluir !== false ? 'checked' : ''} onchange="cambiarSeleccion(${index}, this.checked)" class="w-4 h-4 text-blue-600 rounded cursor-pointer">
-            </td>
-            <td class="p-2">${imgHtml}</td>
-            <td class="p-3 font-medium text-slate-900">${prod.nombre}</td>
-            <td class="p-3 text-slate-500">${prod.formato}</td>
-            <td class="p-3">
-              <input type="number" step="0.01" value="${prod.precio}" onchange="modificarPrecioTemp(${index}, this.value)" class="w-24 border rounded p-1 text-sm font-bold text-slate-800 focus:ring-2 focus:ring-blue-500">
-            </td>
-            <td class="p-3 text-center">
-              <button onclick="eliminarProducto(${index})" class="text-red-500 hover:underline text-xs">Borrar</button>
-            </td>
-          </tr>
+      data.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${p.nombre}</strong></td>
+          <td>${parseFloat(p.precio).toFixed(2)} €</td>
+          <td>${p.cliente || '-'}</td>
+          <td><button class="btn-delete" onclick="borrarProducto(${p.id})">Eliminar</button></td>
         `;
+        tbody.appendChild(tr);
       });
     }
 
-    function actualizarHistorial() {
-      const tbody = document.getElementById('tabla-historial');
-      tbody.innerHTML = '';
+    async function guardarProducto() {
+      const nombre = document.getElementById('nombre').value.trim();
+      const precio = document.getElementById('precio').value;
+      const cliente = document.getElementById('cliente').value.trim();
+      const status = document.getElementById('status');
 
-      if (historial.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" class="p-4 text-center text-slate-400 text-xs">Aún no se ha generado ninguna lista. Descarga una para empezar el historial.</td></tr>`;
+      if (!nombre || !precio) {
+        alert("Por favor, introduce al menos el nombre y el precio.");
         return;
       }
 
-      historial.slice().reverse().forEach((item) => {
-        tbody.innerHTML += `
-          <tr class="hover:bg-slate-50">
-            <td class="p-3 text-slate-500">${item.fecha}</td>
-            <td class="p-3 font-bold text-slate-800">${item.cliente}</td>
-            <td class="p-3"><span class="px-2 py-0.5 rounded text-xs font-medium ${item.tipo === 'Catálogo (Con fotos)' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'}">${item.tipo}</span></td>
-            <td class="p-3 text-center font-semibold text-slate-700">${item.cantidad}</td>
-          </tr>
-        `;
-      });
-    }
+      status.innerText = "Guardando...";
 
-    function borrarHistorial() {
-      if (confirm("¿Quieres borrar todo el historial de listas creadas?")) {
-        historial = [];
-        actualizarHistorial();
-        guardarTodo();
-      }
-    }
+      const { error } = await supabaseClient
+        .from('productos')
+        .insert([{ nombre, precio: parseFloat(precio), cliente }]);
 
-    function cambiarSeleccion(index, valor) {
-      catalogo[index].incluir = valor;
-      guardarTodo();
-    }
-
-    function modificarPrecioTemp(index, nuevoPrecio) {
-      catalogo[index].precio = parseFloat(nuevoPrecio || 0).toFixed(2);
-      guardarTodo();
-    }
-
-    function marcarTodos(estado) {
-      catalogo.forEach(p => p.incluir = estado);
-      actualizarTabla();
-      guardarTodo();
-    }
-
-    function eliminarProducto(index) {
-      catalogo.splice(index, 1);
-      actualizarTabla();
-      guardarTodo();
-    }
-
-    function exportarBackup() {
-      const dataStr = localStorage.getItem(STORAGE_KEY);
-      if (!dataStr) {
-        alert("No hay datos para exportar.");
-        return;
-      }
-      const blob = new Blob([dataStr], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `catalogo_backup_${new Date().toISOString().slice(0,10)}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    function importarBackup(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const content = e.target.result;
-          JSON.parse(content); // Validar formato JSON
-          localStorage.setItem(STORAGE_KEY, content);
-          cargarTodo();
-          alert("¡Catálogo cargado con éxito!");
-        } catch(err) {
-          alert("El archivo no es válido.");
-        }
-      };
-      reader.readAsText(file);
-    }
-
-    function generarPDF(tipo) {
-      const seleccionados = catalogo.filter(p => p.incluir !== false);
-
-      if (seleccionados.length === 0) {
-        alert("Por favor, selecciona al menos un producto.");
-        return;
-      }
-
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-
-      const nombreEmpresa = document.getElementById('nombre-empresa').value || '';
-      const nombreCliente = document.getElementById('nombre-cliente').value || 'Sin nombre cliente';
-      const nombreComercial = document.getElementById('nombre-comercial').value || '';
-      const telefonoComercial = document.getElementById('telefono-comercial').value || '';
-
-      let headerTextX = 14;
-
-      if (logoEmpresaBase64) {
-        try {
-          doc.addImage(logoEmpresaBase64, 'PNG', 14, 10, 45, 22, undefined, 'FAST');
-          headerTextX = 65;
-        } catch(e) {}
-      }
-
-      if (nombreEmpresa) {
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(30, 41, 59);
-        doc.text(nombreEmpresa.toUpperCase(), headerTextX, 16);
-      }
-
-      doc.setFontSize(15);
-      doc.setFont('helvetica', 'bold');
-      doc.setTextColor(51, 65, 85);
-      doc.text(tipo === 'catalogo' ? "CATÁLOGO DE PRODUCTOS" : "OFERTA / LISTA DE PRECIOS", headerTextX, 24);
-
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(100);
-
-      let infoPosY = 38;
-      doc.text(`Cliente: ${nombreCliente}`, 14, infoPosY);
-      infoPosY += 5;
-      
-      let comercialInfo = '';
-      if (nombreComercial) comercialInfo += `Comercial: ${nombreComercial}`;
-      if (telefonoComercial) comercialInfo += `${comercialInfo ? ' - ' : ''}Tel: ${telefonoComercial}`;
-      
-      if (comercialInfo) {
-        doc.text(comercialInfo, 14, infoPosY);
-        infoPosY += 5;
-      }
-
-      const ahora = new Date();
-      const fechaTexto = ahora.toLocaleDateString('es-ES') + ' ' + ahora.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-      doc.text(`Fecha de emisión: ${fechaTexto}`, 14, infoPosY);
-
-      const tablaStartY = infoPosY + 6;
-
-      historial.push({
-        fecha: fechaTexto,
-        cliente: nombreCliente,
-        tipo: tipo === 'catalogo' ? 'Catálogo (Con fotos)' : 'Lista de Precios',
-        cantidad: seleccionados.length
-      });
-      actualizarHistorial();
-      guardarTodo();
-
-      if (tipo === 'corta') {
-        const filas = seleccionados.map(p => [p.nombre, p.formato, `${p.precio} €`]);
-        doc.autoTable({
-          startY: tablaStartY,
-          head: [['Producto', 'Formato', 'Precio']],
-          body: filas,
-          headStyles: { fillColor: [51, 65, 85] },
-          columnStyles: { 2: { halign: 'right', fontStyle: 'bold' } }
-        });
-        doc.save(`lista_${nombreCliente.replace(/\s+/g, '_')}.pdf`);
+      if (error) {
+        status.innerText = "Error al guardar.";
+        console.error(error);
       } else {
-        const filas = seleccionados.map(p => ['', p.nombre, p.formato, `${p.precio} €`]);
-        doc.autoTable({
-          startY: tablaStartY,
-          head: [['Imagen', 'Producto', 'Formato', 'Precio']],
-          body: filas,
-          rowPageBreak: 'avoid',
-          bodyStyles: { minCellHeight: 20, verticalAlign: 'middle' },
-          headStyles: { fillColor: [16, 185, 129] },
-          columnStyles: { 0: { cellWidth: 24 }, 3: { halign: 'right', fontStyle: 'bold' } },
-          didDrawCell: function(data) {
-            if (data.section === 'body' && data.column.index === 0) {
-              const p = seleccionados[data.row.index];
-              if (p && p.foto) {
-                try {
-                  doc.addImage(p.foto, 'JPEG', data.cell.x + 2, data.cell.y + 2, 16, 16);
-                } catch(e) {}
-              }
-            }
-          }
-        });
-        doc.save(`catalogo_${nombreCliente.replace(/\s+/g, '_')}.pdf`);
+        status.innerText = "¡Guardado con éxito en la nube!";
+        document.getElementById('nombre').value = '';
+        document.getElementById('precio').value = '';
+        document.getElementById('cliente').value = '';
+        cargarProductos();
+        setTimeout(() => status.innerText = '', 3000);
       }
     }
+
+    async function borrarProducto(id) {
+      if (!confirm("¿Seguro que quieres eliminar este producto?")) return;
+
+      const { error } = await supabaseClient
+        .from('productos')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        alert("Error al borrar el producto.");
+        console.error(error);
+      } else {
+        cargarProductos();
+      }
+    }
+
+    // Cargar los datos al abrir la página
+    cargarProductos();
   </script>
 </body>
 </html>
