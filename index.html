@@ -27,7 +27,7 @@
 
   <h1>📋 Catálogo y Generador de Listas de Precios</h1>
 
-  <!-- SECCIÓN 1: ENCABEZADO FIJO CON SELECCIÓN DE LOGO -->
+  <!-- SECCIÓN 1: ENCABEZADO FIJO -->
   <div class="card">
     <h3>🏢 Datos del Encabezado Corporativo (Fijo)</h3>
     <div class="row">
@@ -101,7 +101,7 @@
   </div>
 
   <script>
-    // CREDENCIALES CONFIGURADAS
+    // URL Y KEY VINCULADAS AL MISMO PROYECTO
     const SUPABASE_URL = 'https://irjwegtxvoxhbnfvhnvv.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyandlZ3R4dm94aGJuZnZobnZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMDM0NTgsImV4cCI6MjEwNjc3OTQ1OH0.Eb5A-HaTLLzFV_unn9b-QjCQLVT41x8rxMBOCINLpMg'; 
     
@@ -148,7 +148,7 @@
       const tbody = document.getElementById('tablaProductos');
       
       if (error) {
-        tbody.innerHTML = '<tr><td colspan="4">Error al cargar productos de la base de datos: ' + error.message + '</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4">Error al cargar productos: ' + error.message + '</td></tr>';
         return;
       }
 
