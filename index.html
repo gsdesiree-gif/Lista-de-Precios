@@ -27,7 +27,7 @@
 
   <h1>📋 Catálogo y Generador de Listas de Precios</h1>
 
-  <!-- SECCIÓN 1: ENCABEZADO FIJO CON SUBIDA DE LOGO -->
+  <!-- SECCIÓN 1: ENCABEZADO FIJO CON SELECCIÓN DE LOGO -->
   <div class="card">
     <h3>🏢 Datos del Encabezado Corporativo (Fijo)</h3>
     <div class="row">
@@ -101,9 +101,9 @@
   </div>
 
   <script>
-    // URL Y KEY DE SUPABASE
-    const SUPABASE_URL = 'https://TU-PROYECTO.supabase.co';
-    const SUPABASE_KEY = 'TU_ANON_KEY';
+    // URL Y CLAVE REALES DE SUPABASE
+    const SUPABASE_URL = 'https://1rjwegtsvnmfshmwrmvu.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_856GEZ6hKugVBCDyaN1vhA_61JxV2oo';
     
     let _supabase = null;
 
@@ -116,7 +116,7 @@
       }
     };
 
-    // Subir logo automáticamente a Supabase Storage al elegir archivo
+    // Subir logo automáticamente a Supabase Storage
     async function subirLogoProcesado() {
       const archivoLogo = document.getElementById('empresaLogoFile').files[0];
       if (!archivoLogo || !_supabase) return;
@@ -208,7 +208,7 @@
       if (error) {
         alert('Error al guardar: ' + error.message);
       } else {
-        alert('¡Producto guardado exitosamente!');
+        alert('¡Producto guardado exitosamente en la nube!');
         document.getElementById('prodNombre').value = '';
         document.getElementById('prodPrecio').value = '';
         document.getElementById('prodFoto').value = '';
