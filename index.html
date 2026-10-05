@@ -101,9 +101,9 @@
   </div>
 
   <script>
-    // URL Y CLAVE REALES DE SUPABASE
-    const SUPABASE_URL = 'https://1rjwegtsvnmfshmwrmvu.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_856GEZ6hKugVBCDyaN1vhA_61JxV2oo';
+    // CREDENCIALES CONFIGURADAS
+    const SUPABASE_URL = 'https://irjwegtxvoxhbnfvhnvv.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyandlZ3R4dm94aGJuZnZobnZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMDM0NTgsImV4cCI6MjEwNjc3OTQ1OH0.Eb5A-HaTLLzFV_unn9b-QjCQLVT41x8rxMBOCINLpMg'; 
     
     let _supabase = null;
 
@@ -116,7 +116,6 @@
       }
     };
 
-    // Subir logo automáticamente a Supabase Storage
     async function subirLogoProcesado() {
       const archivoLogo = document.getElementById('empresaLogoFile').files[0];
       if (!archivoLogo || !_supabase) return;
@@ -149,7 +148,7 @@
       const tbody = document.getElementById('tablaProductos');
       
       if (error) {
-        tbody.innerHTML = '<tr><td colspan="4">Error al cargar productos de la base de datos.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4">Error al cargar productos de la base de datos: ' + error.message + '</td></tr>';
         return;
       }
 
