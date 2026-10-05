@@ -26,7 +26,6 @@
     .img-preview { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; }
     .logo-preview { max-height: 60px; margin-top: 10px; display: none; }
 
-    /* ESTILOS EXCLUSIVOS PARA IMPRESIÓN Y PDF */
     @media print {
       body { background: white; margin: 0; padding: 0; }
       .card, button, h1 { box-shadow: none; border: none; padding: 0; }
@@ -48,7 +47,7 @@
       <div class="row">
         <div class="col form-group">
           <label>Nombre de la Empresa:</label>
-          <input type="text" id="empresaNombre" placeholder="Ej: Mi Empresa S.L." oninput="guardarEncabezadoLocal()">
+          <input type="text" id="empresaNombre" placeholder="Ej: Mi Empresa S.L.">
         </div>
         <div class="col form-group">
           <label>Imagen del Logo:</label>
@@ -60,13 +59,14 @@
       <div class="row">
         <div class="col form-group">
           <label>Nombre del Comercial:</label>
-          <input type="text" id="comercialNombre" placeholder="Ej: Juan Pérez" oninput="guardarEncabezadoLocal()">
+          <input type="text" id="comercialNombre" placeholder="Ej: Juan Pérez">
         </div>
         <div class="col form-group">
           <label>Teléfono del Comercial:</label>
-          <input type="text" id="comercialTelefono" placeholder="Ej: +34 600 000 000" oninput="guardarEncabezadoLocal()">
+          <input type="text" id="comercialTelefono" placeholder="Ej: +34 600 000 000">
         </div>
       </div>
+      <button onclick="guardarEncabezadoNube()" style="background: #17a2b8;">💾 Guardar Encabezado en la Nube</button>
     </div>
 
     <!-- SECCIÓN 2: AÑADIR NUEVO PRODUCTO CON FOTO -->
@@ -116,7 +116,7 @@
       <button onclick="generarLista()" style="background: #28a745; font-size: 16px; padding: 10px 18px;">🚀 Guardar Lista de Precios</button>
     </div>
 
-    <!-- SECCIÓN 4: HISTÓRICO Y VER / IMPRIMIR / DESCARGAR -->
+    <!-- SECCIÓN 4: HISTÓRICO -->
     <div class="card">
       <h3>📜 Histórico de Listas Generadas</h3>
       <table>
@@ -135,13 +135,13 @@
     </div>
   </div>
 
-  <!-- SECCIÓN VISIBLE PARA VER / IMPRIMIR / DESCARGAR EN PDF -->
+  <!-- VISTA DOCUMENTO IMPRIMIBLE / PDF -->
   <div id="vistaDocumento" style="display:none;" class="card">
     <button onclick="cerrarVistaDocumento()" class="no-print" style="background:#6c757d; margin-bottom:15px;">⬅️ Volver al Panel</button>
     <button onclick="window.print()" class="no-print" style="background:#28a745; margin-bottom:15px;">📥 Imprimir / Descargar PDF</button>
 
     <div id="contenidoImprimible">
-      <!-- Encabezado y lista generados dinámicamente -->
+      <!-- Se genera al pulsar Ver/Imprimir -->
     </div>
   </div>
 
@@ -155,7 +155,7 @@
     window.onload = function() {
       try {
         _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        cargarEncabezadoLocal();
+        cargarEncabezadoNube();
         cargarProductos();
         cargarHistoricoListas();
       } catch (e) {
@@ -163,38 +163,46 @@
       }
     };
 
-    // GUARDAR Y CARGAR DATOS CORPORATIVOS EN EL NAVEGADOR
-    function guardarEncabezadoLocal() {
+    // GUARDAR ENCABEZADO EN SUPABASE
+    async function guardarEncabezadoNube() {
+      if (!_supabase) return;
+
       const empresa = document.getElementById('empresaNombre').value;
       const comercial = document.getElementById('comercialNombre').value;
       const telefono = document.getElementById('comercialTelefono').value;
       const logoUrl = document.getElementById('empresaLogoUrl').value;
 
-      localStorage.setItem('cfg_empresa', empresa);
-      localStorage.setItem('cfg_comercial', comercial);
-      localStorage.setItem('cfg_telefono', telefono);
-      localStorage.setItem('cfg_logoUrl', logoUrl);
-    }
+      const { error } = await _supabase.from('configuracion').upsert([
+        { id: 'fija', empresa: empresa, comercial: comercial, telefono: telefono, logo_url: logoUrl }
+      ]);
 
-    function cargarEncabezadoLocal() {
-      const empresa = localStorage.getItem('cfg_empresa') || '';
-      const comercial = localStorage.getItem('cfg_comercial') || '';
-      const telefono = localStorage.getItem('cfg_telefono') || '';
-      const logoUrl = localStorage.getItem('cfg_logoUrl') || '';
-
-      document.getElementById('empresaNombre').value = empresa;
-      document.getElementById('comercialNombre').value = comercial;
-      document.getElementById('comercialTelefono').value = telefono;
-      document.getElementById('empresaLogoUrl').value = logoUrl;
-
-      if (logoUrl) {
-        const preview = document.getElementById('logoPreviewImg');
-        preview.src = logoUrl;
-        preview.style.display = 'block';
+      if (error) {
+        alert('Error al guardar encabezado: ' + error.message);
+      } else {
+        alert('¡Encabezado corporativo guardado permanentemente en la nube!');
       }
     }
 
-    // SUBIDA Y PROCESAMIENTO DEL LOGO
+    // CARGAR ENCABEZADO DESDE SUPABASE
+    async function cargarEncabezadoNube() {
+      if (!_supabase) return;
+
+      const { data, error } = await _supabase.from('configuracion').select('*').eq('id', 'fija').single();
+      if (data) {
+        document.getElementById('empresaNombre').value = data.empresa || '';
+        document.getElementById('comercialNombre').value = data.comercial || '';
+        document.getElementById('comercialTelefono').value = data.telefono || '';
+        document.getElementById('empresaLogoUrl').value = data.logo_url || '';
+
+        if (data.logo_url) {
+          const preview = document.getElementById('logoPreviewImg');
+          preview.src = data.logo_url;
+          preview.style.display = 'block';
+        }
+      }
+    }
+
+    // SUBIDA DEL LOGO A STORAGE
     async function subirLogoProcesado() {
       const archivoLogo = document.getElementById('empresaLogoFile').files[0];
       if (!archivoLogo || !_supabase) return;
@@ -221,7 +229,8 @@
       preview.src = urlFinal;
       preview.style.display = 'block';
 
-      guardarEncabezadoLocal();
+      // Auto-guardar en la nube al subir logo
+      guardarEncabezadoNube();
     }
 
     // CARGAR PRODUCTOS DE SUPABASE
