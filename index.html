@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestor de Catálogo y Tarifas Nube</title>
+  <title>Gestor de Catálogo y Tarifas</title>
   <script src="https://cdn.tailwindcss.com"></script>
 
   <!-- Librerías de PDF -->
@@ -14,15 +14,20 @@
 
   <div class="max-w-5xl mx-auto space-y-6">
 
-    <!-- CABECERA Y ESTADO SINCRONIZACIÓN -->
+    <!-- CABECERA Y ACCIONES DE COPIA DE SEGURIDAD -->
     <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-indigo-600 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
       <div>
-        <h1 class="text-xl font-bold text-slate-800">Catálogo de Productos ☁️</h1>
-        <p class="text-slate-500 text-xs">Accede desde cualquier dispositivo. Los cambios se guardan automáticamente.</p>
+        <h1 class="text-xl font-bold text-slate-800">Catálogo de Productos y Tarifas</h1>
+        <p class="text-slate-500 text-xs">Tus datos se guardan en este dispositivo. Puedes pasarlos a otro con 1 clic.</p>
       </div>
-      <div class="flex items-center space-x-2">
-        <span id="estado-nube" class="text-xs bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-medium">Cargando catálogo...</span>
-        <button onclick="cargarCatalogoDesdeNube()" class="text-xs text-indigo-600 hover:underline">🔄 Recargar</button>
+      <div class="flex flex-wrap items-center gap-2">
+        <button onclick="exportarBackup()" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold px-3 py-2 rounded-lg border border-indigo-200 transition-colors">
+          📥 Guardar Copia del Catálogo
+        </button>
+        <label class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-2 rounded-lg border border-slate-300 cursor-pointer transition-colors">
+          📤 Cargar Catálogo
+          <input type="file" id="input-importar" accept=".json" onchange="importarBackup(event)" class="hidden">
+        </label>
       </div>
     </div>
 
@@ -33,7 +38,7 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre de la Empresa / Marca:</label>
-          <input type="text" id="nombre-empresa" placeholder="Ej. Tu Empresa" onchange="guardarDatosConfiguracion()" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500">
+          <input type="text" id="nombre-empresa" placeholder="Ej. Tu Empresa" oninput="guardarDatosConfiguracion()" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500">
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Logo de la Empresa:</label>
@@ -47,11 +52,11 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t">
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre del Comercial:</label>
-          <input type="text" id="nombre-comercial" placeholder="Ej. Juan Pérez" onchange="guardarDatosConfiguracion()" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500">
+          <input type="text" id="nombre-comercial" placeholder="Ej. Juan Pérez" oninput="guardarDatosConfiguracion()" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500">
         </div>
         <div>
           <label class="block text-xs font-semibold text-slate-600 mb-1">Teléfono del Comercial:</label>
-          <input type="tel" id="telefono-comercial" placeholder="Ej. 600 00 00 00" onchange="guardarDatosConfiguracion()" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500">
+          <input type="tel" id="telefono-comercial" placeholder="Ej. 600 00 00 00" oninput="guardarDatosConfiguracion()" class="w-full border rounded-lg p-2 text-sm focus:ring-2 focus:ring-indigo-500">
         </div>
       </div>
     </div>
@@ -162,37 +167,47 @@
   </div>
 
   <script>
-    const STORAGE_KEY = 'mi_catalogo_ncm_v4';
+    const STORAGE_KEY = 'mi_catalogo_completo_v1';
     let catalogo = [];
     let historial = [];
     let logoEmpresaBase64 = null;
 
     window.onload = function() {
-      cargarDatosLocales();
-      cargarCatalogoDesdeNube();
+      cargarTodo();
     };
 
-    function actualizarEstado(texto, tipo) {
-      const el = document.getElementById('estado-nube');
-      el.textContent = texto;
-      if (tipo === 'ok') el.className = 'text-xs bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full font-medium';
-      else if (tipo === 'sync') el.className = 'text-xs bg-blue-100 text-blue-800 px-3 py-1 rounded-full font-medium';
-      else el.className = 'text-xs bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-medium';
+    function guardarTodo() {
+      const estado = {
+        catalogo: catalogo,
+        historial: historial,
+        empresa: document.getElementById('nombre-empresa').value || '',
+        comercial: document.getElementById('nombre-comercial').value || '',
+        telefono: document.getElementById('telefono-comercial').value || '',
+        logo: logoEmpresaBase64
+      };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(estado));
     }
 
-    function cargarDatosLocales() {
-      document.getElementById('nombre-empresa').value = localStorage.getItem('nombre_empresa_ncm') || '';
-      document.getElementById('nombre-comercial').value = localStorage.getItem('nombre_comercial_ncm') || '';
-      document.getElementById('telefono-comercial').value = localStorage.getItem('telefono_comercial_ncm') || '';
-      logoEmpresaBase64 = localStorage.getItem('logo_empresa_ncm') || null;
+    function cargarTodo() {
+      const dataStr = localStorage.getItem(STORAGE_KEY);
+      if (dataStr) {
+        try {
+          const data = JSON.parse(dataStr);
+          catalogo = data.catalogo || [];
+          historial = data.historial || [];
+          document.getElementById('nombre-empresa').value = data.empresa || '';
+          document.getElementById('nombre-comercial').value = data.comercial || '';
+          document.getElementById('telefono-comercial').value = data.telefono || '';
+          logoEmpresaBase64 = data.logo || null;
+        } catch(e) {}
+      }
       mostrarLogoVistaPrevia();
+      actualizarTabla();
+      actualizarHistorial();
     }
 
     function guardarDatosConfiguracion() {
-      localStorage.setItem('nombre_empresa_ncm', document.getElementById('nombre-empresa').value || '');
-      localStorage.setItem('nombre_comercial_ncm', document.getElementById('nombre-comercial').value || '');
-      localStorage.setItem('telefono_comercial_ncm', document.getElementById('telefono-comercial').value || '');
-      guardarEnNube();
+      guardarTodo();
     }
 
     function cargarLogo(event) {
@@ -201,9 +216,8 @@
         const reader = new FileReader();
         reader.onload = function(e) {
           logoEmpresaBase64 = e.target.result;
-          localStorage.setItem('logo_empresa_ncm', logoEmpresaBase64);
           mostrarLogoVistaPrevia();
-          guardarEnNube();
+          guardarTodo();
         };
         reader.readAsDataURL(file);
       }
@@ -220,78 +234,9 @@
 
     function borrarLogo() {
       logoEmpresaBase64 = null;
-      localStorage.removeItem('logo_empresa_ncm');
       document.getElementById('logo-empresa').value = '';
       mostrarLogoVistaPrevia();
-      guardarEnNube();
-    }
-
-    async function cargarCatalogoDesdeNube() {
-      actualizarEstado('Conectando a la nube...', 'wait');
-      try {
-        const res = await fetch(`https://api.jsonbin.io/v3/b/66f80000e41b4d34e4390000`, {
-          headers: { 'X-Master-Key': '$2a$10$Un4lZ3.49kC4Y9o0X3vW9e5W.3W1' }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.record) {
-            if (Array.isArray(data.record.catalogo)) catalogo = data.record.catalogo;
-            if (Array.isArray(data.record.historial)) historial = data.record.historial;
-            if (data.record.empresa) {
-              document.getElementById('nombre-empresa').value = data.record.empresa;
-              localStorage.setItem('nombre_empresa_ncm', data.record.empresa);
-            }
-            if (data.record.comercial) {
-              document.getElementById('nombre-comercial').value = data.record.comercial;
-              localStorage.setItem('nombre_comercial_ncm', data.record.comercial);
-            }
-            if (data.record.telefono) {
-              document.getElementById('telefono-comercial').value = data.record.telefono;
-              localStorage.setItem('telefono_comercial_ncm', data.record.telefono);
-            }
-            if (data.record.logo) {
-              logoEmpresaBase64 = data.record.logo;
-              localStorage.setItem('logo_empresa_ncm', data.record.logo);
-              mostrarLogoVistaPrevia();
-            }
-          }
-        }
-      } catch (e) {
-        const local = localStorage.getItem(STORAGE_KEY);
-        if (local) catalogo = JSON.parse(local);
-      }
-      
-      actualizarEstado('Sincronizado 🟢', 'ok');
-      actualizarTabla();
-      actualizarHistorial();
-    }
-
-    async function guardarEnNube() {
-      actualizarEstado('Guardando en la nube...', 'sync');
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(catalogo));
-
-      const payload = {
-        catalogo: catalogo,
-        historial: historial,
-        empresa: document.getElementById('nombre-empresa').value || '',
-        comercial: document.getElementById('nombre-comercial').value || '',
-        telefono: document.getElementById('telefono-comercial').value || '',
-        logo: logoEmpresaBase64
-      };
-
-      try {
-        await fetch(`https://api.jsonbin.io/v3/b/66f80000e41b4d34e4390000`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Master-Key': '$2a$10$Un4lZ3.49kC4Y9o0X3vW9e5W.3W1'
-          },
-          body: JSON.stringify(payload)
-        });
-        actualizarEstado('Sincronizado 🟢', 'ok');
-      } catch (e) {
-        actualizarEstado('Guardado localmente ⚠️', 'wait');
-      }
+      guardarTodo();
     }
 
     document.getElementById('form-nuevo-producto').addEventListener('submit', function(e) {
@@ -321,7 +266,7 @@
 
       catalogo.push(nuevo);
       actualizarTabla();
-      guardarEnNube();
+      guardarTodo();
       document.getElementById('form-nuevo-producto').reset();
     }
 
@@ -381,28 +326,63 @@
       if (confirm("¿Quieres borrar todo el historial de listas creadas?")) {
         historial = [];
         actualizarHistorial();
-        guardarEnNube();
+        guardarTodo();
       }
     }
 
     function cambiarSeleccion(index, valor) {
       catalogo[index].incluir = valor;
+      guardarTodo();
     }
 
     function modificarPrecioTemp(index, nuevoPrecio) {
       catalogo[index].precio = parseFloat(nuevoPrecio || 0).toFixed(2);
-      guardarEnNube();
+      guardarTodo();
     }
 
     function marcarTodos(estado) {
       catalogo.forEach(p => p.incluir = estado);
       actualizarTabla();
+      guardarTodo();
     }
 
     function eliminarProducto(index) {
       catalogo.splice(index, 1);
       actualizarTabla();
-      guardarEnNube();
+      guardarTodo();
+    }
+
+    function exportarBackup() {
+      const dataStr = localStorage.getItem(STORAGE_KEY);
+      if (!dataStr) {
+        alert("No hay datos para exportar.");
+        return;
+      }
+      const blob = new Blob([dataStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `catalogo_backup_${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importarBackup(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const content = e.target.result;
+          JSON.parse(content); // Validar formato JSON
+          localStorage.setItem(STORAGE_KEY, content);
+          cargarTodo();
+          alert("¡Catálogo cargado con éxito!");
+        } catch(err) {
+          alert("El archivo no es válido.");
+        }
+      };
+      reader.readAsText(file);
     }
 
     function generarPDF(tipo) {
@@ -421,7 +401,6 @@
       const nombreComercial = document.getElementById('nombre-comercial').value || '';
       const telefonoComercial = document.getElementById('telefono-comercial').value || '';
 
-      // Encabezado ampliado con espacio holgado para el logo (30mm)
       let headerTextX = 14;
 
       if (logoEmpresaBase64) {
@@ -466,7 +445,6 @@
 
       const tablaStartY = infoPosY + 6;
 
-      // Registrar en el historial de listas
       historial.push({
         fecha: fechaTexto,
         cliente: nombreCliente,
@@ -474,7 +452,7 @@
         cantidad: seleccionados.length
       });
       actualizarHistorial();
-      guardarEnNube();
+      guardarTodo();
 
       if (tipo === 'corta') {
         const filas = seleccionados.map(p => [p.nombre, p.formato, `${p.precio} €`]);
