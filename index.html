@@ -1,53 +1,213 @@
-<!-- Cargar la librería de Supabase desde CDN -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>📋 Catálogo y Generador de Listas de Precios</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 900px; margin: 20px auto; padding: 20px; background: #f4f6f8; }
+    .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+    h2, h3 { color: #333; margin-top: 0; }
+    .form-group { margin-bottom: 15px; }
+    label { display: block; font-weight: bold; margin-bottom: 5px; }
+    input[type="text"], input[type="number"], input[type="file"] { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+    .row { display: flex; gap: 15px; }
+    .col { flex: 1; }
+    button { background: #0066cc; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-size: 14px; }
+    button:hover { background: #004999; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: middle; }
+    th { background: #f0f4f8; }
+    .img-preview { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; }
+  </style>
+</head>
+<body>
 
-<script>
-  // Tu configuración de Supabase
-  const SUPABASE_URL = 'https://TU-PROYECTO.supabase.co';
-  const SUPABASE_KEY = 'TU_ANON_KEY';
-  const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  <h1>📋 Catálogo y Generador de Listas de Precios</h1>
 
-  // Función para guardar el producto desde la web
-  async function agregarProducto() {
-    const nombre = document.getElementById('nombreProducto').value;
-    const precio = parseFloat(document.getElementById('precioProducto').value);
-    const archivoFoto = document.getElementById('fotoProducto').files[0];
+  <!-- SECCIÓN 1: DATOS FIJOS DEL ENCABEZADO -->
+  <div class="card">
+    <h3>🏢 Datos del Encabezado Corporativo (Fijo)</h3>
+    <div class="row">
+      <div class="col form-group">
+        <label>Nombre de la Empresa:</label>
+        <input type="text" id="empresaNombre" placeholder="Ej: Mi Empresa S.L.">
+      </div>
+      <div class="col form-group">
+        <label>URL del Logo:</label>
+        <input type="text" id="empresaLogo" placeholder="https:// ... url-de-tu-logo.png">
+      </div>
+    </div>
+    <div class="row">
+      <div class="col form-group">
+        <label>Nombre del Comercial:</label>
+        <input type="text" id="comercialNombre" placeholder="Ej: Juan Pérez">
+      </div>
+      <div class="col form-group">
+        <label>Teléfono del Comercial:</label>
+        <input type="text" id="comercialTelefono" placeholder="Ej: +34 600 000 000">
+      </div>
+    </div>
+  </div>
 
-    let urlFoto = '';
+  <!-- SECCIÓN 2: AÑADIR NUEVO PRODUCTO (CON FOTO) -->
+  <div class="card">
+    <h3>➕ Añadir Nuevo Producto</h3>
+    <div class="row">
+      <div class="col form-group">
+        <label>Nombre del Producto:</label>
+        <input type="text" id="prodNombre" placeholder="Ej: Menú Pollo Guisado">
+      </div>
+      <div class="col form-group">
+        <label>Precio (€):</label>
+        <input type="number" step="0.01" id="prodPrecio" placeholder="6.50">
+      </div>
+      <div class="col form-group">
+        <label>Foto del Producto:</label>
+        <input type="file" id="prodFoto" accept="image/*">
+      </div>
+    </div>
+    <button onclick="guardarProducto()">Guardar Producto en la Nube</button>
+  </div>
 
-    // Subir la foto al bucket
-    if (archivoFoto) {
-      const nombreArchivo = `${Date.now()}_${archivoFoto.name}`;
-      const { data: storageData, error: storageError } = await _supabase
-        .storage
-        .from('productos-fotos')
-        .upload(nombreArchivo, archivoFoto);
+  <!-- SECCIÓN 3: LISTA DE PRODUCTOS Y SELECCIÓN PARA GENERAR -->
+  <div class="card">
+    <h3>📦 Catálogo de Productos Registrados</h3>
+    <div class="form-group">
+      <label>Nombre del Cliente para la lista:</label>
+      <input type="text" id="clienteNombre" placeholder="Ej: Restaurante El Faro">
+    </div>
 
-      if (storageError) {
-        alert('Error al subir la imagen: ' + storageError.message);
+    <table>
+      <thead>
+        <tr>
+          <th>Sel.</th>
+          <th>Foto</th>
+          <th>Producto</th>
+          <th>Precio</th>
+        </tr>
+      </thead>
+      <tbody id="tablaProductos">
+        <tr><td colspan="4">Cargando productos...</td></tr>
+      </tbody>
+    </table>
+
+    <br>
+    <button onclick="generarLista()" style="background: #28a745;">🚀 Guardar e Imprimir Lista de Precios</button>
+  </div>
+
+  <script>
+    // --- CONEXIÓN CON SUPABASE ---
+    const SUPABASE_URL = 'https://TU-PROYECTO.supabase.co';
+    const SUPABASE_KEY = 'TU_ANON_KEY';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Cargar productos al entrar a la página
+    window.onload = function() {
+      cargarProductos();
+    };
+
+    // 1. Cargar productos guardados en Supabase
+    async function cargarProductos() {
+      const { data, error } = await _supabase.from('productos').select('*').order('id', { ascending: true });
+      const tbody = document.getElementById('tablaProductos');
+      
+      if (error) {
+        tbody.innerHTML = `<tr><td colspan="4">Error al cargar productos: ${error.message}</td></tr>`;
         return;
       }
 
-      // Obtener la URL pública para la foto
-      const { data: publicUrlData } = _supabase
-        .storage
-        .from('productos-fotos')
-        .getPublicUrl(nombreArchivo);
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4">No hay productos guardados aún.</td></tr>';
+        return;
+      }
 
-      urlFoto = publicUrlData.publicUrl;
+      tbody.innerHTML = data.map(prod => `
+        <tr>
+          <td><input type="checkbox" class="prod-checkbox" value="${prod.id}"></td>
+          <td>${prod.url_foto ? `<img src="${prod.url_foto}" class="img-preview">` : 'Sin foto'}</td>
+          <td>${prod.nombre}</td>
+          <td>${parseFloat(prod.precio).toFixed(2)} €</td>
+        </tr>
+      `).join('');
     }
 
-    // Insertar producto en la tabla de Supabase
-    const { data, error } = await _supabase
-      .from('productos')
-      .insert([
+    // 2. Subir foto a Supabase Storage y guardar producto en la base de datos
+    async function guardarProducto() {
+      const nombre = document.getElementById('prodNombre').value;
+      const precio = parseFloat(document.getElementById('prodPrecio').value);
+      const archivoFoto = document.getElementById('prodFoto').files[0];
+
+      if (!nombre || isNaN(precio)) {
+        alert('Por favor, introduce un nombre y un precio válido.');
+        return;
+      }
+
+      let urlFoto = '';
+
+      // Subir archivo de foto al Bucket si se adjuntó
+      if (archivoFoto) {
+        const nombreArchivo = `${Date.now()}_${archivoFoto.name.replace(/\s+/g, '_')}`;
+        const { data: uploadData, error: uploadError } = await _supabase
+          .storage
+          .from('productos-fotos')
+          .upload(nombreArchivo, archivoFoto);
+
+        if (uploadError) {
+          alert('Error al subir la imagen: ' + uploadError.message);
+          return;
+        }
+
+        const { data: publicUrlData } = _supabase
+          .storage
+          .from('productos-fotos')
+          .getPublicUrl(nombreArchivo);
+
+        urlFoto = publicUrlData.publicUrl;
+      }
+
+      // Guardar registro en la tabla 'productos'
+      const { error } = await _supabase.from('productos').insert([
         { nombre: nombre, precio: precio, url_foto: urlFoto }
       ]);
 
-    if (error) {
-      alert('Error guardando el producto: ' + error.message);
-    } else {
-      alert('¡Producto guardado exitosamente!');
+      if (error) {
+        alert('Error al guardar en la base de datos: ' + error.message);
+      } else {
+        alert('¡Producto guardado exitosamente en la nube!');
+        document.getElementById('prodNombre').value = '';
+        document.getElementById('prodPrecio').value = '';
+        document.getElementById('prodFoto').value = '';
+        cargarProductos();
+      }
     }
-  }
-</script>
+
+    // 3. Guardar el presupuesto/lista en el Histórico de Supabase
+    async function generarLista() {
+      const cliente = document.getElementById('clienteNombre').value;
+      if (!cliente) {
+        alert('Escribe el nombre del cliente.');
+        return;
+      }
+
+      const seleccionados = Array.from(document.querySelectorAll('.prod-checkbox:checked')).map(cb => parseInt(cb.value));
+
+      if (seleccionados.length === 0) {
+        alert('Selecciona al menos un producto de la lista.');
+        return;
+      }
+
+      // Guardar lista en el historial de Supabase
+      const { error } = await _supabase.from('listas_generadas').insert([
+        { cliente_nombre: cliente, productos_ids: seleccionados }
+      ]);
+
+      if (error) {
+        alert('Error guardando en el historial: ' + error.message);
+      } else {
+        alert(`¡Lista para ${cliente} guardada en la nube! Puedes ir a tu Google Sheets para imprimirla/generarla.`);
+      }
+    }
+  </script>
+</body>
+</html>
