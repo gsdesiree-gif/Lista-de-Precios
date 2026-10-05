@@ -229,7 +229,6 @@
       preview.src = urlFinal;
       preview.style.display = 'block';
 
-      // Auto-guardar en la nube al subir logo
       guardarEncabezadoNube();
     }
 
@@ -400,8 +399,7 @@
             ${comercial ? `<p style="margin: 5px 0 0 0;"><strong>Comercial:</strong> ${comercial}${telefono ? `(${telefono})` : ''}</p>` : ''}
           </div>
           <div style="text-align: right;">
-            <h3 style="margin: 0; color: #0066cc;">OFERTA DE PRECIOS</h3>
-            <p style="margin: 5px 0 0 0;"><strong>Cliente:</strong> ${lista.cliente_nombre}</p>
+            <p style="margin: 0;"><strong>Cliente:</strong> ${lista.cliente_nombre}</p>
             <p style="margin: 5px 0 0 0;"><strong>Fecha:</strong> ${new Date(lista.fecha).toLocaleDateString('es-ES')}</p>
           </div>
         </div>
