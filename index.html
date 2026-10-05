@@ -1,150 +1,53 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Catálogo de Precios</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 800px; margin: 20px auto; padding: 0 15px; background: #f8f9fa; }
-    h1 { color: #333; text-align: center; }
-    .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
-    .form-group { margin-bottom: 15px; }
-    label { display: block; font-weight: bold; margin-bottom: 5px; color: #555; }
-    input { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
-    button { background: #007aff; color: white; border: none; padding: 12px 20px; border-radius: 6px; font-size: 16px; cursor: pointer; width: 100%; font-weight: bold; }
-    button:hover { background: #0056b3; }
-    table { width: 100%; border-collapse: collapse; background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
-    th { background: #f1f3f5; color: #333; }
-    .btn-delete { background: #ff3b30; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; width: auto; font-size: 14px; }
-    .status { text-align: center; margin-top: 10px; font-size: 14px; color: #666; }
-  </style>
-</head>
-<body>
+<!-- Cargar la librería de Supabase desde CDN -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  <h1>📋 Catálogo de Precios</h1>
+<script>
+  // Tu configuración de Supabase
+  const SUPABASE_URL = 'https://TU-PROYECTO.supabase.co';
+  const SUPABASE_KEY = 'TU_ANON_KEY';
+  const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  <div class="card">
-    <h3>Añadir Nuevo Producto</h3>
-    <div class="form-group">
-      <label for="nombre">Nombre del Producto / Plato:</label>
-      <input type="text" id="nombre" placeholder="Ej: Lasaña de verduras">
-    </div>
-    <div class="form-group">
-      <label for="precio">Precio (€):</label>
-      <input type="number" step="0.01" id="precio" placeholder="Ej: 8.50">
-    </div>
-    <div class="form-group">
-      <label for="cliente">Cliente (Opcional):</label>
-      <input type="text" id="cliente" placeholder="Ej: Juan Pérez">
-    </div>
-    <button onclick="guardarProducto()">💾 Guardar en la Nube</button>
-    <div id="status" class="status"></div>
-  </div>
+  // Función para guardar el producto desde la web
+  async function agregarProducto() {
+    const nombre = document.getElementById('nombreProducto').value;
+    const precio = parseFloat(document.getElementById('precioProducto').value);
+    const archivoFoto = document.getElementById('fotoProducto').files[0];
 
-  <div class="card">
-    <h3>Lista de Productos</h3>
-    <table>
-      <thead>
-        <tr>
-          <th>Producto</th>
-          <th>Precio</th>
-          <th>Cliente</th>
-          <th>Acción</th>
-        </tr>
-      </thead>
-      <tbody id="tablaProductos">
-        <tr><td colspan="4" style="text-align:center;">Cargando productos...</td></tr>
-      </tbody>
-    </table>
-  </div>
+    let urlFoto = '';
 
-  <script>
-    const SUPABASE_URL = "https://irjwegtxvoxhbnfvhnvv.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_856GEZ6hKugVBCDyaN1vhA_61JxV2oo";
-    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // Subir la foto al bucket
+    if (archivoFoto) {
+      const nombreArchivo = `${Date.now()}_${archivoFoto.name}`;
+      const { data: storageData, error: storageError } = await _supabase
+        .storage
+        .from('productos-fotos')
+        .upload(nombreArchivo, archivoFoto);
 
-    async function cargarProductos() {
-      const { data, error } = await supabaseClient
-        .from('productos')
-        .select('*')
-        .order('id', { ascending: false });
-
-      const tbody = document.getElementById('tablaProductos');
-      tbody.innerHTML = '';
-
-      if (error) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:red;">Error al cargar datos</td></tr>';
-        console.error(error);
+      if (storageError) {
+        alert('Error al subir la imagen: ' + storageError.message);
         return;
       }
 
-      if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No hay productos guardados aún.</td></tr>';
-        return;
-      }
+      // Obtener la URL pública para la foto
+      const { data: publicUrlData } = _supabase
+        .storage
+        .from('productos-fotos')
+        .getPublicUrl(nombreArchivo);
 
-      data.forEach(p => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><strong>${p.nombre}</strong></td>
-          <td>${parseFloat(p.precio).toFixed(2)} €</td>
-          <td>${p.cliente || '-'}</td>
-          <td><button class="btn-delete" onclick="borrarProducto(${p.id})">Eliminar</button></td>
-        `;
-        tbody.appendChild(tr);
-      });
+      urlFoto = publicUrlData.publicUrl;
     }
 
-    async function guardarProducto() {
-      const nombre = document.getElementById('nombre').value.trim();
-      const precio = document.getElementById('precio').value;
-      const cliente = document.getElementById('cliente').value.trim();
-      const status = document.getElementById('status');
+    // Insertar producto en la tabla de Supabase
+    const { data, error } = await _supabase
+      .from('productos')
+      .insert([
+        { nombre: nombre, precio: precio, url_foto: urlFoto }
+      ]);
 
-      if (!nombre || !precio) {
-        alert("Por favor, introduce al menos el nombre y el precio.");
-        return;
-      }
-
-      status.innerText = "Guardando...";
-
-      const { error } = await supabaseClient
-        .from('productos')
-        .insert([{ nombre, precio: parseFloat(precio), cliente }]);
-
-      if (error) {
-        status.innerText = "Error al guardar.";
-        console.error(error);
-      } else {
-        status.innerText = "¡Guardado con éxito en la nube!";
-        document.getElementById('nombre').value = '';
-        document.getElementById('precio').value = '';
-        document.getElementById('cliente').value = '';
-        cargarProductos();
-        setTimeout(() => status.innerText = '', 3000);
-      }
+    if (error) {
+      alert('Error guardando el producto: ' + error.message);
+    } else {
+      alert('¡Producto guardado exitosamente!');
     }
-
-    async function borrarProducto(id) {
-      if (!confirm("¿Seguro que quieres eliminar este producto?")) return;
-
-      const { error } = await supabaseClient
-        .from('productos')
-        .delete()
-        .eq('id', id);
-
-      if (error) {
-        alert("Error al borrar el producto.");
-        console.error(error);
-      } else {
-        cargarProductos();
-      }
-    }
-
-    // Cargar los datos al abrir la página
-    cargarProductos();
-  </script>
-</body>
-</html>
+  }
+</script>
