@@ -48,7 +48,7 @@
       <div class="row">
         <div class="col form-group">
           <label>Nombre de la Empresa:</label>
-          <input type="text" id="empresaNombre" placeholder="Ej: Mi Empresa S.L.">
+          <input type="text" id="empresaNombre" placeholder="Ej: Mi Empresa S.L." oninput="guardarEncabezadoLocal()">
         </div>
         <div class="col form-group">
           <label>Imagen del Logo:</label>
@@ -60,11 +60,11 @@
       <div class="row">
         <div class="col form-group">
           <label>Nombre del Comercial:</label>
-          <input type="text" id="comercialNombre" placeholder="Ej: Juan Pérez">
+          <input type="text" id="comercialNombre" placeholder="Ej: Juan Pérez" oninput="guardarEncabezadoLocal()">
         </div>
         <div class="col form-group">
           <label>Teléfono del Comercial:</label>
-          <input type="text" id="comercialTelefono" placeholder="Ej: +34 600 000 000">
+          <input type="text" id="comercialTelefono" placeholder="Ej: +34 600 000 000" oninput="guardarEncabezadoLocal()">
         </div>
       </div>
     </div>
@@ -141,7 +141,7 @@
     <button onclick="window.print()" class="no-print" style="background:#28a745; margin-bottom:15px;">📥 Imprimir / Descargar PDF</button>
 
     <div id="contenidoImprimible">
-      <!-- Encabezado generado dinámicamente -->
+      <!-- Encabezado y lista generados dinámicamente -->
     </div>
   </div>
 
@@ -155,6 +155,7 @@
     window.onload = function() {
       try {
         _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        cargarEncabezadoLocal();
         cargarProductos();
         cargarHistoricoListas();
       } catch (e) {
@@ -162,6 +163,38 @@
       }
     };
 
+    // GUARDAR Y CARGAR DATOS CORPORATIVOS EN EL NAVEGADOR
+    function guardarEncabezadoLocal() {
+      const empresa = document.getElementById('empresaNombre').value;
+      const comercial = document.getElementById('comercialNombre').value;
+      const telefono = document.getElementById('comercialTelefono').value;
+      const logoUrl = document.getElementById('empresaLogoUrl').value;
+
+      localStorage.setItem('cfg_empresa', empresa);
+      localStorage.setItem('cfg_comercial', comercial);
+      localStorage.setItem('cfg_telefono', telefono);
+      localStorage.setItem('cfg_logoUrl', logoUrl);
+    }
+
+    function cargarEncabezadoLocal() {
+      const empresa = localStorage.getItem('cfg_empresa') || '';
+      const comercial = localStorage.getItem('cfg_comercial') || '';
+      const telefono = localStorage.getItem('cfg_telefono') || '';
+      const logoUrl = localStorage.getItem('cfg_logoUrl') || '';
+
+      document.getElementById('empresaNombre').value = empresa;
+      document.getElementById('comercialNombre').value = comercial;
+      document.getElementById('comercialTelefono').value = telefono;
+      document.getElementById('empresaLogoUrl').value = logoUrl;
+
+      if (logoUrl) {
+        const preview = document.getElementById('logoPreviewImg');
+        preview.src = logoUrl;
+        preview.style.display = 'block';
+      }
+    }
+
+    // SUBIDA Y PROCESAMIENTO DEL LOGO
     async function subirLogoProcesado() {
       const archivoLogo = document.getElementById('empresaLogoFile').files[0];
       if (!archivoLogo || !_supabase) return;
@@ -182,12 +215,16 @@
         .from('productos-fotos')
         .getPublicUrl(nombreArchivo);
 
-      document.getElementById('empresaLogoUrl').value = publicUrlData.publicUrl;
+      const urlFinal = publicUrlData.publicUrl;
+      document.getElementById('empresaLogoUrl').value = urlFinal;
       const preview = document.getElementById('logoPreviewImg');
-      preview.src = publicUrlData.publicUrl;
+      preview.src = urlFinal;
       preview.style.display = 'block';
+
+      guardarEncabezadoLocal();
     }
 
+    // CARGAR PRODUCTOS DE SUPABASE
     async function cargarProductos() {
       if (!_supabase) return;
       const { data, error } = await _supabase.from('productos').select('*').order('id', { ascending: true });
@@ -206,7 +243,7 @@
       }
 
       tbody.innerHTML = _productosCache.map(function(prod) {
-        var fotoHtml = prod.url_foto ? '<img src="' + prod.url_foto + '" class="img-preview">' : 'Sin foto';
+        var fotoHtml = prod.url_foto ? '<img src="' + prod.url_foto + '" class="img-preview" crossorigin="anonymous">' : 'Sin foto';
         return '<tr>' +
           '<td><input type="checkbox" class="prod-checkbox" value="' + prod.id + '"></td>' +
           '<td>' + fotoHtml + '</td>' +
@@ -349,31 +386,31 @@
       let htmlDoc = `
         <div style="border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
           <div>
-            ${logoUrl ? `<img src="${logoUrl}" style="max-height: 70px; display: block; margin-bottom: 10px;">` : ''}
-            <h2>${empresa}</h2>
-            ${comercial ? `<p><strong>Comercial:</strong> ${comercial}${telefono ? `(${telefono})` : ''}</p>` : ''}
+            ${logoUrl ? `<img src="${logoUrl}" crossorigin="anonymous" style="max-height: 80px; display: block; margin-bottom: 10px;">` : ''}
+            <h2 style="margin: 0;">${empresa}</h2>
+            ${comercial ? `<p style="margin: 5px 0 0 0;"><strong>Comercial:</strong> ${comercial}${telefono ? `(${telefono})` : ''}</p>` : ''}
           </div>
           <div style="text-align: right;">
-            <h3>OFERTA DE PRECIOS</h3>
-            <p><strong>Cliente:</strong> ${lista.cliente_nombre}</p>
-            <p><strong>Fecha:</strong> ${new Date(lista.fecha).toLocaleDateString('es-ES')}</p>
+            <h3 style="margin: 0; color: #0066cc;">OFERTA DE PRECIOS</h3>
+            <p style="margin: 5px 0 0 0;"><strong>Cliente:</strong> ${lista.cliente_nombre}</p>
+            <p style="margin: 5px 0 0 0;"><strong>Fecha:</strong> ${new Date(lista.fecha).toLocaleDateString('es-ES')}</p>
           </div>
         </div>
 
         <table>
           <thead>
             <tr>
-              <th>Foto</th>
+              <th style="width: 80px;">Foto</th>
               <th>Producto</th>
-              <th>Precio</th>
+              <th style="width: 120px; text-align: right;">Precio</th>
             </tr>
           </thead>
           <tbody>
             ${productosSeleccionados.map(p => `
               <tr>
-                <td>${p.url_foto ? `<img src="${p.url_foto}" class="img-preview">` : 'Sin foto'}</td>
+                <td style="text-align: center;">${p.url_foto ? `<img src="${p.url_foto}" crossorigin="anonymous" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px;">` : 'Sin foto'}</td>
                 <td><strong>${p.nombre}</strong></td>
-                <td>${parseFloat(p.precio).toFixed(2)} €</td>
+                <td style="text-align: right;"><strong>${parseFloat(p.precio).toFixed(2)} €</strong></td>
               </tr>
             `).join('')}
           </tbody>
