@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>📋 Catálogo y Generador de Listas de Precios</title>
+  <!-- FUENTE ELEGANTE OSWALD DESDE GOOGLE FONTS -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body { font-family: Arial, sans-serif; max-width: 900px; margin: 20px auto; padding: 20px; background: #f4f6f8; }
@@ -136,7 +140,7 @@
     </div>
   </div>
 
-  <!-- VISTA DOCUMENTO IMPRIMIBLE / PDF -->
+  <!-- VISTA DOCUMENTO IMPRIMIBLE / PDF CON TIPOGRAFÍA OSWALD -->
   <div id="vistaDocumento" style="display:none;" class="card">
     <button onclick="cerrarVistaDocumento()" class="no-print" style="background:#6c757d; margin-bottom:15px;">⬅️ Volver al Panel</button>
     <button onclick="window.print()" class="no-print" style="background:#28a745; margin-bottom:15px;">📥 Imprimir / Descargar PDF</button>
@@ -256,4 +260,212 @@
           var fotoHtml = prod.url_foto ? '<img src="' + prod.url_foto + '" class="img-preview" crossorigin="anonymous">' : 'Sin foto';
           return '<tr>' +
             '<td><input type="checkbox" class="prod-checkbox" value="' + prod.id + '"></td>' +
+            '<td>' + fotoHtml + '</td>' +
+            '<td>' + prod.nombre + '</td>' +
+            '<td>' + parseFloat(prod.precio).toFixed(2) + ' €</td>' +
+            '<td><button class="btn-delete" onclick="borrarProducto(' + prod.id + ', \'' + prod.nombre.replace(/'/g, "\\'") + '\')">🗑️ Borrar</button></td>' +
+          '</tr>';
+        }).join('');
+      } catch(e) {
+        tbody.innerHTML = '<tr><td colspan="5">Sin productos guardados.</td></tr>';
+      }
+    }
+
+    async function borrarProducto(id, nombre) {
+      if (!confirm('¿Estás segura de que deseas borrar el producto "' + nombre + '"?')) return;
+      const { error } = await _supabase.from('productos').delete().eq('id', id);
+      if (error) {
+        alert('Error al eliminar el producto: ' + error.message);
+      } else {
+        cargarProductos();
+      }
+    }
+
+    async function guardarProducto() {
+      const nombre = document.getElementById('prodNombre').value;
+      const precio = parseFloat(document.getElementById('prodPrecio').value);
+      const archivoFoto = document.getElementById('prodFoto').files[0];
+
+      if (!nombre || isNaN(precio)) {
+        alert('Por favor, introduce un nombre y un precio válido.');
+        return;
+      }
+
+      let urlFoto = '';
+
+      if (archivoFoto) {
+        const nombreArchivo = Date.now() + '_' + archivoFoto.name.replace(/\s+/g, '_');
+        const { data: uploadData, error: uploadError } = await _supabase
+          .storage
+          .from('productos-fotos')
+          .upload(nombreArchivo, archivoFoto);
+
+        if (uploadError) {
+          alert('Error al subir la imagen: ' + uploadError.message);
+          return;
+        }
+
+        const { data: publicUrlData } = _supabase
+          .storage
+          .from('productos-fotos')
+          .getPublicUrl(nombreArchivo);
+
+        urlFoto = publicUrlData.publicUrl;
+      }
+
+      const { error } = await _supabase.from('productos').insert([
+        { nombre: nombre, precio: precio, url_foto: urlFoto }
+      ]);
+
+      if (error) {
+        alert('Error al guardar: ' + error.message);
+      } else {
+        alert('¡Producto guardado exitosamente!');
+        document.getElementById('prodNombre').value = '';
+        document.getElementById('prodPrecio').value = '';
+        document.getElementById('prodFoto').value = '';
+        cargarProductos();
+      }
+    }
+
+    async function generarLista() {
+      const cliente = document.getElementById('clienteNombre').value;
+      if (!cliente) {
+        alert('Escribe el nombre del cliente.');
+        return;
+      }
+
+      const checkboxes = document.querySelectorAll('.prod-checkbox:checked');
+      const seleccionados = Array.from(checkboxes).map(function(cb) { return parseInt(cb.value); });
+
+      if (seleccionados.length === 0) {
+        alert('Selecciona al menos un producto.');
+        return;
+      }
+
+      const { error } = await _supabase.from('listas_generadas').insert([
+        { cliente_nombre: cliente, productos_ids: seleccionados }
+      ]);
+
+      if (error) {
+        alert('Error al guardar la lista: ' + error.message);
+      } else {
+        alert('¡Lista para ' + cliente + ' guardada correctamente!');
+        document.getElementById('clienteNombre').value = '';
+        cargarHistoricoListas();
+      }
+    }
+
+    async function cargarHistoricoListas() {
+      const tbody = document.getElementById('tablaHistorico');
+      if (!_supabase) {
+        tbody.innerHTML = '<tr><td colspan="4">Sin listas generadas.</td></tr>';
+        return;
+      }
+
+      try {
+        const { data, error } = await _supabase.from('listas_generadas').select('*').order('id', { ascending: false });
+
+        if (error || !data || data.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4">Sin listas generadas.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = data.map(function(lista) {
+          var fechaFormateada = new Date(lista.fecha).toLocaleString('es-ES');
+          return '<tr>' +
+            '<td>' + lista.id + '</td>' +
+            '<td><strong>' + lista.cliente_nombre + '</strong></td>' +
+            '<td>' + fechaFormateada + '</td>' +
             '<td>' +
+              '<button class="btn-view" onclick="verListaDocumento(' + lista.id + ')">👁️️ Ver / Imprimir</button>' +
+              '<button class="btn-delete" onclick="borrarLista(' + lista.id + ', \'' + lista.cliente_nombre.replace(/'/g, "\\'") + '\')">🗑️ Borrar</button>' +
+            '</td>' +
+          '</tr>';
+        }).join('');
+      } catch(e) {
+        tbody.innerHTML = '<tr><td colspan="4">Sin listas generadas.</td></tr>';
+      }
+    }
+
+    async function verListaDocumento(id) {
+      const { data: lista, error } = await _supabase.from('listas_generadas').select('*').eq('id', id).single();
+      if (error || !lista) {
+        alert('No se pudo cargar la lista seleccionada.');
+        return;
+      }
+
+      const empresa = document.getElementById('empresaNombre').value || 'EL ANCLA';
+      const comercial = document.getElementById('comercialNombre').value || '';
+      const telefono = document.getElementById('comercialTelefono').value || '';
+      const logoUrl = document.getElementById('empresaLogoUrl').value;
+
+      const idsGuardados = lista.productos_ids || [];
+      const productosSeleccionados = _productosCache.filter(p => idsGuardados.includes(p.id));
+
+      let htmlDoc = `
+        <div style="border-bottom: 2px solid #1a365d; padding-bottom: 20px; margin-bottom: 25px; display: flex; align-items: center; justify-content: space-between;">
+          <!-- LADO IZQUIERDO: LOGO/ANCLA -->
+          <div style="width: 20%; text-align: left;">
+            ${logoUrl ? `<img src="${logoUrl}" crossorigin="anonymous" style="max-height: 95px; max-width: 100%; object-fit: contain;">` : ''}
+          </div>
+
+          <!-- CENTRO: TITULAR Y COMERCIAL EN TIPOGRAFÍA OSWALD MÁS GRANDE -->
+          <div style="width: 55%; text-align: center;">
+            <h1 style="margin: 0; font-family: 'Oswald', sans-serif; font-size: 38px; color: #1a365d; letter-spacing: 2px; text-transform: uppercase; font-weight: 700;">${empresa}</h1>
+            ${comercial ? `
+              <p style="margin: 8px 0 0 0; font-family: 'Oswald', sans-serif; font-size: 18px; color: #2b6cb0; letter-spacing: 0.5px;">
+                <strong>COMERCIAL:</strong> ${comercial.toUpperCase()}${telefono ? `<span style="margin-left: 8px; color: #1a365d; font-size: 17px;">| 📞 ${telefono}</span>` : ''}
+              </p>
+            ` : ''}
+          </div>
+
+          <!-- LADO DERECHO: CLIENTE Y FECHA -->
+          <div style="width: 25%; text-align: right; font-size: 14px; color: #2d3748;">
+            <p style="margin: 0;"><strong>Cliente:</strong> ${lista.cliente_nombre}</p>
+            <p style="margin: 4px 0 0 0; color: #718096;"><strong>Fecha:</strong> ${new Date(lista.fecha).toLocaleDateString('es-ES')}</p>
+          </div>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr style="background-color: #ebf8ff;">
+              <th style="width: 80px; text-align: center; color: #1a365d; border-bottom: 2px solid #2b6cb0; font-family: 'Oswald', sans-serif; font-size: 16px; letter-spacing: 0.5px;">FOTO</th>
+              <th style="text-align: left; color: #1a365d; border-bottom: 2px solid #2b6cb0; font-family: 'Oswald', sans-serif; font-size: 16px; letter-spacing: 0.5px;">PRODUCTO</th>
+              <th style="width: 120px; text-align: right; color: #1a365d; border-bottom: 2px solid #2b6cb0; font-family: 'Oswald', sans-serif; font-size: 16px; letter-spacing: 0.5px;">PRECIO</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${productosSeleccionados.map(p => `
+              <tr>
+                <td style="text-align: center; padding: 10px;">${p.url_foto ? `<img src="${p.url_foto}" crossorigin="anonymous" style="width: 55px; height: 55px; object-fit: cover; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">` : 'Sin foto'}</td>
+                <td style="padding: 10px; font-size: 15px; color: #2d3748;"><strong>${p.nombre}</strong></td>
+                <td style="text-align: right; padding: 10px; font-size: 16px; color: #1a365d;"><strong>${parseFloat(p.precio).toFixed(2)} €</strong></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+
+      document.getElementById('contenidoImprimible').innerHTML = htmlDoc;
+      document.querySelector('.no-print').style.display = 'none';
+      document.getElementById('vistaDocumento').style.display = 'block';
+    }
+
+    function cerrarVistaDocumento() {
+      document.getElementById('vistaDocumento').style.display = 'none';
+      document.querySelector('.no-print').style.display = 'block';
+    }
+
+    async function borrarLista(id, cliente) {
+      if (!confirm('¿Deseas borrar la lista histórica del cliente "' + cliente + '"?')) return;
+      const { error } = await _supabase.from('listas_generadas').delete().eq('id', id);
+      if (error) {
+        alert('Error al borrar la lista: ' + error.message);
+      } else {
+        cargarHistoricoListas();
+      }
+    }
+  </script>
+</body>
+</html>
