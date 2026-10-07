@@ -238,17 +238,31 @@
     .tab-content.active { display: block !important; }
 
     /* -------------------------------------------------------------
-       ESTILOS DEL DOCUMENTO A4 (FOLIO COMPLETO Y MARCA DE AGUA)
+       ESTILOS DEL DOCUMENTO A4 (FOLIO OBLIGATORIO Y MARCA DE AGUA)
        ------------------------------------------------------------- */
+    #vistaDocumento {
+      padding: 20px 0;
+    }
+
+    .doc-actions-bar {
+      max-width: 210mm;
+      margin: 0 auto 16px auto;
+      display: flex;
+      gap: 12px;
+      padding: 0 10px;
+    }
+
     .page-a4 {
       position: relative;
       width: 210mm;
+      height: 297mm;
       min-height: 297mm;
+      max-height: 297mm;
       margin: 0 auto;
       background: #ffffff;
       padding: 18mm 15mm;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      border-radius: 4px;
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
@@ -260,8 +274,8 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 60%;
-      max-height: 60%;
+      width: 65%;
+      max-height: 65%;
       object-fit: contain;
       opacity: 0.08;
       pointer-events: none;
@@ -289,32 +303,40 @@
       }
     }
 
-    /* REGLAS DE IMPRESIÓN (CONFIGURADO A FOLIO COMPLETO A4) */
+    /* REGLAS STRICTAS DE IMPRESIÓN (FOLIO A4 COMPLETO) */
     @media print {
       @page {
         size: A4 portrait;
         margin: 0;
       }
-      body {
+      html, body {
+        width: 210mm;
+        height: 297mm;
         background: white;
-        margin: 0;
-        padding: 0;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: hidden;
       }
-      .no-print, .nav-bar, .top-bar {
+      .no-print, .nav-bar, .top-bar, .doc-actions-bar {
         display: none !important;
       }
       #vistaDocumento {
+        display: block !important;
         margin: 0 !important;
         padding: 0 !important;
         background: transparent !important;
+        width: 210mm !important;
+        height: 297mm !important;
       }
       .page-a4 {
-        width: 100vw !important;
-        height: 100vh !important;
-        min-height: 100vh !important;
+        width: 210mm !important;
+        height: 297mm !important;
+        min-height: 297mm !important;
+        max-height: 297mm !important;
         box-shadow: none !important;
         border-radius: 0 !important;
         padding: 15mm !important;
+        margin: 0 !important;
         page-break-after: avoid;
         page-break-inside: avoid;
       }
@@ -374,4 +396,53 @@
       <button onclick="guardarEncabezadoNube(); toggleConfig();" class="btn btn-accent" style="margin-top: 12px;">💾 Guardar Ajustes</button>
     </div>
 
-    <!-- PEST
+    <!-- PESTAÑA 1: CATÁLOGO -->
+    <div id="tabCatalogo" class="tab-content active">
+      <div class="grid-layout">
+        <div class="card">
+          <div class="card-header">➕ Registrar Producto</div>
+          <div class="field">
+            <label>Nombre</label>
+            <input type="text" id="prodNombre" placeholder="Ej: Menú Pollo Guisado">
+          </div>
+          <div class="field">
+            <label>Precio (€)</label>
+            <input type="number" step="0.01" id="prodPrecio" placeholder="6.50">
+          </div>
+          <div class="field">
+            <label>Foto</label>
+            <input type="file" id="prodFoto" accept="image/*">
+          </div>
+          <button onclick="guardarProducto()" class="btn">Guardar Producto</button>
+        </div>
+
+        <div class="card">
+          <div class="card-header">📦 Productos Registrados</div>
+          <div id="listaProductosCard" class="product-grid"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PESTAÑA 2: CREAR LISTA DE PRECIOS -->
+    <div id="tabCrear" class="tab-content">
+      <div class="card">
+        <div class="card-header">🚀 Nueva Lista de Precios</div>
+        <div class="field">
+          <label>Nombre del Cliente</label>
+          <input type="text" id="clienteNombre" placeholder="Ej: Restaurante El Faro">
+        </div>
+
+        <div style="font-size: 13px; font-weight: 600; color: var(--muted); margin: 16px 0 8px 0;">SELECCIONA LOS PRODUCTOS:</div>
+        <div id="listaSeleccionProductos" class="product-grid"></div>
+
+        <button onclick="generarLista()" class="btn btn-accent" style="margin-top: 20px;">💾 Generar Lista de Precios</button>
+      </div>
+    </div>
+
+    <!-- PESTAÑA 3: HISTORIAL -->
+    <div id="tabHistorial" class="tab-content">
+      <div class="card">
+        <div class="card-header">📜 Listas Guardadas</div>
+        <div id="listaHistoricoCard" class="product-grid"></div>
+      </div>
+    </div>
