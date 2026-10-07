@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     :root {
       --bg: #f1f5f9;
@@ -100,7 +101,7 @@
       margin-bottom: 6px;
       text-transform: uppercase;
     }
-    input[type="text"], input[type="number"] {
+    input[type="text"], input[type="number"], input[type="file"] {
       width: 100%;
       padding: 12px 16px;
       font-size: 15px;
@@ -171,6 +172,17 @@
     .tab-content { display: none !important; }
     .tab-content.active { display: block !important; }
 
+    .page-a4 {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 20mm 15mm;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+
     @media (min-width: 800px) {
       body { padding-bottom: 30px; }
       .container { max-width: 1280px; padding: 24px; }
@@ -179,265 +191,4 @@
 
       .grid-layout {
         display: grid !important;
-        grid-template-columns: 380px 1fr !important;
-        gap: 24px !important;
-      }
-
-      .product-grid {
-        display: grid !important;
-        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)) !important;
-        gap: 14px !important;
-      }
-    }
-  </style>
-</head>
-<body>
-
-  <div class="top-bar">
-    <div class="brand-title">EL ANCLA</div>
-    <div class="web-nav">
-      <button class="web-nav-btn active" onclick="switchTab('tabCatalogo')">📦 Productos</button>
-      <button class="web-nav-btn" onclick="switchTab('tabCrear')">📝 Crear Lista</button>
-      <button class="web-nav-btn" onclick="switchTab('tabHistorial')">📜 Histórico</button>
-    </div>
-  </div>
-
-  <div class="container">
-    <div id="tabCatalogo" class="tab-content active">
-      <div class="grid-layout">
-        <div class="card">
-          <div class="card-header">➕ Registrar Producto</div>
-          <div class="field">
-            <label>Nombre del Producto</label>
-            <input type="text" id="prodNombre" placeholder="Ej: Merluza Filete">
-          </div>
-          <div class="field">
-            <label>Precio (€)</label>
-            <input type="number" step="0.01" id="prodPrecio" placeholder="6.50">
-          </div>
-          <div class="field">
-            <label>Observaciones / Nota (Opcional)</label>
-            <input type="text" id="prodNotas" placeholder="Ej: Caja de 5kg">
-          </div>
-          <div class="field">
-            <label>URL de la Foto / Imagen (Opcional)</label>
-            <input type="text" id="prodFoto" placeholder="https://ejemplo.com/foto.jpg">
-          </div>
-          <button id="btnGuardarProd" onclick="guardarProducto()" class="btn">Guardar Producto</button>
-        </div>
-
-        <div class="card">
-          <div class="card-header">📦 Productos Registrados</div>
-          <div id="listaProductosCard" class="product-grid">Conectando...</div>
-        </div>
-      </div>
-    </div>
-
-    <div id="tabCrear" class="tab-content">
-      <div class="card">
-        <div class="card-header">🚀 Nueva Lista de Precios</div>
-        <div class="field">
-          <label>Nombre del Cliente</label>
-          <input type="text" id="clienteNombre" placeholder="Ej: Restaurante El Faro">
-        </div>
-        <div style="font-size: 13px; font-weight: 600; color: var(--muted); margin: 16px 0 8px 0;">SELECCIONA LOS PRODUCTOS:</div>
-        <div id="listaSeleccionProductos" class="product-grid">Buscando productos...</div>
-        <button onclick="generarLista()" class="btn btn-accent" style="margin-top: 20px;">💾 Generar Lista de Precios</button>
-      </div>
-    </div>
-
-    <div id="tabHistorial" class="tab-content">
-      <div class="card">
-        <div class="card-header">📜 Listas Guardadas</div>
-        <div id="listaHistoricoCard" class="product-grid">Cargando historial...</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="nav-bar">
-    <button class="nav-item active" onclick="switchTab('tabCatalogo')"><span>📦 Productos</span></button>
-    <button class="nav-item" onclick="switchTab('tabCrear')"><span>📝 Crear Lista</span></button>
-    <button class="nav-item" onclick="switchTab('tabHistorial')"><span>📜 Histórico</span></button>
-  </div>
-
-  <script>
-    const SUPABASE_URL = 'https://fllcmidfhpgczjvnvuho.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_-9avoA6pCJTHqpMzUYzvkg_XD2ISYJJ'; 
-    
-    let _supabase = null;
-    let _productosCache = [];
-
-    window.addEventListener('DOMContentLoaded', () => {
-      try {
-        const createClient = window.supabase ? window.supabase.createClient : null;
-        if (!createClient) {
-          document.getElementById('listaProductosCard').innerHTML = '<div style="color:red; padding:12px;">Error al cargar cliente Supabase. Recarga la página.</div>';
-          return;
-        }
-        _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-        cargarProductos();
-        cargarHistoricoListas();
-      } catch (e) {
-        document.getElementById('listaProductosCard').innerHTML = `<div style="color:red; padding:12px;">Error: ${e.message}</div>`;
-      }
-    });
-
-    function switchTab(tabId) {
-      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-      const target = document.getElementById(tabId);
-      if (target) target.classList.add('active');
-
-      const tabNames = ['tabCatalogo', 'tabCrear', 'tabHistorial'];
-      const idx = tabNames.indexOf(tabId);
-      document.querySelectorAll('.nav-item').forEach((btn, i) => btn.classList.toggle('active', i === idx));
-      document.querySelectorAll('.web-nav-btn').forEach((btn, i) => btn.classList.toggle('active', i === idx));
-    }
-
-    async function cargarProductos() {
-      const c1 = document.getElementById('listaProductosCard');
-      const c2 = document.getElementById('listaSeleccionProductos');
-      if (!_supabase) return;
-
-      try {
-        const { data, error } = await _supabase.from('productos').select('*').order('id', { ascending: false });
-
-        if (error) {
-          c1.innerHTML = `<div style="color:red; padding:12px;">Error base de datos: ${error.message}</div>`;
-          return;
-        }
-
-        if (!data || data.length === 0) {
-          _productosCache = [];
-          c1.innerHTML = '<div style="color:var(--muted); text-align:center; padding:16px;">Sin productos registrados todavía.</div>';
-          c2.innerHTML = '<div style="color:var(--muted); text-align:center; padding:16px;">No hay productos disponibles.</div>';
-          return;
-        }
-
-        _productosCache = data;
-
-        c1.innerHTML = _productosCache.map(p => `
-          <div class="product-item">
-            <div class="product-left">
-              ${p.url_foto ? `<img src="${p.url_foto}" class="product-img" alt="Foto">` : ''}
-              <div>
-                <div class="product-name">${p.nombre || ''}</div>
-                ${p.notas ? `<div class="product-notes">📌 ${p.notas}</div>` : ''}
-                <div class="product-price">${parseFloat(p.precio || 0).toFixed(2)} €</div>
-              </div>
-            </div>
-            <button class="btn btn-danger btn-sm" onclick="borrarProducto(${p.id})">🗑️</button>
-          </div>
-        `).join('');
-
-        c2.innerHTML = _productosCache.map(p => `
-          <div class="product-item">
-            <div class="product-left">
-              <input type="checkbox" class="prod-checkbox" value="${p.id}">
-              ${p.url_foto ? `<img src="${p.url_foto}" class="product-img" alt="Foto">` : ''}
-              <div>
-                <div class="product-name">${p.nombre || ''}</div>
-                ${p.notas ? `<div class="product-notes">📌 ${p.notas}</div>` : ''}
-                <div class="product-price">${parseFloat(p.precio || 0).toFixed(2)} €</div>
-              </div>
-            </div>
-          </div>
-        `).join('');
-
-      } catch(e) {
-        c1.innerHTML = `<div style="color:red; padding:12px;">Error de carga: ${e.message}</div>`;
-      }
-    }
-
-    async function guardarProducto() {
-      const nombre = document.getElementById('prodNombre').value.trim();
-      const precio = parseFloat(document.getElementById('prodPrecio').value);
-      const notas = document.getElementById('prodNotas').value.trim();
-      const url_foto = document.getElementById('prodFoto').value.trim();
-      const btn = document.getElementById('btnGuardarProd');
-
-      if (!nombre || isNaN(precio)) {
-        alert('Escribe al menos el nombre y el precio.');
-        return;
-      }
-
-      btn.disabled = true;
-      btn.innerText = 'Guardando...';
-
-      try {
-        const { error } = await _supabase.from('productos').insert([{ nombre, precio, notas, url_foto }]);
-        if (error) {
-          alert('Error al guardar: ' + error.message);
-        } else {
-          document.getElementById('prodNombre').value = '';
-          document.getElementById('prodPrecio').value = '';
-          document.getElementById('prodNotas').value = '';
-          document.getElementById('prodFoto').value = '';
-          await cargarProductos();
-        }
-      } catch (e) {
-        alert('Error inesperado al guardar.');
-      } finally {
-        btn.disabled = false;
-        btn.innerText = 'Guardar Producto';
-      }
-    }
-
-    async function borrarProducto(id) {
-      if (!confirm('¿Eliminar producto?')) return;
-      await _supabase.from('productos').delete().eq('id', id);
-      cargarProductos();
-    }
-
-    async function generarLista() {
-      const cliente = document.getElementById('clienteNombre').value.trim();
-      if (!cliente) {
-        alert('Escribe el nombre del cliente.');
-        return;
-      }
-
-      const cbs = document.querySelectorAll('.prod-checkbox:checked');
-      const seleccionados = Array.from(cbs).map(cb => parseInt(cb.value));
-
-      if (seleccionados.length === 0) {
-        alert('Selecciona al menos un producto.');
-        return;
-      }
-
-      await _supabase.from('listas_generadas').insert([{ cliente_nombre: cliente, productos_ids: seleccionados }]);
-      document.getElementById('clienteNombre').value = '';
-      cargarHistoricoListas();
-      alert('¡Lista creada correctamente!');
-    }
-
-    async function cargarHistoricoListas() {
-      const container = document.getElementById('listaHistoricoCard');
-      if (!_supabase) return;
-
-      try {
-        const { data } = await _supabase.from('listas_generadas').select('*').order('id', { ascending: false });
-
-        if (!data || data.length === 0) {
-          container.innerHTML = '<div style="color:var(--muted); text-align:center; padding:12px;">Sin historial de listas.</div>';
-          return;
-        }
-
-        container.innerHTML = data.map(l => `
-          <div class="product-item">
-            <div>
-              <div class="product-name">${l.cliente_nombre}</div>
-              <div style="font-size: 12px; color: var(--muted);">${new Date(l.fecha).toLocaleDateString('es-ES')}</div>
-            </div>
-            <button class="btn btn-danger btn-sm" onclick="borrarLista(${l.id})">🗑️</button>
-          </div>
-        `).join('');
-      } catch(e) {}
-    }
-
-    async function borrarLista(id) {
-      if (!confirm('¿Borrar lista del historial?')) return;
-      await _supabase.from('listas_generadas').delete().eq('id', id);
-      cargarHistoricoListas();
-    }
-  </script>
-</body>
-</html>
+        grid-template-columns: 380px 1
