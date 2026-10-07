@@ -1,275 +1,277 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>El Ancla | Catálogo Pro</title>
-  <!-- FUENTES DE DISEÑO -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <style>
-    :root {
-      --bg: #f1f5f9;
-      --card: #ffffff;
-      --primary: #0f172a;
-      --accent: #2563eb;
-      --accent-light: #eff6ff;
-      --text: #1e293b;
-      --muted: #64748b;
-      --border: #e2e8f0;
-      --danger: #ef4444;
-      --radius: 16px;
-    }
-
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sabor a Triana - Menú Digital</title>
     
-    body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background-color: var(--bg);
-      color: var(--text);
-      margin: 0;
-      padding: 0;
-      padding-bottom: 90px;
-    }
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Supabase JS Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    .container {
-      max-width: 100%;
-      margin: 0 auto;
-      padding: 16px;
-      transition: all 0.3s ease;
-    }
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            gold: '#D4AF37',
+                            goldHover: '#B89628',
+                            dark: '#121212',
+                            card: '#1A1A1A',
+                            accent: '#2A2A2A',
+                            red: '#E53935'
+                        }
+                    },
+                    fontFamily: {
+                        serif: ['"Playfair Display"', 'serif'],
+                        sans: ['Poppins', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body {
+            background-color: #121212;
+            color: #F3F4F6;
+            font-family: 'Poppins', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .glass-header {
+            background: rgba(18, 18, 18, 0.85);
+            backdrop-filter: blur(12px);
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="pb-24 antialiased selection:bg-brand-gold selection:text-black">
 
-    .top-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 14px 24px;
-      background: var(--card);
-      border-bottom: 1px solid var(--border);
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-    .brand-title {
-      font-family: 'Oswald', sans-serif;
-      font-size: 24px;
-      color: var(--primary);
-      margin: 0;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
+    <!-- Header / Navbar -->
+    <header class="sticky top-0 z-40 glass-header border-b border-white/10 px-4 py-3 transition-all duration-300">
+        <div class="max-w-md mx-auto flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-brand-gold/20 flex items-center justify-center border border-brand-gold/40">
+                    <i class="fa-solid font-serif text-brand-gold font-bold text-xl">S</i>
+                </div>
+                <div>
+                    <h1 class="font-serif text-lg font-bold tracking-wide text-white leading-tight">Sabor a Triana</h1>
+                    <p class="text-xs text-gray-400">Tapas & Cocina Tradicional</p>
+                </div>
+            </div>
+            
+            <button id="cart-btn" class="relative p-2 text-gray-200 hover:text-brand-gold transition-colors focus:outline-none" onclick="toggleCartModal()">
+                <i class="fa-solid fa-utensils text-xl"></i>
+                <span id="cart-badge" class="hidden absolute -top-1 -right-1 bg-brand-gold text-black text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">0</span>
+            </button>
+        </div>
+    </header>
 
-    .web-nav {
-      display: none;
-      gap: 10px;
-    }
-    .web-nav-btn {
-      padding: 10px 18px;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: #f8fafc;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--muted);
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .web-nav-btn:hover { background: #e2e8f0; }
-    .web-nav-btn.active {
-      background: var(--accent);
-      color: #ffffff;
-      border-color: var(--accent);
-    }
+    <!-- Hero Banner -->
+    <div class="relative bg-gradient-to-b from-brand-card to-brand-dark border-b border-white/5 py-6 px-4 mb-4">
+        <div class="max-w-md mx-auto text-center">
+            <span class="text-brand-gold text-xs font-semibold tracking-widest uppercase mb-1 block">Bienvenido a nuestra mesa</span>
+            <h2 class="font-serif text-2xl text-white font-bold mb-2">Carta Digital</h2>
+            <p class="text-xs text-gray-400 max-w-xs mx-auto">Selecciona tus platos favoritos y realiza tu pedido de forma rápida y sencilla.</p>
+        </div>
+    </div>
 
-    .card {
-      background: var(--card);
-      border-radius: var(--radius);
-      padding: 24px;
-      margin-bottom: 16px;
-      border: 1px solid var(--border);
-      box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.04);
-    }
+    <!-- Filtros de Categorías -->
+    <div class="sticky top-[61px] z-30 bg-brand-dark/95 backdrop-blur-md py-3 border-b border-white/5">
+        <div class="max-w-md mx-auto px-4">
+            <div id="categories-container" class="flex space-x-2 overflow-x-auto hide-scrollbar scroll-smooth">
+                <div class="h-9 w-24 bg-brand-card rounded-full animate-pulse"></div>
+                <div class="h-9 w-24 bg-brand-card rounded-full animate-pulse"></div>
+                <div class="h-9 w-24 bg-brand-card rounded-full animate-pulse"></div>
+            </div>
+        </div>
+    </div>
 
-    .card-header {
-      font-family: 'Oswald', sans-serif;
-      font-size: 18px;
-      color: var(--primary);
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      margin-bottom: 18px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
+    <!-- Menú de Platos -->
+    <main class="max-w-md mx-auto px-4 mt-6">
+        <!-- Estado de Carga -->
+        <div id="loading-spinner" class="py-12 flex flex-col items-center justify-center space-y-3">
+            <div class="w-8 h-8 border-2 border-brand-gold border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-xs text-gray-400">Cargando exquisitos platos...</p>
+        </div>
 
-    .grid-layout {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
+        <!-- Mensaje de Error -->
+        <div id="error-message" class="hidden my-8 p-4 bg-red-900/30 border border-red-500/50 rounded-2xl text-center">
+            <i class="fa-solid fa-triangle-exclamation text-brand-red text-2xl mb-2"></i>
+            <p class="text-sm font-medium text-white mb-1">No se pudieron cargar los datos</p>
+            <p class="text-xs text-gray-400 mb-3" id="error-details">Comprueba tu conexión o reintenta.</p>
+            <button onclick="fetchMenuItems()" class="text-xs bg-brand-card hover:bg-brand-accent px-4 py-2 rounded-lg border border-white/10 text-white transition-colors">
+                Reintentar
+            </button>
+        </div>
 
-    .field { margin-bottom: 14px; }
-    .field label {
-      display: block;
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--muted);
-      margin-bottom: 6px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    input[type="text"], input[type="number"], input[type="file"] {
-      width: 100%;
-      padding: 12px 16px;
-      font-size: 15px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: #f8fafc;
-      color: var(--primary);
-      transition: all 0.2s;
-    }
-    input[type="text"]:focus, input[type="number"]:focus {
-      outline: none;
-      border-color: var(--accent);
-      background: #fff;
-      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
-    }
+        <!-- Lista de Productos -->
+        <div id="menu-container" class="space-y-4">
+            <!-- Renderizado dinámico -->
+        </div>
+    </main>
 
-    .btn {
-      width: 100%;
-      padding: 14px;
-      border-radius: 12px;
-      border: none;
-      background: var(--primary);
-      color: #fff;
-      font-weight: 600;
-      font-size: 15px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      transition: all 0.2s;
-    }
-    .btn:active { transform: scale(0.98); }
-    .btn-accent { background: var(--accent); }
-    .btn-danger { background: #fef2f2; color: var(--danger); }
-    .btn-sm { width: auto; padding: 8px 14px; font-size: 13px; }
+    <!-- Resumen flotante de Pedido / Carrito (Bottom Bar) -->
+    <div id="floating-cart-bar" class="fixed bottom-4 left-4 right-4 max-w-md mx-auto z-30 hidden">
+        <button onclick="toggleCartModal()" class="w-full bg-brand-gold hover:bg-brand-goldHover text-black font-semibold py-3 px-5 rounded-2xl shadow-lg flex items-center justify-between transition-all transform active:scale-95">
+            <div class="flex items-center space-x-3">
+                <span id="floating-cart-count" class="bg-black/20 text-black px-2.5 py-1 rounded-lg text-xs font-bold">0</span>
+                <span class="text-sm">Ver mi pedido</span>
+            </div>
+            <span id="floating-cart-total" class="text-sm font-bold">0.00 €</span>
+        </button>
+    </div>
 
-    .switch-group {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 0;
-      border-top: 1px solid var(--border);
-      margin-top: 10px;
-    }
-    .switch-title { font-size: 14px; font-weight: 500; }
-    .switch-group input { width: 20px; height: 20px; accent-color: var(--accent); }
+    <!-- Modal del Carrito / Detalle del Pedido -->
+    <div id="cart-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex flex-col justify-end sm:justify-center items-center">
+        <div class="bg-brand-card w-full max-w-md rounded-t-3xl sm:rounded-3xl border-t sm:border border-white/10 max-h-[85vh] flex flex-col overflow-hidden fade-in">
+            <!-- Modal Header -->
+            <div class="p-4 border-b border-white/10 flex items-center justify-between">
+                <h3 class="font-serif text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-receipt text-brand-gold text-base"></i> Tu Pedido
+                </h3>
+                <button onclick="toggleCartModal()" class="text-gray-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
 
-    .product-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
+            <!-- Lista del Carrito -->
+            <div id="cart-items-container" class="p-4 overflow-y-auto flex-1 space-y-3">
+                <!-- Se puebla por JS -->
+            </div>
 
-    .product-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 16px;
-      background: #f8fafc;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      transition: background 0.2s;
-      cursor: pointer;
-    }
-    .product-item.selected {
-      background: var(--accent-light);
-      border-color: var(--accent);
-    }
-    .product-left { display: flex; align-items: center; gap: 12px; }
-    .product-img { width: 52px; height: 52px; border-radius: 10px; object-fit: cover; background: #cbd5e1; }
-    .product-name { font-weight: 600; font-size: 15px; }
-    .product-notes { font-size: 12px; color: var(--muted); margin-top: 2px; }
-    .product-price { font-size: 14px; font-weight: 700; color: var(--accent); }
+            <!-- Footer con Total y Botón de Envío -->
+            <div class="p-4 border-t border-white/10 bg-brand-dark/50 space-y-3">
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-gray-400">Total estimado:</span>
+                    <span id="cart-modal-total" class="font-serif text-xl font-bold text-brand-gold">0.00 €</span>
+                </div>
 
-    .nav-bar {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: #ffffff;
-      border-top: 1px solid var(--border);
-      display: flex;
-      justify-content: space-around;
-      padding: 10px 0;
-      z-index: 100;
-    }
-    .nav-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--muted);
-      cursor: pointer;
-      border: none;
-      background: none;
-      width: 33.33%;
-    }
-    .nav-item.active { color: var(--accent); }
-    .nav-icon { font-size: 20px; }
+                <div class="space-y-2 pt-2">
+                    <label for="table-number" class="block text-xs font-medium text-gray-300">Número de Mesa / Observaciones</label>
+                    <input type="text" id="table-number" placeholder="Ej: Mesa 4 (sin cebolla)" class="w-full bg-brand-dark border border-white/10 rounded-xl px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand-gold">
+                </div>
 
-    .tab-content { display: none !important; }
-    .tab-content.active { display: block !important; }
+                <button onclick="sendOrder()" class="w-full mt-2 bg-brand-gold hover:bg-brand-goldHover text-black font-bold py-3 px-4 rounded-xl shadow transition-colors flex items-center justify-center gap-2 text-sm">
+                    <i class="fa-solid fa-paper-plane"></i> Confirmar Pedido
+                </button>
+            </div>
+        </div>
+    </div>
 
-    #vistaDocumento { padding: 20px 0; }
+    <!-- Script Principal -->
+    <script>
+        // CONFIGURACIÓN DE SUPABASE
+        const SUPABASE_URL = 'https://fllcmidfhpgczjvnvuho.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_-9avoA6pCJTHqpMzUYzvkg_XD2ISYJJ';
 
-    .doc-actions-bar {
-      max-width: 210mm;
-      margin: 0 auto 16px auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 10px;
-    }
+        let supabaseClient;
+        try {
+            supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        } catch (e) {
+            console.error("Error inicializando Supabase:", e);
+        }
 
-    .page-a4 {
-      position: relative;
-      width: 210mm;
-      height: 297mm;
-      min-height: 297mm;
-      max-height: 297mm;
-      margin: 0 auto;
-      background: #ffffff;
-      padding: 18mm 15mm;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-      border-radius: 4px;
-      box-sizing: border-box;
-      overflow: hidden;
-    }
+        // ESTADO DE LA APLICACIÓN
+        let menuItems = [];
+        let categories = ['Todos'];
+        let activeCategory = 'Todos';
+        let cart = {};
 
-    .watermark-bg {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 65%;
-      max-height: 65%;
-      object-fit: contain;
-      opacity: 0.12;
-      pointer-events: none;
-      z-index: 0;
-    }
+        // DOM ELEMENTS
+        const menuContainer = document.getElementById('menu-container');
+        const categoriesContainer = document.getElementById('categories-container');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const errorMessage = document.getElementById('error-message');
+        const errorDetails = document.getElementById('error-details');
+        
+        const cartBadge = document.getElementById('cart-badge');
+        const floatingCartBar = document.getElementById('floating-cart-bar');
+        const floatingCartCount = document.getElementById('floating-cart-count');
+        const floatingCartTotal = document.getElementById('floating-cart-total');
+        
+        const cartModal = document.getElementById('cart-modal');
+        const cartItemsContainer = document.getElementById('cart-items-container');
+        const cartModalTotal = document.getElementById('cart-modal-total');
 
-    .doc-content {
-      position: relative;
-      z-index: 2;
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
+        // INICIALIZACIÓN
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchMenuItems();
+        });
+
+        // OBTENER DATOS DE SUPABASE
+        async function fetchMenuItems() {
+            showLoading(true);
+            hideError();
+
+            try {
+                if (!supabaseClient) throw new Error("Cliente Supabase no configurado correctamente.");
+
+                const { data, error } = await supabaseClient
+                    .from('productos')
+                    .select('*');
+
+                if (error) {
+                    // Intento de fallback si la tabla se llama 'menu'
+                    const fallback = await supabaseClient.from('menu').select('*');
+                    if (!fallback.error && fallback.data) {
+                        data = fallback.data;
+                    } else {
+                        throw error;
+                    }
+                }
+
+                if (data && data.length > 0) {
+                    menuItems = data;
+                    extractCategories();
+                    renderCategories();
+                    renderMenu();
+                } else {
+                    menuContainer.innerHTML = '<p class="text-center text-gray-400 py-8 text-sm">No se encontraron platos en la base de datos.</p>';
+                }
+            } catch (err) {
+                console.error("Error fetching menu:", err);
+                showError(err.message || "Error al conectar con la base de datos.");
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // EXTRAER CATEGORÍAS
+        function extractCategories() {
+            const rawCategories = menuItems
+                .map(item => item.categoria || item.category)
+                .filter(Boolean);
+            
+            categories = ['Todos', ...new Set(rawCategories)];
+        }
+
+        // RENDERIZAR CATEGORÍAS
+        function renderCategories() {
+            categoriesContainer.innerHTML = '';
+            categories.forEach(cat => {
+                const isActive = cat === activeCategory;
+                const btn = document.createElement('button');
+                btn.className = `px-4 py-1.5 rounded-full text-
