@@ -2,307 +2,302 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>📋 Catálogo y Generador de Listas de Precios</title>
-  <!-- FUENTE ELEGANTE OSWALD Y INTER -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>El Ancla | Catálogo & Precios</title>
+  <!-- FUENTES DE DISEÑO -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Oswald:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    * { box-sizing: border-box; }
-    body { 
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
-      max-width: 900px; 
-      margin: 0 auto; 
-      padding: 15px; 
-      background: #f8fafc; 
-      color: #334155; 
+    :root {
+      --bg-app: #f8fafc;
+      --card-bg: #ffffff;
+      --primary: #0f172a;
+      --accent: #2563eb;
+      --accent-soft: #eff6ff;
+      --border: #f1f5f9;
+      --text-main: #334155;
+      --text-muted: #64748b;
+      --danger: #ef4444;
+      --radius: 16px;
     }
-    
-    h1 { 
-      font-family: 'Oswald', sans-serif; 
-      font-size: 26px; 
-      color: #1a365d; 
-      margin-bottom: 20px; 
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      background-color: var(--bg-app);
+      color: var(--text-main);
+      margin: 0;
+      padding: 16px;
+      max-width: 800px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    /* HEADER APP */
+    .app-header {
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .app-title {
+      font-family: 'Oswald', sans-serif;
+      font-size: 24px;
+      color: var(--primary);
+      margin: 0;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    /* TARJETAS MINIMALISTAS */
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 16px;
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03);
+    }
+    .card-title {
+      font-family: 'Oswald', sans-serif;
+      font-size: 16px;
+      color: var(--primary);
+      margin: 0 0 16px 0;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* INPUTS & FORMULARIOS UI/UX */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+    }
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .field label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
-    
-    .card { 
-      background: white; 
-      padding: 20px; 
-      border-radius: 12px; 
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); 
-      border: 1px solid #e2e8f0;
-      margin-bottom: 20px; 
-      position: relative; 
-    }
-
-    h3 { 
-      font-family: 'Oswald', sans-serif; 
-      color: #1a365d; 
-      margin-top: 0; 
-      font-size: 18px; 
-      letter-spacing: 0.5px;
-      margin-bottom: 15px;
-    }
-
-    .form-group { margin-bottom: 12px; }
-    label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #475569; }
-    
-    input[type="text"], input[type="number"], input[type="file"] { 
-      width: 100%; 
-      padding: 10px 12px; 
+    input[type="text"], input[type="number"], input[type="file"] {
+      width: 100%;
+      padding: 12px 14px;
       font-size: 14px;
-      border: 1px solid #cbd5e1; 
-      border-radius: 8px; 
-      background: #fafafa;
-      transition: all 0.2s;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      color: var(--primary);
+      transition: all 0.2s ease;
     }
-    input[type="text"]:focus, input[type="number"]:focus { 
-      outline: none; 
-      border-color: #2b6cb0; 
-      background: white; 
-      box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.1); 
+    input[type="text"]:focus, input[type="number"]:focus {
+      outline: none;
+      border-color: var(--accent);
+      background: #ffffff;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
     }
 
-    .row { display: flex; flex-wrap: wrap; gap: 12px; }
-    .col { flex: 1; min-width: 220px; }
-
-    button { 
-      background: #1a365d; 
-      color: white; 
-      border: none; 
-      padding: 10px 16px; 
-      border-radius: 8px; 
-      cursor: pointer; 
-      font-weight: 500;
-      font-size: 14px; 
-      transition: background 0.2s, transform 0.1s;
+    /* BOTONES ESTILO APP */
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: none;
+      background: var(--primary);
+      color: white;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 8px;
+      transition: transform 0.1s ease, opacity 0.2s ease;
     }
-    button:active { transform: scale(0.98); }
-    button:hover { background: #0f233f; }
-    .btn-view { background: #2b6cb0; color: white; }
-    .btn-view:hover { background: #1c4ed8; }
-    .btn-delete { background: #ef4444; color: white; }
-    .btn-delete:hover { background: #dc2626; }
-    
-    .btn-full { width: 100%; }
+    .btn:active { transform: scale(0.98); }
+    .btn-accent { background: var(--accent); }
+    .btn-danger { background: #fef2f2; color: var(--danger); }
+    .btn-danger:hover { background: #fee2e2; }
+    .btn-icon { width: auto; padding: 8px 12px; font-size: 13px; }
 
-    /* TABLA MINIMALISTA RESPONSIVE */
-    table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 15px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; }
-    th, td { padding: 12px; text-align: left; vertical-align: middle; border-bottom: 1px solid #f1f5f9; }
-    th { background: #f8fafc; color: #1a365d; font-family: 'Oswald', sans-serif; font-weight: 600; }
-    tr:last-child td { border-bottom: none; }
-    
-    .img-preview { width: 48px; height: 48px; object-fit: cover; border-radius: 6px; }
-    .logo-preview { max-height: 50px; margin-top: 8px; border-radius: 6px; display: none; }
+    /* CHECKBOX MINIMALISTA */
+    .switch-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--text-main);
+      cursor: pointer;
+      margin: 12px 0;
+      user-select: none;
+    }
+    .switch-label input { accent-color: var(--accent); width: 18px; height: 18px; }
 
-    /* MARCA DE AGUA EN DOCUMENTO IMPRESO */
+    /* TARJETAS DE PRODUCTOS / LISTA MÓVIL */
+    .product-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .item-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border-radius: 12px;
+      background: #f8fafc;
+      border: 1px solid #f1f5f9;
+    }
+    .item-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .item-thumb {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      object-fit: cover;
+      background: #e2e8f0;
+    }
+    .item-title {
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--primary);
+      margin: 0;
+    }
+    .item-sub {
+      font-size: 13px;
+      color: var(--accent);
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    /* VISTA DOCUMENTO IMPRIMIBLE / PDF */
     .watermark-container { position: relative; overflow: hidden; }
     .watermark-bg {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 55%;
+      width: 50%;
       opacity: 0.08;
       pointer-events: none;
       z-index: 1;
     }
 
-    .checkbox-label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      font-size: 13px;
-      color: #2b6cb0;
-      margin-top: 10px;
-    }
-
-    /* VISTA MÓVIL OPTIMIZADA */
-    @media (max-width: 640px) {
-      body { padding: 10px; }
-      .card { padding: 15px; }
-      .row { flex-direction: column; gap: 10px; }
-      .col { min-width: 100%; }
-      
-      /* Transformar tablas en tarjetas limpias en móvil */
-      .mobile-card-table table, 
-      .mobile-card-table thead, 
-      .mobile-card-table tbody, 
-      .mobile-card-table th, 
-      .mobile-card-table td, 
-      .mobile-card-table tr { 
-        display: block; 
-      }
-      
-      .mobile-card-table thead { display: none; }
-      
-      .mobile-card-table tr {
-        background: #fafafa;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        margin-bottom: 10px;
-        padding: 12px;
-      }
-      
-      .mobile-card-table td {
-        border: none;
-        padding: 4px 0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-      
-      .mobile-card-table td:before {
-        content: attr(data-label);
-        font-weight: 600;
-        font-size: 12px;
-        color: #64748b;
-      }
-    }
-
     @media print {
       body { background: white; margin: 0; padding: 0; }
-      .card, button, h1 { box-shadow: none; border: none; padding: 0; }
+      .card { border: none; box-shadow: none; padding: 0; }
       .no-print { display: none !important; }
-      .print-only { display: block !important; }
-      table { border: 1px solid #1a365d; width: 100%; display: table !important; }
-      thead { display: table-header-group !important; }
-      tr { display: table-row !important; background: transparent !important; border: none !important; margin: 0 !important; padding: 0 !important; }
-      td, th { display: table-cell !important; border-bottom: 1px solid #cbd5e0 !important; padding: 8px !important; }
-      th { background-color: #ebf8ff !important; -webkit-print-color-adjust: exact; }
-      .watermark-bg { opacity: 0.1 !important; -webkit-print-color-adjust: exact; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { border-bottom: 1px solid #e2e8f0; padding: 10px; }
+      th { background-color: #f8fafc !important; -webkit-print-color-adjust: exact; }
     }
   </style>
 </head>
 <body>
 
   <div class="no-print">
-    <h1>📋 Catálogo de Precios</h1>
+    <div class="app-header">
+      <h1 class="app-title">📋 Catálogo & Precios</h1>
+    </div>
 
-    <!-- SECCIÓN 1: ENCABEZADO FIJO -->
+    <!-- 1. ENCABEZADO FIJO -->
     <div class="card">
-      <h3>🏢 Encabezado Corporativo</h3>
-      <div class="row">
-        <div class="col form-group">
-          <label>Nombre Empresa:</label>
+      <div class="card-title">🏢 Configuración Empresa</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Nombre Empresa</label>
           <input type="text" id="empresaNombre" placeholder="Ej: El Ancla">
         </div>
-        <div class="col form-group">
-          <label>Logo / Ancla:</label>
+        <div class="field">
+          <label>Logo / Imagen</label>
           <input type="file" id="empresaLogoFile" accept="image/*" onchange="subirLogoProcesado()">
           <input type="hidden" id="empresaLogoUrl">
-          <img id="logoPreviewImg" class="logo-preview" alt="Logo">
-          <button id="btnEliminarLogo" onclick="eliminarLogo()" class="btn-delete" style="display: none; margin-top: 8px; padding: 6px 10px; font-size: 12px;">🗑️ Quitar Logo</button>
+          <img id="logoPreviewImg" style="max-height: 40px; margin-top: 8px; border-radius: 6px; display: none;" alt="Preview">
+          <button id="btnEliminarLogo" onclick="eliminarLogo()" class="btn btn-danger btn-icon" style="display: none; margin-top: 8px;">🗑️ Quitar Logo</button>
         </div>
-      </div>
-      <div class="row">
-        <div class="col form-group">
-          <label>Comercial:</label>
+        <div class="field">
+          <label>Comercial</label>
           <input type="text" id="comercialNombre" placeholder="Ej: Juan Pérez">
         </div>
-        <div class="col form-group">
-          <label>Teléfono Comercial:</label>
+        <div class="field">
+          <label>Teléfono</label>
           <input type="text" id="comercialTelefono" placeholder="Ej: +34 600 000 000">
         </div>
       </div>
       
-      <div class="form-group">
-        <label class="checkbox-label">
-          <input type="checkbox" id="usarMarcaAgua" checked>
-          <span>Mostrar logo como marca de agua</span>
-        </label>
-      </div>
+      <label class="switch-label">
+        <input type="checkbox" id="usarMarcaAgua" checked>
+        <span>Usar logo como marca de agua al imprimir</span>
+      </label>
 
-      <button onclick="guardarEncabezadoNube()" class="btn-full" style="background: #2b6cb0;">💾 Guardar Encabezado</button>
+      <button onclick="guardarEncabezadoNube()" class="btn btn-accent">💾 Guardar Ajustes</button>
     </div>
 
-    <!-- SECCIÓN 2: AÑADIR NUEVO PRODUCTO -->
+    <!-- 2. AÑADIR PRODUCTO -->
     <div class="card">
-      <h3>➕ Nuevo Producto</h3>
-      <div class="row">
-        <div class="col form-group">
-          <label>Nombre del Producto:</label>
+      <div class="card-title">➕ Nuevo Producto</div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Nombre</label>
           <input type="text" id="prodNombre" placeholder="Ej: Menú Pollo Guisado">
         </div>
-        <div class="col form-group">
-          <label>Precio (€):</label>
+        <div class="field">
+          <label>Precio (€)</label>
           <input type="number" step="0.01" id="prodPrecio" placeholder="6.50">
         </div>
-        <div class="col form-group">
-          <label>Foto:</label>
+        <div class="field">
+          <label>Foto Producto</label>
           <input type="file" id="prodFoto" accept="image/*">
         </div>
       </div>
-      <button onclick="guardarProducto()" class="btn-full">Guardar Producto</button>
+      <button onclick="guardarProducto()" class="btn">Guardar Producto</button>
     </div>
 
-    <!-- SECCIÓN 3: CATÁLOGO Y SELECCIÓN -->
+    <!-- 3. CATÁLOGO -->
     <div class="card">
-      <h3>📦 Productos Registrados</h3>
-      <div class="form-group">
-        <label>Cliente para esta lista:</label>
+      <div class="card-title">📦 Catálogo de Productos</div>
+      <div class="field">
+        <label>Nombre del Cliente</label>
         <input type="text" id="clienteNombre" placeholder="Ej: Restaurante El Faro">
       </div>
 
-      <div class="mobile-card-table">
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 40px;">Sel.</th>
-              <th style="width: 60px;">Foto</th>
-              <th>Producto</th>
-              <th>Precio</th>
-              <th style="text-align: right;">Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="tablaProductos">
-            <tr><td colspan="5">Sin productos guardados.</td></tr>
-          </tbody>
-        </table>
+      <div id="listaProductosCard" class="product-list">
+        <!-- Renderizado dinámico estilizado para móvil -->
       </div>
 
-      <br>
-      <button onclick="generarLista()" class="btn-full" style="background: #10b981; font-size: 15px; padding: 12px;">🚀 Guardar Lista de Precios</button>
+      <button onclick="generarLista()" class="btn btn-accent" style="margin-top: 16px;">🚀 Guardar Lista de Precios</button>
     </div>
 
-    <!-- SECCIÓN 4: HISTÓRICO -->
+    <!-- 4. HISTÓRICO -->
     <div class="card">
-      <h3>📜 Listas Generadas</h3>
-      <div class="mobile-card-table">
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 50px;">ID</th>
-              <th>Cliente</th>
-              <th>Fecha</th>
-              <th style="text-align: right;">Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="tablaHistorico">
-            <tr><td colspan="4">Sin listas generadas.</td></tr>
-          </tbody>
-        </table>
+      <div class="card-title">📜 Histórico de Listas</div>
+      <div id="listaHistoricoCard" class="product-list">
+        <!-- Renderizado dinámico estilizado -->
       </div>
     </div>
   </div>
 
-  <!-- VISTA DOCUMENTO IMPRIMIBLE -->
+  <!-- VISTA DOCUMENTO IMPRIMIBLE / PDF -->
   <div id="vistaDocumento" style="display:none;" class="card watermark-container">
-    <button onclick="cerrarVistaDocumento()" class="no-print" style="background:#64748b; margin-bottom:15px;">⬅️ Volver al Panel</button>
-    <button onclick="window.print()" class="no-print" style="background:#10b981; margin-bottom:15px;">📥 Descargar PDF / Imprimir</button>
+    <button onclick="cerrarVistaDocumento()" class="no-print btn" style="background:#64748b; margin-bottom:12px;">⬅️ Volver</button>
+    <button onclick="window.print()" class="no-print btn btn-accent" style="margin-bottom:16px;">📥 Descargar / Imprimir PDF</button>
 
-    <div id="contenidoImprimible" style="position: relative; z-index: 2;">
-      <!-- Generado dinámicamente -->
-    </div>
+    <div id="contenidoImprimible" style="position: relative; z-index: 2;"></div>
   </div>
 
   <script>
@@ -319,7 +314,7 @@
         cargarProductos();
         cargarHistoricoListas();
       } catch (e) {
-        console.error("Error inicializando Supabase:", e);
+        console.error("Error cargando Supabase:", e);
       }
     };
 
@@ -333,28 +328,23 @@
 
     async function guardarEncabezadoNube() {
       if (!_supabase) return;
-
       const empresa = document.getElementById('empresaNombre').value;
       const comercial = document.getElementById('comercialNombre').value;
       const telefono = document.getElementById('comercialTelefono').value;
       const logoUrl = document.getElementById('empresaLogoUrl').value;
 
       const { error } = await _supabase.from('configuracion').upsert([
-        { id: 'fija', empresa: empresa, comercial: comercial, telefono: telefono, logo_url: logoUrl }
+        { id: 'fija', empresa, comercial, telefono, logo_url: logoUrl }
       ]);
 
-      if (error) {
-        alert('Error al guardar encabezado: ' + error.message);
-      } else {
-        alert('¡Encabezado guardado!');
-      }
+      if (error) alert('Error: ' + error.message);
+      else alert('¡Configuración guardada!');
     }
 
     async function cargarEncabezadoNube() {
       if (!_supabase) return;
-
       try {
-        const { data, error } = await _supabase.from('configuracion').select('*').eq('id', 'fija').maybeSingle();
+        const { data } = await _supabase.from('configuracion').select('*').eq('id', 'fija').maybeSingle();
         if (data) {
           document.getElementById('empresaNombre').value = data.empresa || '';
           document.getElementById('comercialNombre').value = data.comercial || '';
@@ -368,9 +358,7 @@
             document.getElementById('btnEliminarLogo').style.display = 'inline-block';
           }
         }
-      } catch(e) {
-        console.warn("No se pudo obtener la configuración inicial:", e);
-      }
+      } catch(e) {}
     }
 
     async function subirLogoProcesado() {
@@ -378,23 +366,17 @@
       if (!archivoLogo || !_supabase) return;
 
       const nombreArchivo = 'logo_' + Date.now() + '_' + archivoLogo.name.replace(/\s+/g, '_');
-      const { data: uploadData, error: uploadError } = await _supabase
-        .storage
-        .from('productos-fotos')
-        .upload(nombreArchivo, archivoLogo);
+      const { error: uploadError } = await _supabase.storage.from('productos-fotos').upload(nombreArchivo, archivoLogo);
 
       if (uploadError) {
         alert('Error al subir logo: ' + uploadError.message);
         return;
       }
 
-      const { data: publicUrlData } = _supabase
-        .storage
-        .from('productos-fotos')
-        .getPublicUrl(nombreArchivo);
-
+      const { data: publicUrlData } = _supabase.storage.from('productos-fotos').getPublicUrl(nombreArchivo);
       const urlFinal = publicUrlData.publicUrl;
       document.getElementById('empresaLogoUrl').value = urlFinal;
+      
       const preview = document.getElementById('logoPreviewImg');
       preview.src = urlFinal;
       preview.style.display = 'block';
@@ -404,46 +386,43 @@
     }
 
     async function cargarProductos() {
-      const tbody = document.getElementById('tablaProductos');
-      if (!_supabase) {
-        tbody.innerHTML = '<tr><td colspan="5">Sin productos guardados.</td></tr>';
-        return;
-      }
+      const container = document.getElementById('listaProductosCard');
+      if (!_supabase) return;
 
       try {
         const { data, error } = await _supabase.from('productos').select('*').order('id', { ascending: true });
         
         if (error || !data || data.length === 0) {
           _productosCache = [];
-          tbody.innerHTML = '<tr><td colspan="5">Sin productos guardados.</td></tr>';
+          container.innerHTML = '<div style="font-size:13px; color:var(--text-muted); text-align:center; padding:12px;">Sin productos registrados.</div>';
           return;
         }
 
         _productosCache = data;
 
-        tbody.innerHTML = _productosCache.map(function(prod) {
-          var fotoHtml = prod.url_foto ? '<img src="' + prod.url_foto + '" class="img-preview" crossorigin="anonymous">' : 'Sin foto';
-          return '<tr>' +
-            '<td data-label="Seleccionar"><input type="checkbox" class="prod-checkbox" value="' + prod.id + '"></td>' +
-            '<td data-label="Foto">' + fotoHtml + '</td>' +
-            '<td data-label="Producto"><strong>' + prod.nombre + '</strong></td>' +
-            '<td data-label="Precio">' + parseFloat(prod.precio).toFixed(2) + ' €</td>' +
-            '<td data-label="Acciones" style="text-align: right;"><button class="btn-delete" onclick="borrarProducto(' + prod.id + ', \'' + prod.nombre.replace(/'/g, "\\'") + '\')">🗑️</button></td>' +
-          '</tr>';
+        container.innerHTML = _productosCache.map(function(prod) {
+          var img = prod.url_foto ? '<img src="' + prod.url_foto + '" class="item-thumb" crossorigin="anonymous">' : '<div class="item-thumb"></div>';
+          return `
+            <div class="item-card">
+              <div class="item-info">
+                <input type="checkbox" class="prod-checkbox" value="${prod.id}" style="width: 18px; height: 18px; accent-color: var(--accent);">
+                ${img}
+                <div>
+                  <div class="item-title">${prod.nombre}</div>
+                  <div class="item-sub">${parseFloat(prod.precio).toFixed(2)} €</div>
+                </div>
+              </div>
+              <button class="btn btn-danger btn-icon" onclick="borrarProducto(${prod.id}, '${prod.nombre.replace(/'/g, "\\'")}')">🗑️</button>
+            </div>
+          `;
         }).join('');
-      } catch(e) {
-        tbody.innerHTML = '<tr><td colspan="5">Sin productos guardados.</td></tr>';
-      }
+      } catch(e) {}
     }
 
     async function borrarProducto(id, nombre) {
-      if (!confirm('¿Borrar producto "' + nombre + '"?')) return;
-      const { error } = await _supabase.from('productos').delete().eq('id', id);
-      if (error) {
-        alert('Error al eliminar: ' + error.message);
-      } else {
-        cargarProductos();
-      }
+      if (!confirm('¿Eliminar "' + nombre + '"?')) return;
+      await _supabase.from('productos').delete().eq('id', id);
+      cargarProductos();
     }
 
     async function guardarProducto() {
@@ -452,113 +431,77 @@
       const archivoFoto = document.getElementById('prodFoto').files[0];
 
       if (!nombre || isNaN(precio)) {
-        alert('Escribe un nombre y un precio válido.');
+        alert('Rellena nombre y precio.');
         return;
       }
 
       let urlFoto = '';
-
       if (archivoFoto) {
         const nombreArchivo = Date.now() + '_' + archivoFoto.name.replace(/\s+/g, '_');
-        const { data: uploadData, error: uploadError } = await _supabase
-          .storage
-          .from('productos-fotos')
-          .upload(nombreArchivo, archivoFoto);
-
-        if (uploadError) {
-          alert('Error al subir la imagen: ' + uploadError.message);
-          return;
-        }
-
-        const { data: publicUrlData } = _supabase
-          .storage
-          .from('productos-fotos')
-          .getPublicUrl(nombreArchivo);
-
-        urlFoto = publicUrlData.publicUrl;
+        await _supabase.storage.from('productos-fotos').upload(nombreArchivo, archivoFoto);
+        urlFoto = _supabase.storage.from('productos-fotos').getPublicUrl(nombreArchivo).data.publicUrl;
       }
 
-      const { error } = await _supabase.from('productos').insert([
-        { nombre: nombre, precio: precio, url_foto: urlFoto }
-      ]);
-
-      if (error) {
-        alert('Error al guardar: ' + error.message);
-      } else {
-        alert('¡Producto guardado!');
-        document.getElementById('prodNombre').value = '';
-        document.getElementById('prodPrecio').value = '';
-        document.getElementById('prodFoto').value = '';
-        cargarProductos();
-      }
+      await _supabase.from('productos').insert([{ nombre, precio, url_foto: urlFoto }]);
+      document.getElementById('prodNombre').value = '';
+      document.getElementById('prodPrecio').value = '';
+      document.getElementById('prodFoto').value = '';
+      cargarProductos();
     }
 
     async function generarLista() {
       const cliente = document.getElementById('clienteNombre').value;
       if (!cliente) {
-        alert('Escribe el nombre del cliente.');
+        alert('Escribe el cliente.');
         return;
       }
 
-      const checkboxes = document.querySelectorAll('.prod-checkbox:checked');
-      const seleccionados = Array.from(checkboxes).map(function(cb) { return parseInt(cb.value); });
+      const cbs = document.querySelectorAll('.prod-checkbox:checked');
+      const seleccionados = Array.from(cbs).map(cb => parseInt(cb.value));
 
       if (seleccionados.length === 0) {
-        alert('Selecciona al menos un producto.');
+        alert('Selecciona productos.');
         return;
       }
 
-      const { error } = await _supabase.from('listas_generadas').insert([
-        { cliente_nombre: cliente, productos_ids: seleccionados }
-      ]);
-
-      if (error) {
-        alert('Error al guardar lista: ' + error.message);
-      } else {
-        alert('¡Lista para ' + cliente + ' guardada!');
-        document.getElementById('clienteNombre').value = '';
-        cargarHistoricoListas();
-      }
+      await _supabase.from('listas_generadas').insert([{ cliente_nombre: cliente, productos_ids: seleccionados }]);
+      document.getElementById('clienteNombre').value = '';
+      cargarHistoricoListas();
     }
 
     async function cargarHistoricoListas() {
-      const tbody = document.getElementById('tablaHistorico');
-      if (!_supabase) {
-        tbody.innerHTML = '<tr><td colspan="4">Sin listas generadas.</td></tr>';
-        return;
-      }
+      const container = document.getElementById('listaHistoricoCard');
+      if (!_supabase) return;
 
       try {
-        const { data, error } = await _supabase.from('listas_generadas').select('*').order('id', { ascending: false });
+        const { data } = await _supabase.from('listas_generadas').select('*').order('id', { ascending: false });
 
-        if (error || !data || data.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="4">Sin listas generadas.</td></tr>';
+        if (!data || data.length === 0) {
+          container.innerHTML = '<div style="font-size:13px; color:var(--text-muted); text-align:center; padding:12px;">Sin historial.</div>';
           return;
         }
 
-        tbody.innerHTML = data.map(function(lista) {
-          var fechaFormateada = new Date(lista.fecha).toLocaleDateString('es-ES');
-          return '<tr>' +
-            '<td data-label="ID">' + lista.id + '</td>' +
-            '<td data-label="Cliente"><strong>' + lista.cliente_nombre + '</strong></td>' +
-            '<td data-label="Fecha">' + fechaFormateada + '</td>' +
-            '<td data-label="Acciones" style="text-align: right;">' +
-              '<button class="btn-view" onclick="verListaDocumento(' + lista.id + ')">👁️ Ver</button> ' +
-              '<button class="btn-delete" onclick="borrarLista(' + lista.id + ', \'' + lista.cliente_nombre.replace(/'/g, "\\'") + '\')">🗑️</button>' +
-            '</td>' +
-          '</tr>';
+        container.innerHTML = data.map(function(lista) {
+          var fecha = new Date(lista.fecha).toLocaleDateString('es-ES');
+          return `
+            <div class="item-card">
+              <div>
+                <div class="item-title">${lista.cliente_nombre}</div>
+                <div style="font-size: 12px; color: var(--text-muted);">${fecha}</div>
+              </div>
+              <div style="display:flex; gap:6px;">
+                <button class="btn btn-accent btn-icon" onclick="verListaDocumento(${lista.id})">👁️ Ver</button>
+                <button class="btn btn-danger btn-icon" onclick="borrarLista(${lista.id}, '${lista.cliente_nombre.replace(/'/g, "\\'")}')">🗑️</button>
+              </div>
+            </div>
+          `;
         }).join('');
-      } catch(e) {
-        tbody.innerHTML = '<tr><td colspan="4">Sin listas generadas.</td></tr>';
-      }
+      } catch(e) {}
     }
 
     async function verListaDocumento(id) {
-      const { data: lista, error } = await _supabase.from('listas_generadas').select('*').eq('id', id).single();
-      if (error || !lista) {
-        alert('No se pudo cargar la lista.');
-        return;
-      }
+      const { data: lista } = await _supabase.from('listas_generadas').select('*').eq('id', id).single();
+      if (!lista) return;
 
       const empresa = document.getElementById('empresaNombre').value || 'EL ANCLA';
       const comercial = document.getElementById('comercialNombre').value || '';
@@ -568,48 +511,47 @@
 
       const idsGuardados = lista.productos_ids || [];
       const productosSeleccionados = _productosCache.filter(p => idsGuardados.includes(p.id));
-
       const mostrarLogoLateral = logoUrl && !usarMarcaAgua;
 
       let htmlDoc = `
         ${(logoUrl && usarMarcaAgua) ? `<img src="${logoUrl}" crossorigin="anonymous" class="watermark-bg">` : ''}
 
-        <div style="border-bottom: 2px solid #1a365d; padding-bottom: 20px; margin-bottom: 25px; display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 2;">
+        <div style="border-bottom: 2px solid #1a365d; padding-bottom: 16px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 2;">
           <div style="width: 20%; text-align: left;">
-            ${mostrarLogoLateral ? `<img src="${logoUrl}" crossorigin="anonymous" style="max-height: 95px; max-width: 100%; object-fit: contain;">` : ''}
+            ${mostrarLogoLateral ? `<img src="${logoUrl}" crossorigin="anonymous" style="max-height: 80px; max-width: 100%; object-fit: contain;">` : ''}
           </div>
 
           <div style="width: 55%; text-align: center;">
-            <h1 style="margin: 0; font-family: 'Oswald', sans-serif; font-size: 34px; color: #1a365d; letter-spacing: 2px; text-transform: uppercase; font-weight: 700;">${empresa}</h1>
+            <h1 style="margin: 0; font-family: 'Oswald', sans-serif; font-size: 32px; color: #1a365d; letter-spacing: 1px; text-transform: uppercase;">${empresa}</h1>
             ${comercial ? `
-              <p style="margin: 8px 0 0 0; font-family: 'Oswald', sans-serif; font-size: 17px; color: #2b6cb0; letter-spacing: 0.5px; font-weight: 600;">
-                COMERCIAL: ${comercial.toUpperCase()}${telefono ? `<span style="margin-left: 8px; color: #1a365d; font-size: 16px; font-weight: 600;">| 📞 ${telefono}</span>` : ''}
+              <p style="margin: 6px 0 0 0; font-family: 'Oswald', sans-serif; font-size: 16px; color: #2563eb; font-weight: 600;">
+                COMERCIAL: ${comercial.toUpperCase()}${telefono ? `<span style="margin-left: 6px; color: #1a365d;">| 📞 ${telefono}</span>` : ''}
               </p>
             ` : ''}
           </div>
 
-          <div style="width: 25%; text-align: right; font-size: 14px; color: #2d3748;">
-            <p style="margin: 0; font-family: 'Oswald', sans-serif; font-size: 16px; color: #2b6cb0; font-weight: 400; letter-spacing: 0.5px;">
+          <div style="width: 25%; text-align: right; font-size: 13px; color: #334155;">
+            <p style="margin: 0; font-family: 'Oswald', sans-serif; font-size: 15px; color: #2563eb; font-weight: 400;">
               CLIENTE: ${lista.cliente_nombre.toUpperCase()}
             </p>
-            <p style="margin: 6px 0 0 0; color: #718096; font-size: 13px;"><strong>Fecha:</strong> ${new Date(lista.fecha).toLocaleDateString('es-ES')}</p>
+            <p style="margin: 4px 0 0 0; color: #64748b;"><strong>Fecha:</strong> ${new Date(lista.fecha).toLocaleDateString('es-ES')}</p>
           </div>
         </div>
 
         <table style="width: 100%; border-collapse: collapse; position: relative; z-index: 2;">
           <thead>
-            <tr style="background-color: #ebf8ff;">
-              <th style="width: 80px; text-align: center; color: #1a365d; border-bottom: 2px solid #2b6cb0; font-family: 'Oswald', sans-serif; font-size: 15px; font-weight: 600;">FOTO</th>
-              <th style="text-align: left; color: #1a365d; border-bottom: 2px solid #2b6cb0; font-family: 'Oswald', sans-serif; font-size: 15px; font-weight: 600;">PRODUCTO</th>
-              <th style="width: 120px; text-align: right; color: #1a365d; border-bottom: 2px solid #2b6cb0; font-family: 'Oswald', sans-serif; font-size: 15px; font-weight: 600;">PRECIO</th>
+            <tr style="background-color: #f8fafc;">
+              <th style="width: 70px; text-align: center; color: #1a365d; border-bottom: 2px solid #2563eb; font-family: 'Oswald', sans-serif; font-size: 14px;">FOTO</th>
+              <th style="text-align: left; color: #1a365d; border-bottom: 2px solid #2563eb; font-family: 'Oswald', sans-serif; font-size: 14px;">PRODUCTO</th>
+              <th style="width: 100px; text-align: right; color: #1a365d; border-bottom: 2px solid #2563eb; font-family: 'Oswald', sans-serif; font-size: 14px;">PRECIO</th>
             </tr>
           </thead>
           <tbody>
             ${productosSeleccionados.map(p => `
               <tr>
-                <td style="text-align: center; padding: 10px;">${p.url_foto ? `<img src="${p.url_foto}" crossorigin="anonymous" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px;">` : 'Sin foto'}</td>
-                <td style="padding: 10px; font-size: 15px; color: #2d3748;"><strong>${p.nombre}</strong></td>
-                <td style="text-align: right; padding: 10px; font-size: 16px; color: #1a365d;"><strong>${parseFloat(p.precio).toFixed(2)} €</strong></td>
+                <td style="text-align: center; padding: 8px;">${p.url_foto ? `<img src="${p.url_foto}" crossorigin="anonymous" style="width: 44px; height: 44px; object-fit: cover; border-radius: 6px;">` : '-'}</td>
+                <td style="padding: 8px; font-size: 14px; color: #334155;"><strong>${p.nombre}</strong></td>
+                <td style="text-align: right; padding: 8px; font-size: 15px; color: #1a365d;"><strong>${parseFloat(p.precio).toFixed(2)} €</strong></td>
               </tr>
             `).join('')}
           </tbody>
@@ -627,13 +569,9 @@
     }
 
     async function borrarLista(id, cliente) {
-      if (!confirm('¿Deseas borrar la lista histórica del cliente "' + cliente + '"?')) return;
-      const { error } = await _supabase.from('listas_generadas').delete().eq('id', id);
-      if (error) {
-        alert('Error al borrar la lista: ' + error.message);
-      } else {
-        cargarHistoricoListas();
-      }
+      if (!confirm('¿Borrar lista de "' + cliente + '"?')) return;
+      await _supabase.from('listas_generadas').delete().eq('id', id);
+      cargarHistoricoListas();
     }
   </script>
 </body>
