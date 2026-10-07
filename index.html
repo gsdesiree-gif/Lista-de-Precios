@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>El Ancla | Catálogo Pro</title>
-  <!-- FUENTES DE DISEÑO -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -38,7 +37,6 @@
       max-width: 100%;
       margin: 0 auto;
       padding: 16px;
-      transition: all 0.3s ease;
     }
 
     .top-bar {
@@ -74,9 +72,7 @@
       font-weight: 600;
       color: var(--muted);
       cursor: pointer;
-      transition: all 0.2s;
     }
-    .web-nav-btn:hover { background: #e2e8f0; }
     .web-nav-btn.active {
       background: var(--accent);
       color: #ffffff;
@@ -89,7 +85,6 @@
       padding: 24px;
       margin-bottom: 16px;
       border: 1px solid var(--border);
-      box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.04);
     }
 
     .card-header {
@@ -99,9 +94,6 @@
       letter-spacing: 0.5px;
       text-transform: uppercase;
       margin-bottom: 18px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
     }
 
     .grid-layout {
@@ -118,7 +110,6 @@
       color: var(--muted);
       margin-bottom: 6px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
     }
     input[type="text"], input[type="number"], input[type="file"] {
       width: 100%;
@@ -128,13 +119,6 @@
       border: 1px solid var(--border);
       background: #f8fafc;
       color: var(--primary);
-      transition: all 0.2s;
-    }
-    input[type="text"]:focus, input[type="number"]:focus {
-      outline: none;
-      border-color: var(--accent);
-      background: #fff;
-      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
     }
 
     .btn {
@@ -147,27 +131,10 @@
       font-weight: 600;
       font-size: 15px;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      transition: all 0.2s;
     }
-    .btn:active { transform: scale(0.98); }
     .btn-accent { background: var(--accent); }
     .btn-danger { background: #fef2f2; color: var(--danger); }
     .btn-sm { width: auto; padding: 8px 14px; font-size: 13px; }
-
-    .switch-group {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 0;
-      border-top: 1px solid var(--border);
-      margin-top: 10px;
-    }
-    .switch-title { font-size: 14px; font-weight: 500; }
-    .switch-group input { width: 20px; height: 20px; accent-color: var(--accent); }
 
     .product-grid {
       display: flex;
@@ -183,12 +150,6 @@
       background: #f8fafc;
       border: 1px solid var(--border);
       border-radius: 14px;
-      transition: background 0.2s;
-      cursor: pointer;
-    }
-    .product-item.selected {
-      background: var(--accent-light);
-      border-color: var(--accent);
     }
     .product-left { display: flex; align-items: center; gap: 12px; }
     .product-img { width: 52px; height: 52px; border-radius: 10px; object-fit: cover; background: #cbd5e1; }
@@ -216,62 +177,25 @@
       font-size: 11px;
       font-weight: 600;
       color: var(--muted);
-      cursor: pointer;
       border: none;
       background: none;
       width: 33.33%;
     }
     .nav-item.active { color: var(--accent); }
-    .nav-icon { font-size: 20px; }
 
     .tab-content { display: none !important; }
     .tab-content.active { display: block !important; }
-
-    #vistaDocumento { padding: 20px 0; }
-
-    .doc-actions-bar {
-      max-width: 210mm;
-      margin: 0 auto 16px auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 10px;
-    }
 
     .page-a4 {
       position: relative;
       width: 210mm;
       height: 297mm;
-      min-height: 297mm;
-      max-height: 297mm;
       margin: 0 auto;
       background: #ffffff;
       padding: 18mm 15mm;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
       border-radius: 4px;
       box-sizing: border-box;
-      overflow: hidden;
-    }
-
-    .watermark-bg {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 65%;
-      max-height: 65%;
-      object-fit: contain;
-      opacity: 0.12;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    .doc-content {
-      position: relative;
-      z-index: 2;
-      width: 100%;
-      height: 100%;
-      display: block;
     }
 
     @media (min-width: 800px) {
@@ -284,7 +208,6 @@
         display: grid !important;
         grid-template-columns: 380px 1fr !important;
         gap: 24px !important;
-        align-items: start;
       }
 
       .product-grid {
@@ -295,41 +218,11 @@
     }
 
     @media print {
-      @page {
-        size: A4 portrait;
-        margin: 0;
-      }
-      html, body {
-        width: 210mm;
-        height: 297mm;
-        background: white;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: hidden;
-      }
-      .no-print, .nav-bar, .top-bar, .doc-actions-bar {
-        display: none !important;
-      }
-      #vistaDocumento {
-        display: block !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        background: transparent !important;
-        width: 210mm !important;
-        height: 297mm !important;
-      }
-      .page-a4 {
-        width: 210mm !important;
-        height: 297mm !important;
-        min-height: 297mm !important;
-        max-height: 297mm !important;
-        box-shadow: none !important;
-        border-radius: 0 !important;
-        padding: 15mm !important;
-        margin: 0 !important;
-        page-break-after: avoid;
-        page-break-inside: avoid;
-      }
+      @page { size: A4 portrait; margin: 0; }
+      html, body { width: 210mm; height: 297mm; background: white; margin: 0 !important; padding: 0 !important; }
+      .no-print { display: none !important; }
+      #vistaDocumento { display: block !important; margin: 0 !important; padding: 0 !important; }
+      .page-a4 { box-shadow: none !important; border-radius: 0 !important; padding: 15mm !important; }
     }
   </style>
 </head>
@@ -352,12 +245,12 @@
 
   <div class="container no-print">
 
-    <!-- MODAL DE CONFIGURACIÓN -->
+    <!-- CONFIGURACIÓN -->
     <div id="tabConfig" class="card" style="display: none;">
       <div class="card-header">⚙️ Ajustes del Encabezado</div>
       <div class="field">
         <label>Empresa</label>
-        <input type="text" id="empresaNombre" placeholder="Ej: El Ancla">
+        <input type="text" id="empresaNombre" value="EL ANCLA">
       </div>
       <div class="field">
         <label>Comercial</label>
@@ -367,20 +260,7 @@
         <label>Teléfono Comercial</label>
         <input type="text" id="comercialTelefono" placeholder="Ej: +34 600 000 000">
       </div>
-      <div class="field">
-        <label>Logo de Empresa</label>
-        <input type="file" id="empresaLogoFile" accept="image/*" onchange="subirLogoProcesado()">
-        <input type="hidden" id="empresaLogoUrl">
-        <img id="logoPreviewImg" style="max-height: 45px; margin-top: 8px; border-radius: 8px; display: none;">
-        <button id="btnEliminarLogo" onclick="eliminarLogo()" class="btn btn-danger btn-sm" style="display: none; margin-top: 8px;">🗑️ Quitar Logo</button>
-      </div>
-
-      <div class="switch-group">
-        <span class="switch-title">Mostrar marca de agua al imprimir</span>
-        <input type="checkbox" id="usarMarcaAgua" checked>
-      </div>
-
-      <button onclick="guardarEncabezadoNube(); toggleConfig();" class="btn btn-accent" style="margin-top: 12px;">💾 Guardar Ajustes</button>
+      <button onclick="toggleConfig()" class="btn btn-accent" style="margin-top: 12px;">Cerrar Ajustes</button>
     </div>
 
     <!-- PESTAÑA 1: CATÁLOGO -->
@@ -390,7 +270,7 @@
           <div class="card-header">➕ Registrar Producto</div>
           <div class="field">
             <label>Nombre</label>
-            <input type="text" id="prodNombre" placeholder="Ej: Menú Pollo Guisado">
+            <input type="text" id="prodNombre" placeholder="Ej: Merluza Filete">
           </div>
           <div class="field">
             <label>Precio (€)</label>
@@ -398,13 +278,9 @@
           </div>
           <div class="field">
             <label>Observaciones / Nota (Opcional)</label>
-            <input type="text" id="prodNotas" placeholder="Ej: Caja de 5kg, ultracongelado...">
+            <input type="text" id="prodNotas" placeholder="Ej: Caja de 5kg">
           </div>
-          <div class="field">
-            <label>Foto</label>
-            <input type="file" id="prodFoto" accept="image/*">
-          </div>
-          <button onclick="guardarProducto()" class="btn">Guardar Producto</button>
+          <button id="btnGuardarProd" onclick="guardarProducto()" class="btn">Guardar Producto</button>
         </div>
 
         <div class="card">
@@ -443,380 +319,9 @@
   <!-- NAVEGACIÓN INFERIOR MÓVIL -->
   <div class="nav-bar no-print">
     <button class="nav-item active" onclick="switchTab('tabCatalogo')">
-      <span class="nav-icon">📦</span>
-      <span>Productos</span>
+      <span>📦 Productos</span>
     </button>
     <button class="nav-item" onclick="switchTab('tabCrear')">
-      <span class="nav-icon">📝</span>
-      <span>Crear Lista</span>
+      <span>📝 Crear Lista</span>
     </button>
-    <button class="nav-item" onclick="switchTab('tabHistorial')">
-      <span class="nav-icon">📜</span>
-      <span>Histórico</span>
-    </button>
-  </div>
-
-  <!-- VISTA DOCUMENTO IMPRIMIBLE -->
-  <div id="vistaDocumento" style="display:none;">
-    <div class="doc-actions-bar no-print" style="display: flex; justify-content: space-between; align-items: center; max-width: 210mm; margin: 0 auto 16px auto; padding: 0 10px;">
-      <button onclick="cerrarVistaDocumento()" class="btn btn-sm" style="background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; font-size: 14px; font-weight: 700; width: auto; padding: 10px 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); cursor: pointer;">
-        ⬅️ Volver al menú
-      </button>
-      <button onclick="window.print()" class="btn btn-accent btn-sm" style="padding: 10px 18px; font-weight: 700;">📥 Imprimir / Guardar PDF</button>
-    </div>
-
-    <div class="page-a4">
-      <div id="contenidoImprimible" class="doc-content"></div>
-    </div>
-  </div>
-
-  <script>
-    const SUPABASE_URL = 'https://irjwegtxvoxhbnfvhnvv.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlyandlZ3R4dm94aGJuZnZobnZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMDM0NTgsImV4cCI6MjEwNjc3OTQ1OH0.Eb5A-HaTLLzFV_unn9b-QjCQLVT41x8rxMBOCINLpMg'; 
-    
-    let _supabase = null;
-    let _productosCache = [];
-
-    window.onload = function() {
-      try {
-        _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        cargarEncabezadoNube();
-        cargarProductos();
-        cargarHistoricoListas();
-      } catch (e) {
-        console.error("Error reconectando a Supabase:", e);
-      }
-    };
-
-    function switchTab(tabId) {
-      cerrarVistaDocumento();
-
-      const tabs = document.querySelectorAll('.tab-content');
-      tabs.forEach(t => t.classList.remove('active'));
-
-      const target = document.getElementById(tabId);
-      if (target) {
-        target.classList.add('active');
-      }
-
-      const tabNames = ['tabCatalogo', 'tabCrear', 'tabHistorial'];
-      const index = tabNames.indexOf(tabId);
-
-      document.querySelectorAll('.nav-item').forEach((btn, i) => {
-        btn.classList.toggle('active', i === index);
-      });
-
-      document.querySelectorAll('.web-nav-btn').forEach((btn, i) => {
-        btn.classList.toggle('active', i === index);
-      });
-    }
-
-    function toggleConfig() {
-      const cfg = document.getElementById('tabConfig');
-      cfg.style.display = cfg.style.display === 'none' ? 'block' : 'none';
-    }
-
-    async function eliminarLogo() {
-      document.getElementById('empresaLogoUrl').value = '';
-      document.getElementById('empresaLogoFile').value = '';
-      document.getElementById('logoPreviewImg').style.display = 'none';
-      document.getElementById('btnEliminarLogo').style.display = 'none';
-      await guardarEncabezadoNube();
-    }
-
-    async function guardarEncabezadoNube() {
-      if (!_supabase) return;
-      const empresa = document.getElementById('empresaNombre').value;
-      const comercial = document.getElementById('comercialNombre').value;
-      const telefono = document.getElementById('comercialTelefono').value;
-      const logoUrl = document.getElementById('empresaLogoUrl').value;
-
-      const { error } = await _supabase.from('configuracion').upsert([
-        { id: 'fija', empresa, comercial, telefono, logo_url: logoUrl }
-      ]);
-
-      if (error) alert('Error en ajustes: ' + error.message);
-      else alert('¡Ajustes guardados!');
-    }
-
-    async function cargarEncabezadoNube() {
-      if (!_supabase) return;
-      try {
-        const { data } = await _supabase.from('configuracion').select('*').eq('id', 'fija').maybeSingle();
-        if (data) {
-          document.getElementById('empresaNombre').value = data.empresa || '';
-          document.getElementById('comercialNombre').value = data.comercial || '';
-          document.getElementById('comercialTelefono').value = data.telefono || '';
-          document.getElementById('empresaLogoUrl').value = data.logo_url || '';
-
-          if (data.logo_url) {
-            const preview = document.getElementById('logoPreviewImg');
-            preview.src = data.logo_url;
-            preview.style.display = 'block';
-            document.getElementById('btnEliminarLogo').style.display = 'inline-block';
-          }
-        }
-      } catch(e) {}
-    }
-
-    async function subirLogoProcesado() {
-      const archivoLogo = document.getElementById('empresaLogoFile').files[0];
-      if (!archivoLogo || !_supabase) return;
-
-      const nombreArchivo = 'logo_' + Date.now() + '_' + archivoLogo.name.replace(/\s+/g, '_');
-      const { error: uploadError } = await _supabase.storage.from('productos-fotos').upload(nombreArchivo, archivoLogo);
-
-      if (uploadError) {
-        alert('Error al subir logo: ' + uploadError.message);
-        return;
-      }
-
-      const { data: publicUrlData } = _supabase.storage.from('productos-fotos').getPublicUrl(nombreArchivo);
-      const urlFinal = publicUrlData.publicUrl;
-      document.getElementById('empresaLogoUrl').value = urlFinal;
-      
-      const preview = document.getElementById('logoPreviewImg');
-      preview.src = urlFinal;
-      preview.style.display = 'block';
-      document.getElementById('btnEliminarLogo').style.display = 'inline-block';
-
-      guardarEncabezadoNube();
-    }
-
-    async function cargarProductos() {
-      const container1 = document.getElementById('listaProductosCard');
-      const container2 = document.getElementById('listaSeleccionProductos');
-      if (!_supabase) return;
-
-      try {
-        const { data, error } = await _supabase.from('productos').select('*');
-
-        if (error) {
-          console.error('Error al conectar con Supabase:', error.message);
-          if (container1) {
-            container1.innerHTML = `<div style="color:red; padding:12px; font-size:13px;">Error de consulta: ${error.message}</div>`;
-          }
-          return;
-        }
-
-        if (!data || data.length === 0) {
-          _productosCache = [];
-          if (container1) container1.innerHTML = '<div style="font-size:13px; color:var(--muted); text-align:center; padding:12px;">Sin productos registrados.</div>';
-          if (container2) container2.innerHTML = '<div style="font-size:13px; color:var(--muted); text-align:center; padding:12px;">No hay productos disponibles.</div>';
-          return;
-        }
-
-        _productosCache = data;
-
-        if (container1) {
-          container1.innerHTML = _productosCache.map(prod => `
-            <div class="product-item">
-              <div class="product-left">
-                ${prod.url_foto ? `<img src="${prod.url_foto}" class="product-img" crossorigin="anonymous">` : '<div class="product-img"></div>'}
-                <div>
-                  <div class="product-name">${prod.nombre || 'Sin nombre'}</div>
-                  ${prod.notas ? `<div class="product-notes">📌 ${prod.notas}</div>` : ''}
-                  <div class="product-price">${parseFloat(prod.precio || 0).toFixed(2)} €</div>
-                </div>
-              </div>
-              <button class="btn btn-danger btn-sm" onclick="borrarProducto(${prod.id}, '${(prod.nombre || '').replace(/'/g, "\\'")}')">🗑️</button>
-            </div>
-          `).join('');
-        }
-
-        if (container2) {
-          container2.innerHTML = _productosCache.map(prod => `
-            <div class="product-item" onclick="toggleSelectProduct(this)">
-              <div class="product-left">
-                <input type="checkbox" class="prod-checkbox" value="${prod.id}" onclick="event.stopPropagation(); checkCardState(this)">
-                ${prod.url_foto ? `<img src="${prod.url_foto}" class="product-img" crossorigin="anonymous">` : '<div class="product-img"></div>'}
-                <div>
-                  <div class="product-name">${prod.nombre || 'Sin nombre'}</div>
-                  ${prod.notas ? `<div class="product-notes">📌 ${prod.notas}</div>` : ''}
-                  <div class="product-price">${parseFloat(prod.precio || 0).toFixed(2)} €</div>
-                </div>
-              </div>
-            </div>
-          `).join('');
-        }
-
-      } catch(e) {
-        console.error('Error al cargar productos:', e);
-      }
-    }
-
-    function toggleSelectProduct(card) {
-      const cb = card.querySelector('.prod-checkbox');
-      cb.checked = !cb.checked;
-      card.classList.toggle('selected', cb.checked);
-    }
-
-    function checkCardState(cb) {
-      cb.closest('.product-item').classList.toggle('selected', cb.checked);
-    }
-
-    async function borrarProducto(id, nombre) {
-      if (!confirm('¿Eliminar "' + nombre + '"?')) return;
-      await _supabase.from('productos').delete().eq('id', id);
-      cargarProductos();
-    }
-
-    async function guardarProducto() {
-      const nombre = document.getElementById('prodNombre').value;
-      const precio = parseFloat(document.getElementById('prodPrecio').value);
-      const notas = document.getElementById('prodNotas').value || '';
-      const archivoFoto = document.getElementById('prodFoto').files[0];
-
-      if (!nombre || isNaN(precio)) {
-        alert('Rellena nombre y precio.');
-        return;
-      }
-
-      let urlFoto = '';
-      if (archivoFoto) {
-        const nombreArchivo = Date.now() + '_' + archivoFoto.name.replace(/\s+/g, '_');
-        await _supabase.storage.from('productos-fotos').upload(nombreArchivo, archivoFoto);
-        urlFoto = _supabase.storage.from('productos-fotos').getPublicUrl(nombreArchivo).data.publicUrl;
-      }
-
-      await _supabase.from('productos').insert([{ nombre, precio, notas, url_foto: urlFoto }]);
-      document.getElementById('prodNombre').value = '';
-      document.getElementById('prodPrecio').value = '';
-      document.getElementById('prodNotas').value = '';
-      document.getElementById('prodFoto').value = '';
-      cargarProductos();
-    }
-
-    async function generarLista() {
-      const cliente = document.getElementById('clienteNombre').value;
-      if (!cliente) {
-        alert('Escribe el nombre del cliente.');
-        return;
-      }
-
-      const cbs = document.querySelectorAll('.prod-checkbox:checked');
-      const seleccionados = Array.from(cbs).map(cb => parseInt(cb.value));
-
-      if (seleccionados.length === 0) {
-        alert('Selecciona al menos un producto.');
-        return;
-      }
-
-      await _supabase.from('listas_generadas').insert([{ cliente_nombre: cliente, productos_ids: seleccionados }]);
-      document.getElementById('clienteNombre').value = '';
-      cargarHistoricoListas();
-      alert('¡Lista creada correctamente!');
-    }
-
-    async function cargarHistoricoListas() {
-      const container = document.getElementById('listaHistoricoCard');
-      if (!_supabase) return;
-
-      try {
-        const { data } = await _supabase.from('listas_generadas').select('*').order('id', { ascending: false });
-
-        if (!data || data.length === 0) {
-          container.innerHTML = '<div style="font-size:13px; color:var(--muted); text-align:center; padding:12px;">Sin historial de listas.</div>';
-          return;
-        }
-
-        container.innerHTML = data.map(lista => `
-          <div class="product-item">
-            <div>
-              <div class="product-name">${lista.cliente_nombre}</div>
-              <div style="font-size: 12px; color: var(--muted);">${new Date(lista.fecha).toLocaleDateString('es-ES')}</div>
-            </div>
-            <div style="display:flex; gap:6px;">
-              <button class="btn btn-accent btn-sm" onclick="verListaDocumento(${lista.id})">👁️ Ver</button>
-              <button class="btn btn-danger btn-sm" onclick="borrarLista(${lista.id}, '${lista.cliente_nombre.replace(/'/g, "\\'")}')">🗑️</button>
-            </div>
-          </div>
-        `).join('');
-      } catch(e) {}
-    }
-
-    async function verListaDocumento(id) {
-      const { data: lista } = await _supabase.from('listas_generadas').select('*').eq('id', id).single();
-      if (!lista) return;
-
-      const empresa = document.getElementById('empresaNombre').value || 'EL ANCLA';
-      const comercial = document.getElementById('comercialNombre').value || '';
-      const telefono = document.getElementById('comercialTelefono').value || '';
-      const logoUrl = document.getElementById('empresaLogoUrl').value;
-      const usarMarcaAgua = document.getElementById('usarMarcaAgua').checked;
-
-      const idsGuardados = lista.productos_ids || [];
-      const productosSeleccionados = _productosCache.filter(p => idsGuardados.includes(p.id));
-      const mostrarLogoLateral = logoUrl && !usarMarcaAgua;
-
-      let htmlDoc = `
-        ${(logoUrl && usarMarcaAgua) ? `<img src="${logoUrl}" crossorigin="anonymous" class="watermark-bg">` : ''}
-
-        <div style="border-bottom: 2px solid #0f172a; padding-bottom: 18px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 2;">
-          <div style="width: 25%; text-align: left;">
-            ${mostrarLogoLateral ? `<img src="${logoUrl}" crossorigin="anonymous" style="max-height: 75px; max-width: 100%; object-fit: contain;">` : ''}
-          </div>
-
-          <div style="width: 50%; text-align: center;">
-            <h1 style="margin: 0; font-family: 'Oswald', sans-serif; font-size: 30px; color: #0f172a; letter-spacing: 1.5px; text-transform: uppercase;">${empresa}</h1>
-            ${comercial ? `
-              <p style="margin: 6px 0 0 0; font-size: 13px; color: #2563eb; font-weight: 700; letter-spacing: 0.5px;">
-                COMERCIAL: ${comercial.toUpperCase()}${telefono ? `<span style="margin-left: 6px; color: #475569;">| 📞 ${telefono}</span>` : ''}
-              </p>
-            ` : ''}
-          </div>
-
-          <div style="width: 25%; text-align: right; font-size: 12px; color: #475569;">
-            <p style="margin: 0; font-size: 14px; color: #0f172a; font-weight: 700;">
-              CLIENTE: <span style="color: #2563eb;">${lista.cliente_nombre.toUpperCase()}</span>
-            </p>
-            <p style="margin: 4px 0 0 0;"><strong>Fecha:</strong> ${new Date(lista.fecha).toLocaleDateString('es-ES')}</p>
-          </div>
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: 10px; position: relative; z-index: 2;">
-          ${productosSeleccionados.map(p => `
-            <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid rgba(203, 213, 225, 0.6); background: rgba(255, 255, 255, 0.45); backdrop-filter: blur(1px); border-radius: 10px;">
-              <div style="display: flex; align-items: center; gap: 16px;">
-                ${p.url_foto 
-                  ? `<img src="${p.url_foto}" crossorigin="anonymous" style="width: 75px; height: 75px; object-fit: cover; border-radius: 10px; border: 1px solid #e2e8f0; background: #fff;">` 
-                  : `<div style="width: 75px; height: 75px; border-radius: 10px; background: rgba(248, 250, 252, 0.6); border: 1px dashed #cbd5e1; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 11px;">Sin Foto</div>`
-                }
-                <div>
-                  <div style="font-size: 16px; font-weight: 700; color: #0f172a; text-transform: capitalize;">${p.nombre \vert{}\vert{} ''}</div>${p.notas ? `<div style="font-size: 12px; color: #475569; margin-top: 3px; font-style: italic;">📌 ${p.notas}</div>` : ''}
-                </div>
-              </div>
-              <div style="font-family: 'Oswald', sans-serif; font-size: 20px; font-weight: 700; color: #2563eb; white-space: nowrap; margin-left: 16px;">
-                ${parseFloat(p.precio || 0).toFixed(2)} €
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      `;
-
-      document.getElementById('contenidoImprimible').innerHTML = htmlDoc;
-      document.querySelectorAll('.no-print').forEach(el => el.style.display = 'none');
-      const vistaDoc = document.getElementById('vistaDocumento');
-      vistaDoc.style.display = 'block';
-
-      const actionsBar = vistaDoc.querySelector('.doc-actions-bar');
-      if (actionsBar) {
-        actionsBar.style.display = 'flex';
-      }
-
-      window.scrollTo(0, 0);
-    }
-
-    function cerrarVistaDocumento() {
-      document.getElementById('vistaDocumento').style.display = 'none';
-      document.querySelectorAll('.no-print').forEach(el => el.style.display = '');
-    }
-
-    async function borrarLista(id, cliente) {
-      if (!confirm('¿Borrar lista de "' + cliente + '"?')) return;
-      await _supabase.from('listas_generadas').delete().eq('id', id);
-      cargarHistoricoListas();
-    }
-  </script>
-</body>
-</html>
+    <button
