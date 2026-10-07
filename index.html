@@ -4,37 +4,107 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>📋 Catálogo y Generador de Listas de Precios</title>
-  <!-- FUENTE ELEGANTE OSWALD DESDE GOOGLE FONTS -->
+  <!-- FUENTE ELEGANTE OSWALD Y INTER -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Oswald:wght@300;400;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 900px; margin: 20px auto; padding: 20px; background: #f4f6f8; }
-    .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; position: relative; }
-    h1, h3 { color: #1a365d; margin-top: 0; }
-    .form-group { margin-bottom: 15px; }
-    label { display: block; font-weight: bold; margin-bottom: 5px; }
-    input[type="text"], input[type="number"], input[type="file"] { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
-    .row { display: flex; gap: 15px; }
-    .col { flex: 1; }
-    button { background: #1a365d; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 14px; margin-right: 5px; }
+    * { box-sizing: border-box; }
+    body { 
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
+      max-width: 900px; 
+      margin: 0 auto; 
+      padding: 15px; 
+      background: #f8fafc; 
+      color: #334155; 
+    }
+    
+    h1 { 
+      font-family: 'Oswald', sans-serif; 
+      font-size: 26px; 
+      color: #1a365d; 
+      margin-bottom: 20px; 
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .card { 
+      background: white; 
+      padding: 20px; 
+      border-radius: 12px; 
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03); 
+      border: 1px solid #e2e8f0;
+      margin-bottom: 20px; 
+      position: relative; 
+    }
+
+    h3 { 
+      font-family: 'Oswald', sans-serif; 
+      color: #1a365d; 
+      margin-top: 0; 
+      font-size: 18px; 
+      letter-spacing: 0.5px;
+      margin-bottom: 15px;
+    }
+
+    .form-group { margin-bottom: 12px; }
+    label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #475569; }
+    
+    input[type="text"], input[type="number"], input[type="file"] { 
+      width: 100%; 
+      padding: 10px 12px; 
+      font-size: 14px;
+      border: 1px solid #cbd5e1; 
+      border-radius: 8px; 
+      background: #fafafa;
+      transition: all 0.2s;
+    }
+    input[type="text"]:focus, input[type="number"]:focus { 
+      outline: none; 
+      border-color: #2b6cb0; 
+      background: white; 
+      box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.1); 
+    }
+
+    .row { display: flex; flex-wrap: wrap; gap: 12px; }
+    .col { flex: 1; min-width: 220px; }
+
+    button { 
+      background: #1a365d; 
+      color: white; 
+      border: none; 
+      padding: 10px 16px; 
+      border-radius: 8px; 
+      cursor: pointer; 
+      font-weight: 500;
+      font-size: 14px; 
+      transition: background 0.2s, transform 0.1s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    button:active { transform: scale(0.98); }
     button:hover { background: #0f233f; }
     .btn-view { background: #2b6cb0; color: white; }
     .btn-view:hover { background: #1c4ed8; }
-    .btn-delete { background: #dc3545; color: white; }
-    .btn-delete:hover { background: #bd2130; }
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; position: relative; z-index: 2; }
-    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; vertical-align: middle; }
-    th { background: #ebf8ff; color: #1a365d; }
-    .img-preview { width: 50px; height: 50px; object-fit: cover; border-radius: 4px; }
-    .logo-preview { max-height: 60px; margin-top: 10px; display: none; }
+    .btn-delete { background: #ef4444; color: white; }
+    .btn-delete:hover { background: #dc2626; }
+    
+    .btn-full { width: 100%; }
 
-    /* ESTILOS DE MARCA DE AGUA */
-    .watermark-container {
-      position: relative;
-      overflow: hidden;
-    }
+    /* TABLA MINIMALISTA RESPONSIVE */
+    table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 15px; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; }
+    th, td { padding: 12px; text-align: left; vertical-align: middle; border-bottom: 1px solid #f1f5f9; }
+    th { background: #f8fafc; color: #1a365d; font-family: 'Oswald', sans-serif; font-weight: 600; }
+    tr:last-child td { border-bottom: none; }
+    
+    .img-preview { width: 48px; height: 48px; object-fit: cover; border-radius: 6px; }
+    .logo-preview { max-height: 50px; margin-top: 8px; border-radius: 6px; display: none; }
+
+    /* MARCA DE AGUA EN DOCUMENTO IMPRESO */
+    .watermark-container { position: relative; overflow: hidden; }
     .watermark-bg {
       position: absolute;
       top: 50%;
@@ -51,9 +121,52 @@
       align-items: center;
       gap: 8px;
       cursor: pointer;
-      font-weight: normal;
-      margin-top: 10px;
+      font-size: 13px;
       color: #2b6cb0;
+      margin-top: 10px;
+    }
+
+    /* VISTA MÓVIL OPTIMIZADA */
+    @media (max-width: 640px) {
+      body { padding: 10px; }
+      .card { padding: 15px; }
+      .row { flex-direction: column; gap: 10px; }
+      .col { min-width: 100%; }
+      
+      /* Transformar tablas en tarjetas limpias en móvil */
+      .mobile-card-table table, 
+      .mobile-card-table thead, 
+      .mobile-card-table tbody, 
+      .mobile-card-table th, 
+      .mobile-card-table td, 
+      .mobile-card-table tr { 
+        display: block; 
+      }
+      
+      .mobile-card-table thead { display: none; }
+      
+      .mobile-card-table tr {
+        background: #fafafa;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        padding: 12px;
+      }
+      
+      .mobile-card-table td {
+        border: none;
+        padding: 4px 0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      
+      .mobile-card-table td:before {
+        content: attr(data-label);
+        font-weight: 600;
+        font-size: 12px;
+        color: #64748b;
+      }
     }
 
     @media print {
@@ -61,8 +174,10 @@
       .card, button, h1 { box-shadow: none; border: none; padding: 0; }
       .no-print { display: none !important; }
       .print-only { display: block !important; }
-      table { border: 1px solid #1a365d; width: 100%; }
-      th, td { border: 1px solid #cbd5e0; }
+      table { border: 1px solid #1a365d; width: 100%; display: table !important; }
+      thead { display: table-header-group !important; }
+      tr { display: table-row !important; background: transparent !important; border: none !important; margin: 0 !important; padding: 0 !important; }
+      td, th { display: table-cell !important; border-bottom: 1px solid #cbd5e0 !important; padding: 8px !important; }
       th { background-color: #ebf8ff !important; -webkit-print-color-adjust: exact; }
       .watermark-bg { opacity: 0.1 !important; -webkit-print-color-adjust: exact; }
     }
@@ -71,31 +186,31 @@
 <body>
 
   <div class="no-print">
-    <h1>📋 Catálogo y Generador de Listas de Precios</h1>
+    <h1>📋 Catálogo de Precios</h1>
 
     <!-- SECCIÓN 1: ENCABEZADO FIJO -->
     <div class="card">
-      <h3>🏢 Datos del Encabezado Corporativo (Fijo)</h3>
+      <h3>🏢 Encabezado Corporativo</h3>
       <div class="row">
         <div class="col form-group">
-          <label>Nombre de la Empresa:</label>
+          <label>Nombre Empresa:</label>
           <input type="text" id="empresaNombre" placeholder="Ej: El Ancla">
         </div>
         <div class="col form-group">
-          <label>Imagen del Logo / Ancla:</label>
+          <label>Logo / Ancla:</label>
           <input type="file" id="empresaLogoFile" accept="image/*" onchange="subirLogoProcesado()">
           <input type="hidden" id="empresaLogoUrl">
-          <img id="logoPreviewImg" class="logo-preview" alt="Vista previa del logo">
-          <button id="btnEliminarLogo" onclick="eliminarLogo()" class="btn-delete" style="display: none; margin-top: 8px;">🗑️ Quitar Logo</button>
+          <img id="logoPreviewImg" class="logo-preview" alt="Logo">
+          <button id="btnEliminarLogo" onclick="eliminarLogo()" class="btn-delete" style="display: none; margin-top: 8px; padding: 6px 10px; font-size: 12px;">🗑️ Quitar Logo</button>
         </div>
       </div>
       <div class="row">
         <div class="col form-group">
-          <label>Nombre del Comercial:</label>
+          <label>Comercial:</label>
           <input type="text" id="comercialNombre" placeholder="Ej: Juan Pérez">
         </div>
         <div class="col form-group">
-          <label>Teléfono del Comercial:</label>
+          <label>Teléfono Comercial:</label>
           <input type="text" id="comercialTelefono" placeholder="Ej: +34 600 000 000">
         </div>
       </div>
@@ -103,16 +218,16 @@
       <div class="form-group">
         <label class="checkbox-label">
           <input type="checkbox" id="usarMarcaAgua" checked>
-          <span>Mostrar logo como marca de agua en el documento</span>
+          <span>Mostrar logo como marca de agua</span>
         </label>
       </div>
 
-      <button onclick="guardarEncabezadoNube()" style="background: #2b6cb0;">💾 Guardar Encabezado en la Nube</button>
+      <button onclick="guardarEncabezadoNube()" class="btn-full" style="background: #2b6cb0;">💾 Guardar Encabezado</button>
     </div>
 
-    <!-- SECCIÓN 2: AÑADIR NUEVO PRODUCTO CON FOTO -->
+    <!-- SECCIÓN 2: AÑADIR NUEVO PRODUCTO -->
     <div class="card">
-      <h3>➕ Añadir Nuevo Producto</h3>
+      <h3>➕ Nuevo Producto</h3>
       <div class="row">
         <div class="col form-group">
           <label>Nombre del Producto:</label>
@@ -123,66 +238,70 @@
           <input type="number" step="0.01" id="prodPrecio" placeholder="6.50">
         </div>
         <div class="col form-group">
-          <label>Foto del Producto:</label>
+          <label>Foto:</label>
           <input type="file" id="prodFoto" accept="image/*">
         </div>
       </div>
-      <button onclick="guardarProducto()">Guardar Producto en la Nube</button>
+      <button onclick="guardarProducto()" class="btn-full">Guardar Producto</button>
     </div>
 
-    <!-- SECCIÓN 3: CATÁLOGO Y SELECCIÓN DE PRODUCTOS -->
+    <!-- SECCIÓN 3: CATÁLOGO Y SELECCIÓN -->
     <div class="card">
-      <h3>📦 Catálogo de Productos Registrados</h3>
+      <h3>📦 Productos Registrados</h3>
       <div class="form-group">
-        <label>Nombre del Cliente para la lista:</label>
+        <label>Cliente para esta lista:</label>
         <input type="text" id="clienteNombre" placeholder="Ej: Restaurante El Faro">
       </div>
 
-      <table>
-        <thead>
-          <tr>
-            <th>Sel.</th>
-            <th>Foto</th>
-            <th>Producto</th>
-            <th>Precio</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="tablaProductos">
-          <tr><td colspan="5">Sin productos guardados.</td></tr>
-        </tbody>
-      </table>
+      <div class="mobile-card-table">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 40px;">Sel.</th>
+              <th style="width: 60px;">Foto</th>
+              <th>Producto</th>
+              <th>Precio</th>
+              <th style="text-align: right;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tablaProductos">
+            <tr><td colspan="5">Sin productos guardados.</td></tr>
+          </tbody>
+        </table>
+      </div>
 
       <br>
-      <button onclick="generarLista()" style="background: #28a745; font-size: 16px; padding: 10px 18px;">🚀 Guardar Lista de Precios</button>
+      <button onclick="generarLista()" class="btn-full" style="background: #10b981; font-size: 15px; padding: 12px;">🚀 Guardar Lista de Precios</button>
     </div>
 
     <!-- SECCIÓN 4: HISTÓRICO -->
     <div class="card">
-      <h3>📜 Histórico de Listas Generadas</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Cliente</th>
-            <th>Fecha</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="tablaHistorico">
-          <tr><td colspan="4">Sin listas generadas.</td></tr>
-        </tbody>
-      </table>
+      <h3>📜 Listas Generadas</h3>
+      <div class="mobile-card-table">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 50px;">ID</th>
+              <th>Cliente</th>
+              <th>Fecha</th>
+              <th style="text-align: right;">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tablaHistorico">
+            <tr><td colspan="4">Sin listas generadas.</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 
   <!-- VISTA DOCUMENTO IMPRIMIBLE -->
   <div id="vistaDocumento" style="display:none;" class="card watermark-container">
-    <button onclick="cerrarVistaDocumento()" class="no-print" style="background:#6c757d; margin-bottom:15px;">⬅️ Volver al Panel</button>
-    <button onclick="window.print()" class="no-print" style="background:#28a745; margin-bottom:15px;">📥 Imprimir / Descargar PDF</button>
+    <button onclick="cerrarVistaDocumento()" class="no-print" style="background:#64748b; margin-bottom:15px;">⬅️ Volver al Panel</button>
+    <button onclick="window.print()" class="no-print" style="background:#10b981; margin-bottom:15px;">📥 Descargar PDF / Imprimir</button>
 
     <div id="contenidoImprimible" style="position: relative; z-index: 2;">
-      <!-- Se genera al pulsar Ver/Imprimir -->
+      <!-- Generado dinámicamente -->
     </div>
   </div>
 
@@ -227,7 +346,7 @@
       if (error) {
         alert('Error al guardar encabezado: ' + error.message);
       } else {
-        alert('¡Encabezado corporativo guardado en la nube!');
+        alert('¡Encabezado guardado!');
       }
     }
 
@@ -265,7 +384,7 @@
         .upload(nombreArchivo, archivoLogo);
 
       if (uploadError) {
-        alert('Error al subir el logo: ' + uploadError.message);
+        alert('Error al subir logo: ' + uploadError.message);
         return;
       }
 
@@ -305,11 +424,11 @@
         tbody.innerHTML = _productosCache.map(function(prod) {
           var fotoHtml = prod.url_foto ? '<img src="' + prod.url_foto + '" class="img-preview" crossorigin="anonymous">' : 'Sin foto';
           return '<tr>' +
-            '<td><input type="checkbox" class="prod-checkbox" value="' + prod.id + '"></td>' +
-            '<td>' + fotoHtml + '</td>' +
-            '<td>' + prod.nombre + '</td>' +
-            '<td>' + parseFloat(prod.precio).toFixed(2) + ' €</td>' +
-            '<td><button class="btn-delete" onclick="borrarProducto(' + prod.id + ', \'' + prod.nombre.replace(/'/g, "\\'") + '\')">🗑️ Borrar</button></td>' +
+            '<td data-label="Seleccionar"><input type="checkbox" class="prod-checkbox" value="' + prod.id + '"></td>' +
+            '<td data-label="Foto">' + fotoHtml + '</td>' +
+            '<td data-label="Producto"><strong>' + prod.nombre + '</strong></td>' +
+            '<td data-label="Precio">' + parseFloat(prod.precio).toFixed(2) + ' €</td>' +
+            '<td data-label="Acciones" style="text-align: right;"><button class="btn-delete" onclick="borrarProducto(' + prod.id + ', \'' + prod.nombre.replace(/'/g, "\\'") + '\')">🗑️</button></td>' +
           '</tr>';
         }).join('');
       } catch(e) {
@@ -318,10 +437,10 @@
     }
 
     async function borrarProducto(id, nombre) {
-      if (!confirm('¿Estás segura de que deseas borrar el producto "' + nombre + '"?')) return;
+      if (!confirm('¿Borrar producto "' + nombre + '"?')) return;
       const { error } = await _supabase.from('productos').delete().eq('id', id);
       if (error) {
-        alert('Error al eliminar el producto: ' + error.message);
+        alert('Error al eliminar: ' + error.message);
       } else {
         cargarProductos();
       }
@@ -333,7 +452,7 @@
       const archivoFoto = document.getElementById('prodFoto').files[0];
 
       if (!nombre || isNaN(precio)) {
-        alert('Por favor, introduce un nombre y un precio válido.');
+        alert('Escribe un nombre y un precio válido.');
         return;
       }
 
@@ -366,7 +485,7 @@
       if (error) {
         alert('Error al guardar: ' + error.message);
       } else {
-        alert('¡Producto guardado exitosamente!');
+        alert('¡Producto guardado!');
         document.getElementById('prodNombre').value = '';
         document.getElementById('prodPrecio').value = '';
         document.getElementById('prodFoto').value = '';
@@ -394,9 +513,9 @@
       ]);
 
       if (error) {
-        alert('Error al guardar la lista: ' + error.message);
+        alert('Error al guardar lista: ' + error.message);
       } else {
-        alert('¡Lista para ' + cliente + ' guardada correctamente!');
+        alert('¡Lista para ' + cliente + ' guardada!');
         document.getElementById('clienteNombre').value = '';
         cargarHistoricoListas();
       }
@@ -418,14 +537,14 @@
         }
 
         tbody.innerHTML = data.map(function(lista) {
-          var fechaFormateada = new Date(lista.fecha).toLocaleString('es-ES');
+          var fechaFormateada = new Date(lista.fecha).toLocaleDateString('es-ES');
           return '<tr>' +
-            '<td>' + lista.id + '</td>' +
-            '<td><strong>' + lista.cliente_nombre + '</strong></td>' +
-            '<td>' + fechaFormateada + '</td>' +
-            '<td>' +
-              '<button class="btn-view" onclick="verListaDocumento(' + lista.id + ')">👁️ Ver / Imprimir</button>' +
-              '<button class="btn-delete" onclick="borrarLista(' + lista.id + ', \'' + lista.cliente_nombre.replace(/'/g, "\\'") + '\')">🗑️ Borrar</button>' +
+            '<td data-label="ID">' + lista.id + '</td>' +
+            '<td data-label="Cliente"><strong>' + lista.cliente_nombre + '</strong></td>' +
+            '<td data-label="Fecha">' + fechaFormateada + '</td>' +
+            '<td data-label="Acciones" style="text-align: right;">' +
+              '<button class="btn-view" onclick="verListaDocumento(' + lista.id + ')">👁️ Ver</button> ' +
+              '<button class="btn-delete" onclick="borrarLista(' + lista.id + ', \'' + lista.cliente_nombre.replace(/'/g, "\\'") + '\')">🗑️</button>' +
             '</td>' +
           '</tr>';
         }).join('');
@@ -437,7 +556,7 @@
     async function verListaDocumento(id) {
       const { data: lista, error } = await _supabase.from('listas_generadas').select('*').eq('id', id).single();
       if (error || !lista) {
-        alert('No se pudo cargar la lista seleccionada.');
+        alert('No se pudo cargar la lista.');
         return;
       }
 
@@ -450,31 +569,27 @@
       const idsGuardados = lista.productos_ids || [];
       const productosSeleccionados = _productosCache.filter(p => idsGuardados.includes(p.id));
 
-      // SI SE USA MARCA DE AGUA, SE OCULTA EL LOGO LATERAL
       const mostrarLogoLateral = logoUrl && !usarMarcaAgua;
 
       let htmlDoc = `
         ${(logoUrl && usarMarcaAgua) ? `<img src="${logoUrl}" crossorigin="anonymous" class="watermark-bg">` : ''}
 
         <div style="border-bottom: 2px solid #1a365d; padding-bottom: 20px; margin-bottom: 25px; display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 2;">
-          <!-- LADO IZQUIERDO: LOGO (Solo si NO hay marca de agua) -->
           <div style="width: 20%; text-align: left;">
             ${mostrarLogoLateral ? `<img src="${logoUrl}" crossorigin="anonymous" style="max-height: 95px; max-width: 100%; object-fit: contain;">` : ''}
           </div>
 
-          <!-- CENTRO: TÍTULO Y COMERCIAL -->
           <div style="width: 55%; text-align: center;">
-            <h1 style="margin: 0; font-family: 'Oswald', sans-serif; font-size: 38px; color: #1a365d; letter-spacing: 2px; text-transform: uppercase; font-weight: 700;">${empresa}</h1>
+            <h1 style="margin: 0; font-family: 'Oswald', sans-serif; font-size: 34px; color: #1a365d; letter-spacing: 2px; text-transform: uppercase; font-weight: 700;">${empresa}</h1>
             ${comercial ? `
-              <p style="margin: 8px 0 0 0; font-family: 'Oswald', sans-serif; font-size: 18px; color: #2b6cb0; letter-spacing: 0.5px; font-weight: 600;">
-                COMERCIAL: ${comercial.toUpperCase()}${telefono ? `<span style="margin-left: 8px; color: #1a365d; font-size: 17px; font-weight: 600;">| 📞 ${telefono}</span>` : ''}
+              <p style="margin: 8px 0 0 0; font-family: 'Oswald', sans-serif; font-size: 17px; color: #2b6cb0; letter-spacing: 0.5px; font-weight: 600;">
+                COMERCIAL: ${comercial.toUpperCase()}${telefono ? `<span style="margin-left: 8px; color: #1a365d; font-size: 16px; font-weight: 600;">| 📞 ${telefono}</span>` : ''}
               </p>
             ` : ''}
           </div>
 
-          <!-- LADO DERECHO: CLIENTE Y FECHA -->
           <div style="width: 25%; text-align: right; font-size: 14px; color: #2d3748;">
-            <p style="margin: 0; font-family: 'Oswald', sans-serif; font-size: 17px; color: #2b6cb0; font-weight: 400; letter-spacing: 0.5px;">
+            <p style="margin: 0; font-family: 'Oswald', sans-serif; font-size: 16px; color: #2b6cb0; font-weight: 400; letter-spacing: 0.5px;">
               CLIENTE: ${lista.cliente_nombre.toUpperCase()}
             </p>
             <p style="margin: 6px 0 0 0; color: #718096; font-size: 13px;"><strong>Fecha:</strong> ${new Date(lista.fecha).toLocaleDateString('es-ES')}</p>
@@ -484,15 +599,15 @@
         <table style="width: 100%; border-collapse: collapse; position: relative; z-index: 2;">
           <thead>
             <tr style="background-color: #ebf8ff;">
-              <th style="width: 80px; text-align: center; color: #1a365d; border-bottom: 2px solid #2b6cb0; font-family: 'Oswald', sans-serif; font-size: 16px; letter-spacing: 0.5px; font-weight: 600;">FOTO</th>
-              <th style="text-align: left; color: #1a365d; border-bottom: 2px solid #2b6cb0; font-family: 'Oswald', sans-serif; font-size: 16px; letter-spacing: 0.5px; font-weight: 600;">PRODUCTO</th>
-              <th style="width: 120px; text-align: right; color: #1a365d; border-bottom: 2px solid #2b6cb0; font-family: 'Oswald', sans-serif; font-size: 16px; letter-spacing: 0.5px; font-weight: 600;">PRECIO</th>
+              <th style="width: 80px; text-align: center; color: #1a365d; border-bottom: 2px solid #2b6cb0; font-family: 'Oswald', sans-serif; font-size: 15px; font-weight: 600;">FOTO</th>
+              <th style="text-align: left; color: #1a365d; border-bottom: 2px solid #2b6cb0; font-family: 'Oswald', sans-serif; font-size: 15px; font-weight: 600;">PRODUCTO</th>
+              <th style="width: 120px; text-align: right; color: #1a365d; border-bottom: 2px solid #2b6cb0; font-family: 'Oswald', sans-serif; font-size: 15px; font-weight: 600;">PRECIO</th>
             </tr>
           </thead>
           <tbody>
             ${productosSeleccionados.map(p => `
               <tr>
-                <td style="text-align: center; padding: 10px;">${p.url_foto ? `<img src="${p.url_foto}" crossorigin="anonymous" style="width: 55px; height: 55px; object-fit: cover; border-radius: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">` : 'Sin foto'}</td>
+                <td style="text-align: center; padding: 10px;">${p.url_foto ? `<img src="${p.url_foto}" crossorigin="anonymous" style="width: 50px; height: 50px; object-fit: cover; border-radius: 6px;">` : 'Sin foto'}</td>
                 <td style="padding: 10px; font-size: 15px; color: #2d3748;"><strong>${p.nombre}</strong></td>
                 <td style="text-align: right; padding: 10px; font-size: 16px; color: #1a365d;"><strong>${parseFloat(p.precio).toFixed(2)} €</strong></td>
               </tr>
