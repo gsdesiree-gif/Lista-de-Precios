@@ -137,6 +137,7 @@
       border-radius: 14px;
     }
     .product-left { display: flex; align-items: center; gap: 12px; }
+    .product-img { width: 50px; height: 50px; border-radius: 10px; object-fit: cover; background: #e2e8f0; }
     .product-name { font-weight: 600; font-size: 15px; }
     .product-notes { font-size: 12px; color: var(--muted); margin-top: 2px; }
     .product-price { font-size: 14px; font-weight: 700; color: var(--accent); }
@@ -207,7 +208,7 @@
         <div class="card">
           <div class="card-header">➕ Registrar Producto</div>
           <div class="field">
-            <label>Nombre</label>
+            <label>Nombre del Producto</label>
             <input type="text" id="prodNombre" placeholder="Ej: Merluza Filete">
           </div>
           <div class="field">
@@ -217,6 +218,10 @@
           <div class="field">
             <label>Observaciones / Nota (Opcional)</label>
             <input type="text" id="prodNotas" placeholder="Ej: Caja de 5kg">
+          </div>
+          <div class="field">
+            <label>URL de la Foto / Imagen (Opcional)</label>
+            <input type="text" id="prodFoto" placeholder="https://ejemplo.com/foto.jpg">
           </div>
           <button id="btnGuardarProd" onclick="guardarProducto()" class="btn">Guardar Producto</button>
         </div>
@@ -313,6 +318,7 @@
         c1.innerHTML = _productosCache.map(p => `
           <div class="product-item">
             <div class="product-left">
+              ${p.url_foto ? `<img src="${p.url_foto}" class="product-img" alt="Foto">` : ''}
               <div>
                 <div class="product-name">${p.nombre || ''}</div>
                 ${p.notas ? `<div class="product-notes">📌 ${p.notas}</div>` : ''}
@@ -327,6 +333,7 @@
           <div class="product-item">
             <div class="product-left">
               <input type="checkbox" class="prod-checkbox" value="${p.id}">
+              ${p.url_foto ? `<img src="${p.url_foto}" class="product-img" alt="Foto">` : ''}
               <div>
                 <div class="product-name">${p.nombre || ''}</div>
                 ${p.notas ? `<div class="product-notes">📌 ${p.notas}</div>` : ''}
@@ -345,6 +352,7 @@
       const nombre = document.getElementById('prodNombre').value.trim();
       const precio = parseFloat(document.getElementById('prodPrecio').value);
       const notas = document.getElementById('prodNotas').value.trim();
+      const url_foto = document.getElementById('prodFoto').value.trim();
       const btn = document.getElementById('btnGuardarProd');
 
       if (!nombre || isNaN(precio)) {
@@ -356,13 +364,14 @@
       btn.innerText = 'Guardando...';
 
       try {
-        const { error } = await _supabase.from('productos').insert([{ nombre, precio, notas }]);
+        const { error } = await _supabase.from('productos').insert([{ nombre, precio, notas, url_foto }]);
         if (error) {
           alert('Error al guardar: ' + error.message);
         } else {
           document.getElementById('prodNombre').value = '';
           document.getElementById('prodPrecio').value = '';
           document.getElementById('prodNotas').value = '';
+          document.getElementById('prodFoto').value = '';
           await cargarProductos();
         }
       } catch (e) {
