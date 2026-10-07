@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <style>
     :root {
       --bg: #f1f5f9;
@@ -192,7 +192,6 @@
 </head>
 <body>
 
-  <!-- BARRA SUPERIOR -->
   <div class="top-bar">
     <div class="brand-title">EL ANCLA</div>
     <div class="web-nav">
@@ -203,7 +202,6 @@
   </div>
 
   <div class="container">
-    <!-- PESTAÑA 1: CATÁLOGO -->
     <div id="tabCatalogo" class="tab-content active">
       <div class="grid-layout">
         <div class="card">
@@ -225,12 +223,11 @@
 
         <div class="card">
           <div class="card-header">📦 Productos Registrados</div>
-          <div id="listaProductosCard" class="product-grid">Cargando productos...</div>
+          <div id="listaProductosCard" class="product-grid">Conectando...</div>
         </div>
       </div>
     </div>
 
-    <!-- PESTAÑA 2: CREAR LISTA DE PRECIOS -->
     <div id="tabCrear" class="tab-content">
       <div class="card">
         <div class="card-header">🚀 Nueva Lista de Precios</div>
@@ -244,7 +241,6 @@
       </div>
     </div>
 
-    <!-- PESTAÑA 3: HISTORIAL -->
     <div id="tabHistorial" class="tab-content">
       <div class="card">
         <div class="card-header">📜 Listas Guardadas</div>
@@ -253,7 +249,6 @@
     </div>
   </div>
 
-  <!-- NAVEGACIÓN INFERIOR MÓVIL -->
   <div class="nav-bar">
     <button class="nav-item active" onclick="switchTab('tabCatalogo')"><span>📦 Productos</span></button>
     <button class="nav-item" onclick="switchTab('tabCrear')"><span>📝 Crear Lista</span></button>
@@ -267,15 +262,20 @@
     let _supabase = null;
     let _productosCache = [];
 
-    window.onload = function() {
+    window.addEventListener('DOMContentLoaded', () => {
       try {
-        _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const createClient = window.supabase ? window.supabase.createClient : null;
+        if (!createClient) {
+          document.getElementById('listaProductosCard').innerHTML = '<div style="color:red; padding:12px;">Error al cargar cliente Supabase. Recarga la página.</div>';
+          return;
+        }
+        _supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
         cargarProductos();
         cargarHistoricoListas();
       } catch (e) {
-        console.error("Error al conectar:", e);
+        document.getElementById('listaProductosCard').innerHTML = `<div style="color:red; padding:12px;">Error: ${e.message}</div>`;
       }
-    };
+    });
 
     function switchTab(tabId) {
       document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
@@ -297,7 +297,7 @@
         const { data, error } = await _supabase.from('productos').select('*').order('id', { ascending: false });
 
         if (error) {
-          c1.innerHTML = `<div style="color:red; padding:12px;">Error: ${error.message}</div>`;
+          c1.innerHTML = `<div style="color:red; padding:12px;">Error base de datos: ${error.message}</div>`;
           return;
         }
 
