@@ -234,7 +234,6 @@
                     .select('*');
 
                 if (error) {
-                    // Intento de fallback si la tabla se llama 'menu'
                     const fallback = await supabaseClient.from('menu').select('*');
                     if (!fallback.error && fallback.data) {
                         data = fallback.data;
@@ -274,4 +273,187 @@
             categories.forEach(cat => {
                 const isActive = cat === activeCategory;
                 const btn = document.createElement('button');
-                btn.className = `px-4 py-1.5 rounded-full text-
+                btn.className = `px-4 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap ${isActive ? 'bg-brand-gold text-black font-semibold' : 'bg-brand-card text-gray-300 hover:bg-brand-accent border border-white/5'}`;
+                btn.textContent = cat;
+                btn.onclick = () => {
+                    activeCategory = cat;
+                    renderCategories();
+                    renderMenu();
+                };
+                categoriesContainer.appendChild(btn);
+            });
+        }
+
+        // RENDERIZAR MENÚ
+        function renderMenu() {
+            menuContainer.innerHTML = '';
+            const filtered = activeCategory === 'Todos' 
+                ? menuItems 
+                : menuItems.filter(item => (item.categoria || item.category) === activeCategory);
+
+            if (filtered.length === 0) {
+                menuContainer.innerHTML = '<p class="text-center text-gray-400 py-8 text-sm">No hay platos en esta categoría.</p>';
+                return;
+            }
+
+            filtered.forEach(item => {
+                const id = item.id;
+                const name = item.nombre || item.name || 'Plato sin nombre';
+                const desc = item.descripcion || item.description || '';
+                const price = Number(item.precio || item.price || 0);
+                const image = item.imagen || item.image || '';
+                const qty = cart[id] ? cart[id].quantity : 0;
+
+                const card = document.createElement('div');
+                card.className = 'bg-brand-card border border-white/5 rounded-2xl p-4 flex gap-3 items-center shadow-md';
+                
+                let imgHtml = '';
+                if (image) {
+                    imgHtml = `<img src="${image}" alt="${name}" class="w-20 h-20 object-cover rounded-xl flex-shrink-0 bg-brand-accent">`;
+                }
+
+                card.innerHTML = `
+                    ${imgHtml}
+                    <div class="flex-1 min-w-0">
+                        <h4 class="font-serif text-white font-bold text-base truncate">${name}</h4>
+                        <p class="text-xs text-gray-400 line-clamp-2 mt-0.5">${desc}</p>
+                        <div class="flex items-center justify-between mt-2">
+                            <span class="font-serif text-brand-gold font-bold text-sm">${price.toFixed(2)} €</span>
+                            <div class="flex items-center gap-2">
+                                ${qty > 0 ? `
+                                    <button onclick="updateCart(${id}, -1)" class="w-7 h-7 bg-brand-accent rounded-lg text-white flex items-center justify-center hover:bg-white/20 transition-colors">
+                                        <i class="fa-solid fa-minus text-xs"></i>
+                                    </button>
+                                    <span class="text-xs font-bold text-white w-4 text-center">${qty}</span>
+                                ` : ''}
+                                <button onclick="updateCart(${id}, 1)" class="w-7 h-7 bg-brand-gold hover:bg-brand-goldHover text-black rounded-lg flex items-center justify-center transition-colors font-bold">
+                                    <i class="fa-solid fa-plus text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                menuContainer.appendChild(card);
+            });
+        }
+
+        // GESTIÓN DEL CARRITO
+        function updateCart(id, delta) {
+            const item = menuItems.find(i => i.id === id);
+            if (!item) return;
+
+            if (!cart[id]) {
+                cart[id] = { ...item, quantity: 0 };
+            }
+
+            cart[id].quantity += delta;
+
+            if (cart[id].quantity <= 0) {
+                delete cart[id];
+            }
+
+            renderMenu();
+            updateCartUI();
+        }
+
+        function updateCartUI() {
+            let totalCount = 0;
+            let totalPrice = 0;
+
+            const cartItemsArray = Object.values(cart);
+            cartItemsContainer.innerHTML = '';
+
+            if (cartItemsArray.length === 0) {
+                cartItemsContainer.innerHTML = '<p class="text-center text-gray-400 py-8 text-sm">Tu pedido está vacío.</p>';
+                floatingCartBar.classList.add('hidden');
+                cartBadge.classList.add('hidden');
+                if (!cartModal.classList.contains('hidden')) {
+                    toggleCartModal();
+                }
+                return;
+            }
+
+            cartItemsArray.forEach(item => {
+                totalCount += item.quantity;
+                const itemPrice = Number(item.precio || item.price || 0);
+                totalPrice += itemPrice * item.quantity;
+
+                const row = document.createElement('div');
+                row.className = 'flex items-center justify-between bg-brand-dark/40 p-3 rounded-xl border border-white/5';
+                row.innerHTML = `
+                    <div class="flex-1 min-w-0 pr-2">
+                        <h5 class="text-sm font-medium text-white truncate">${item.nombre || item.name}</h5>
+                        <p class="text-xs text-brand-gold font-semibold">${(itemPrice * item.quantity).toFixed(2)} €</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="updateCart(${item.id}, -1)" class="w-6 h-6 bg-brand-accent rounded text-white flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-minus"></i>
+                        </button>
+                        <span class="text-xs font-bold text-white w-4 text-center">${item.quantity}</span>
+                        <button onclick="updateCart(${item.id}, 1)" class="w-6 h-6 bg-brand-gold text-black rounded flex items-center justify-center text-xs font-bold">
+                            <i class="fa-solid fa-plus"></i>
+                        </button>
+                    </div>
+                `;
+                cartItemsContainer.appendChild(row);
+            });
+
+            cartBadge.textContent = totalCount;
+            cartBadge.classList.remove('hidden');
+            
+            floatingCartCount.textContent = totalCount;
+            floatingCartTotal.textContent = totalPrice.toFixed(2) + ' €';
+            cartModalTotal.textContent = totalPrice.toFixed(2) + ' €';
+
+            floatingCartBar.classList.remove('hidden');
+        }
+
+        function toggleCartModal() {
+            cartModal.classList.toggle('hidden');
+        }
+
+        function sendOrder() {
+            const tableInput = document.getElementById('table-number').value.trim();
+            const cartItemsArray = Object.values(cart);
+
+            if (cartItemsArray.length === 0) return;
+
+            let message = "Hola, ¡quiero hacer el siguiente pedido!%0A%0A";
+            if (tableInput) {
+                message += `*${tableInput}*%0A%0A`;
+            }
+
+            let total = 0;
+            cartItemsArray.forEach(item => {
+                const price = Number(item.precio || item.price || 0);
+                const subtotal = price * item.quantity;
+                total += subtotal;
+                message += `- ${item.quantity}x ${item.nombre || item.name} (${subtotal.toFixed(2)} €)%0A`;
+            });
+
+            message += `%0A*Total:* ${total.toFixed(2)} €`;
+
+            // Número de WhatsApp de destino (puedes cambiarlo si es necesario)
+            const phone = "34600000000"; 
+            window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+        }
+
+        function showLoading(show) {
+            if (show) {
+                loadingSpinner.classList.remove('hidden');
+            } else {
+                loadingSpinner.classList.add('hidden');
+            }
+        }
+
+        function showError(msg) {
+            errorDetails.textContent = msg;
+            errorMessage.classList.remove('hidden');
+        }
+
+        function hideError() {
+            errorMessage.classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
