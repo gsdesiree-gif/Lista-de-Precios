@@ -472,7 +472,7 @@
     </button>
   </div>
 
-  <!-- VISTA DOCUMENTO IMPRIMIBLE CON BOTÓN VOLVER DENTRO DE LA ACCIÓN -->
+  <!-- VISTA DOCUMENTO IMPRIMIBLE -->
   <div id="vistaDocumento" style="display:none;">
     <div class="doc-actions-bar no-print" style="display: flex; justify-content: space-between; align-items: center; max-width: 210mm; margin: 0 auto 16px auto; padding: 0 10px;">
       <button onclick="cerrarVistaDocumento()" class="btn btn-sm" style="background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1; font-size: 14px; font-weight: 700; width: auto; padding: 10px 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); cursor: pointer;">
@@ -610,6 +610,7 @@
         
         if (error) {
           console.error('Error al traer productos de Supabase:', error.message);
+          if (container1) container1.innerHTML = `<div style="color:red; padding:12px; font-size:13px;">Error de conexión: ${error.message}</div>`;
           return;
         }
 
