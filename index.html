@@ -382,4 +382,53 @@
     async function generarLista() {
       const cliente = document.getElementById('clienteNombre').value.trim();
       if (!cliente) {
-        alert
+        alert('Escribe el nombre del cliente.');
+        return;
+      }
+
+      const cbs = document.querySelectorAll('.prod-checkbox:checked');
+      const seleccionados = Array.from(cbs).map(cb => parseInt(cb.value));
+
+      if (seleccionados.length === 0) {
+        alert('Selecciona al menos un producto.');
+        return;
+      }
+
+      await _supabase.from('listas_generadas').insert([{ cliente_nombre: cliente, productos_ids: seleccionados }]);
+      document.getElementById('clienteNombre').value = '';
+      cargarHistoricoListas();
+      alert('¡Lista creada correctamente!');
+    }
+
+    async function cargarHistoricoListas() {
+      const container = document.getElementById('listaHistoricoCard');
+      if (!_supabase) return;
+
+      try {
+        const { data } = await _supabase.from('listas_generadas').select('*').order('id', { ascending: false });
+
+        if (!data || data.length === 0) {
+          container.innerHTML = '<div style="color:var(--muted); text-align:center; padding:12px;">Sin historial de listas.</div>';
+          return;
+        }
+
+        container.innerHTML = data.map(l => `
+          <div class="product-item">
+            <div>
+              <div class="product-name">${l.cliente_nombre}</div>
+              <div style="font-size: 12px; color: var(--muted);">${new Date(l.fecha).toLocaleDateString('es-ES')}</div>
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="borrarLista(${l.id})">🗑️</button>
+          </div>
+        `).join('');
+      } catch(e) {}
+    }
+
+    async function borrarLista(id) {
+      if (!confirm('¿Borrar lista del historial?')) return;
+      await _supabase.from('listas_generadas').delete().eq('id', id);
+      cargarHistoricoListas();
+    }
+  </script>
+</body>
+</html>
