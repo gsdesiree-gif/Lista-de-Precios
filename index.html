@@ -1,59 +1,77 @@
-async function cargarProductos() {
-  const container1 = document.getElementById('listaProductosCard');
-  const container2 = document.getElementById('listaSeleccionProductos');
-  if (!_supabase) return;
+async function verListaDocumento(id) {
+  const { data: lista } = await _supabase.from('listas_generadas').select('*').eq('id', id).single();
+  if (!lista) return;
 
-  try {
-    const { data, error } = await _supabase.from('productos').select('*');
-    
-    if (error) {
-      console.error('Error al traer productos de Supabase:', error.message);
-      if (container1) container1.innerHTML = `<div style="color:red; padding:12px; font-size:13px;">Error de conexión: ${error.message}</div>`;
-      return;
-    }
+  const empresa = document.getElementById('empresaNombre').value || 'EL ANCLA';
+  const comercial = document.getElementById('comercialNombre').value || '';
+  const telefono = document.getElementById('comercialTelefono').value || '';
+  const logoUrl = document.getElementById('empresaLogoUrl').value;
+  const usarMarcaAgua = document.getElementById('usarMarcaAgua').checked;
 
-    if (!data || data.length === 0) {
-      _productosCache = [];
-      if (container1) container1.innerHTML = '<div style="font-size:13px; color:var(--muted); text-align:center; padding:12px;">Sin productos registrados.</div>';
-      if (container2) container2.innerHTML = '<div style="font-size:13px; color:var(--muted); text-align:center; padding:12px;">No hay productos disponibles.</div>';
-      return;
-    }
+  const idsGuardados = lista.productos_ids || [];
+  const productosSeleccionados = _productosCache.filter(p => idsGuardados.includes(p.id));
+  const mostrarLogoLateral = logoUrl && !usarMarcaAgua;
 
-    _productosCache = data;
+  let htmlDoc = `
+    ${(logoUrl && usarMarcaAgua) ? `<img src="${logoUrl}" crossorigin="anonymous" class="watermark-bg">` : ''}
 
-    if (container1) {
-      container1.innerHTML = _productosCache.map(prod => `
-        <div class="product-item">
-          <div class="product-left">
-            ${prod.url_foto ? `<img src="${prod.url_foto}" class="product-img" crossorigin="anonymous">` : '<div class="product-img"></div>'}
+    <!-- CABECERA ELEGANTE Y MINIMALISTA -->
+    <div style="border-bottom: 2px solid #0f172a; padding-bottom: 18px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 2;">
+      <div style="width: 25%; text-align: left;">
+        ${mostrarLogoLateral ? `<img src="${logoUrl}" crossorigin="anonymous" style="max-height: 75px; max-width: 100%; object-fit: contain;">` : ''}
+      </div>
+
+      <div style="width: 50%; text-align: center;">
+        <h1 style="margin: 0; font-family: 'Oswald', sans-serif; font-size: 30px; color: #0f172a; letter-spacing: 1.5px; text-transform: uppercase;">${empresa}</h1>
+        ${comercial ? `
+          <p style="margin: 6px 0 0 0; font-size: 13px; color: #2563eb; font-weight: 700; letter-spacing: 0.5px;">
+            COMERCIAL: ${comercial.toUpperCase()}${telefono ? `<span style="margin-left: 6px; color: #475569;">| 📞 ${telefono}</span>` : ''}
+          </p>
+        ` : ''}
+      </div>
+
+      <div style="width: 25%; text-align: right; font-size: 12px; color: #475569;">
+        <p style="margin: 0; font-size: 14px; color: #0f172a; font-weight: 700;">
+          CLIENTE: <span style="color: #2563eb;">${lista.cliente_nombre.toUpperCase()}</span>
+        </p>
+        <p style="margin: 4px 0 0 0;"><strong>Fecha:</strong> ${new Date(lista.fecha).toLocaleDateString('es-ES')}</p>
+      </div>
+    </div>
+
+    <!-- TARJETAS DE PRODUCTO CON FONDO TRANSPARENTE PARA MOSTRAR LA MARCA DE AGUA -->
+    <div style="display: flex; flex-direction: column; gap: 12px; position: relative; z-index: 2;">
+      ${productosSeleccionados.map(p => `
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid rgba(226, 232, 240, 0.8); background: rgba(255, 255, 255, 0.65); backdrop-filter: blur(2px); border-radius: 12px;">
+          <div style="display: flex; align-items: center; gap: 16px;">
+            ${p.url_foto 
+              ? `<img src="${p.url_foto}" crossorigin="anonymous" style="width: 75px; height: 75px; object-fit: cover; border-radius: 10px; border: 1px solid #f1f5f9; background: #fff;">` 
+              : `<div style="width: 75px; height: 75px; border-radius: 10px; background: rgba(248, 250, 252, 0.8); border: 1px dashed #cbd5e1; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 11px;">Sin Foto</div>`
+            }
             <div>
-              <div class="product-name">${prod.nombre || 'Sin nombre'}</div>
-              ${prod.notas ? `<div class="product-notes">📌 ${prod.notas}</div>` : ''}
-              <div class="product-price">${parseFloat(prod.precio || 0).toFixed(2)} €</div>
+              <div style="font-size: 16px; font-weight: 700; color: #0f172a; text-transform: capitalize;">${p.nombre}</div>${p.notas ? `<div style="font-size: 12px; color: #475569; margin-top: 4px; font-style: italic;">📌 ${p.notas}</div>` : ''}
             </div>
           </div>
-          <button class="btn btn-danger btn-sm" onclick="borrarProducto(${prod.id}, '${(prod.nombre || '').replace(/'/g, "\\'")}')">🗑️</button>
-        </div>
-      `).join('');
-    }
-
-    if (container2) {
-      container2.innerHTML = _productosCache.map(prod => `
-        <div class="product-item" onclick="toggleSelectProduct(this)">
-          <div class="product-left">
-            <input type="checkbox" class="prod-checkbox" value="${prod.id}" onclick="event.stopPropagation(); checkCardState(this)">
-            ${prod.url_foto ? `<img src="${prod.url_foto}" class="product-img" crossorigin="anonymous">` : '<div class="product-img"></div>'}
-            <div>
-              <div class="product-name">${prod.nombre || 'Sin nombre'}</div>
-              ${prod.notas ? `<div class="product-notes">📌 ${prod.notas}</div>` : ''}
-              <div class="product-price">${parseFloat(prod.precio || 0).toFixed(2)} €</div>
-            </div>
+          <div style="font-family: 'Oswald', sans-serif; font-size: 20px; font-weight: 700; color: #2563eb; white-space: nowrap; margin-left: 16px;">
+            ${parseFloat(p.precio || 0).toFixed(2)} €
           </div>
         </div>
-      `).join('');
-    }
+      `).join('')}
+    </div>
+  `;
 
-  } catch(e) {
-    console.error('Error inesperado al cargar productos:', e);
+  document.getElementById('contenidoImprimible').innerHTML = htmlDoc;
+  
+  // Ocultar la app y mostrar la vista de documento
+  document.querySelectorAll('.no-print').forEach(el => el.style.display = 'none');
+  
+  // Asegurar que la barra superior con el botón de retroceso esté visible
+  const vistaDoc = document.getElementById('vistaDocumento');
+  vistaDoc.style.display = 'block';
+  
+  const actionsBar = vistaDoc.querySelector('.doc-actions-bar');
+  if (actionsBar) {
+    actionsBar.style.display = 'flex';
   }
+
+  window.scrollTo(0, 0);
 }
