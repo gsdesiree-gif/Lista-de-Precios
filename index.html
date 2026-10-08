@@ -1,63 +1,643 @@
-async function cargarProductos() {
-  const c1 = document.getElementById('listaProductosCard');
-  const c2 = document.getElementById('listaSeleccionProductos');
-  if (!_supabase) return;
-
-  try {
-    // Timeout de 8 segundos por si la red no responde
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Tiempo de espera agotado al conectar con Supabase')), 8000)
-    );
-
-    const queryPromise = _supabase.from('productos').select('*').order('id', { ascending: false });
-
-    const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
-
-    if (error) {
-      c1.innerHTML = `<div style="color:var(--danger); padding:12px; font-weight:600;">⚠️ Error de Supabase: ${error.message}</div>`;
-      c2.innerHTML = '<div style="color:var(--muted); padding:12px;">Error al obtener productos.</div>';
-      return;
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>El Ancla | Catálogo Pro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --primary: #0f172a;
+      --accent: #2563eb;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --danger: #ef4444;
+      --radius: 16px;
     }
 
-    if (!data || data.length === 0) {
-      _productosCache = [];
-      c1.innerHTML = '<div style="color:var(--muted); text-align:center; padding:16px;">Sin productos registrados todavía.</div>';
-      c2.innerHTML = '<div style="color:var(--muted); text-align:center; padding:16px;">No hay productos disponibles.</div>';
-      return;
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 0;
+      padding-bottom: 90px;
     }
 
-    _productosCache = data;
+    .container { max-width: 100%; margin: 0 auto; padding: 16px; }
 
-    c1.innerHTML = _productosCache.map(p => `
-      <div class="product-item">
-        <div class="product-left">
-          ${p.url_foto ? `<img src="${p.url_foto}" class="product-img" alt="Foto">` : '<div class="product-img" style="display:flex;align-items:center;justify-content:center;font-size:20px;">📦</div>'}
-          <div>
-            <div class="product-name">${p.nombre || ''}</div>
-            ${p.notas ? `<div class="product-notes">📌 ${p.notas}</div>` : ''}
-            <div class="product-price">${parseFloat(p.precio || 0).toFixed(2)} €</div>
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 24px;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .brand-title {
+      font-family: 'Oswald', sans-serif;
+      font-size: 24px;
+      color: var(--primary);
+      margin: 0;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .web-nav { display: none; gap: 10px; }
+    .web-nav-btn {
+      padding: 10px 18px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .web-nav-btn.active {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+    }
+
+    .card-header {
+      font-family: 'Oswald', sans-serif;
+      font-size: 18px;
+      color: var(--primary);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+
+    .grid-layout { display: flex; flex-direction: column; gap: 16px; }
+
+    .field { margin-bottom: 14px; }
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+    input[type="text"], input[type="number"], input[type="file"] {
+      width: 100%;
+      padding: 12px 16px;
+      font-size: 15px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: #f8fafc;
+      color: var(--primary);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: none;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+    }
+    .btn-accent { background: var(--accent); }
+    .btn-danger { background: #fef2f2; color: var(--danger); }
+    .btn-sm { width: auto; padding: 8px 14px; font-size: 13px; }
+
+    .product-grid { display: flex; flex-direction: column; gap: 10px; }
+
+    .product-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+    }
+    .product-left { display: flex; align-items: center; gap: 12px; }
+    .product-img { width: 50px; height: 50px; border-radius: 10px; object-fit: cover; background: #e2e8f0; }
+    .product-name { font-weight: 600; font-size: 15px; }
+    .product-notes { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .product-price { font-size: 14px; font-weight: 700; color: var(--accent); }
+
+    .nav-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #ffffff;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+      z-index: 100;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      border: none;
+      background: none;
+      width: 33.33%;
+    }
+    .nav-item.active { color: var(--accent); }
+
+    .tab-content { display: none !important; }
+    .tab-content.active { display: block !important; }
+
+    .page-a4 {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      background: #ffffff;
+      padding: 20mm 15mm;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+
+    @media (min-width: 800px) {
+      body { padding-bottom: 30px; }
+      .container { max-width: 1280px; padding: 24px; }
+      .web-nav { display: flex !important; }
+      .nav-bar { display: none !important; }
+
+      .grid-layout {
+        display: grid !important;
+        grid-template-columns: 380px 1fr !important;
+        gap: 24px !important;
+      }
+
+      .product-grid {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)) !important;
+        gap: 14px !important;
+      }
+    }
+
+    @media print {
+      @page { size: A4 portrait; margin: 0; }
+      html, body { width: 210mm; height: 297mm; background: white; margin: 0 !important; padding: 0 !important; }
+      .no-print { display: none !important; }
+      #vistaDocumento { display: block !important; margin: 0 !important; padding: 0 !important; }
+      .page-a4 { box-shadow: none !important; border-radius: 0 !important; padding: 15mm !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar no-print">
+    <div class="brand-title">EL ANCLA</div>
+    <div class="web-nav">
+      <button class="web-nav-btn active" onclick="switchTab('tabCatalogo')">📦 Productos</button>
+      <button class="web-nav-btn" onclick="switchTab('tabCrear')">📝 Crear Lista</button>
+      <button class="web-nav-btn" onclick="switchTab('tabHistorial')">📜 Histórico</button>
+    </div>
+  </div>
+
+  <div class="container no-print">
+    <div id="tabCatalogo" class="tab-content active">
+      <div class="grid-layout">
+        <div class="card">
+          <div class="card-header">➕ Registrar Producto</div>
+          <div class="field">
+            <label>Nombre del Producto</label>
+            <input type="text" id="prodNombre" placeholder="Ej: Merluza Filete">
           </div>
-        </div>
-        <button class="btn btn-danger btn-sm" onclick="borrarProducto(${p.id})">🗑️</button>
-      </div>
-    `).join('');
-
-    c2.innerHTML = _productosCache.map(p => `
-      <div class="product-item">
-        <div class="product-left">
-          <input type="checkbox" class="prod-checkbox" value="${p.id}">
-          ${p.url_foto ? `<img src="${p.url_foto}" class="product-img" alt="Foto">` : '<div class="product-img" style="display:flex;align-items:center;justify-content:center;font-size:20px;">📦</div>'}
-          <div>
-            <div class="product-name">${p.nombre || ''}</div>
-            ${p.notas ? `<div class="product-notes">📌 ${p.notas}</div>` : ''}
-            <div class="product-price">${parseFloat(p.precio || 0).toFixed(2)} €</div>
+          <div class="field">
+            <label>Precio (€)</label>
+            <input type="number" step="0.01" id="prodPrecio" placeholder="6.50">
           </div>
+          <div class="field">
+            <label>Observaciones / Nota (Opcional)</label>
+            <input type="text" id="prodNotas" placeholder="Ej: Caja de 5kg">
+          </div>
+          <div class="field">
+            <label>Seleccionar Foto (Imagen)</label>
+            <input type="file" id="prodArchivoFoto" accept="image/*" onchange="procesarImagen(this)">
+            <input type="hidden" id="prodFotoBase64">
+          </div>
+          <button id="btnGuardarProd" onclick="guardarProducto()" class="btn">Guardar Producto</button>
+        </div>
+
+        <div class="card">
+          <div class="card-header">📦 Productos Registrados</div>
+          <div id="listaProductosCard" class="product-grid">Cargando datos...</div>
         </div>
       </div>
-    `).join('');
+    </div>
 
-  } catch(e) {
-    c1.innerHTML = `<div style="color:var(--danger); padding:12px; font-weight:600;">⚠️ Error: ${e.message}</div>`;
-    c2.innerHTML = '<div style="color:var(--muted); padding:12px;">Error al conectar.</div>';
-  }
-}
+    <div id="tabCrear" class="tab-content">
+      <div class="card">
+        <div class="card-header">🚀 Nueva Lista de Precios</div>
+        <div class="field">
+          <label>Nombre del Cliente</label>
+          <input type="text" id="clienteNombre" placeholder="Ej: Restaurante El Faro">
+        </div>
+        <div style="font-size: 13px; font-weight: 600; color: var(--muted); margin: 16px 0 8px 0;">SELECCIONA LOS PRODUCTOS:</div>
+        <div id="listaSeleccionProductos" class="product-grid">Buscando productos...</div>
+        <button onclick="generarLista()" class="btn btn-accent" style="margin-top: 20px;">💾 Generar Lista de Precios</button>
+      </div>
+    </div>
+
+    <div id="tabHistorial" class="tab-content">
+      <div class="card">
+        <div class="card-header">📜 Listas Guardadas</div>
+        <div id="listaHistoricoCard" class="product-grid">Cargando historial...</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nav-bar no-print">
+    <button class="nav-item active" onclick="switchTab('tabCatalogo')"><span>📦 Productos</span></button>
+    <button class="nav-item" onclick="switchTab('tabCrear')"><span>📝 Crear Lista</span></button>
+    <button class="nav-item" onclick="switchTab('tabHistorial')"><span>📜 Histórico</span></button>
+  </div>
+
+  <div id="vistaDocumento" style="display:none;">
+    <div class="no-print" style="display: flex; gap: 10px; justify-content: space-between; align-items: center; max-width: 210mm; margin: 0 auto 16px auto; padding: 10px;">
+      <button onclick="cerrarVistaDocumento()" class="btn btn-sm" style="background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1;">⬅️ Volver</button>
+      <div style="display: flex; gap: 8px;">
+        <button onclick="window.print()" class="btn btn-sm" style="background:#0f172a; color:#ffffff;">🖨️ Imprimir</button>
+        <button onclick="descargarPDF()" class="btn btn-accent btn-sm">📄 Descargar PDF</button>
+      </div>
+    </div>
+
+    <div class="page-a4" id="documentoA4">
+      <div id="contenidoImprimible"></div>
+    </div>
+  </div>
+
+  <script>
+    var SUPABASE_URL = 'https://fllcmidfhpgczjvnvuho.supabase.co';
+    var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsbGNtaWRmaHBnY3pqdm52dWhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMDM0MDIsImV4cCI6MjEwNjc3OTQwMn0.pHENTLosOxgknz7tCMRtjBm9SYDJaLCbtwyrO1kkbkY'; 
+    
+    var _supabase = null;
+    var _productosCache = [];
+    var _clienteActual = '';
+
+    window.addEventListener('load', function() {
+      iniciarAplicacion();
+    });
+
+    function iniciarAplicacion() {
+      try {
+        if (window.supabase) {
+          _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        } else {
+          mostrarError('No se pudo cargar la librería de Supabase.');
+          return;
+        }
+        cargarProductos();
+        cargarHistoricoListas();
+      } catch (e) {
+        mostrarError('Error al conectar: ' + e.message);
+      }
+    }
+
+    function mostrarError(msj) {
+      document.getElementById('listaProductosCard').innerHTML = '<div style="color:var(--danger); padding:12px; font-weight:600;">⚠️ ' + msj + '</div>';
+      document.getElementById('listaSeleccionProductos').innerHTML = '<div style="color:var(--muted); padding:12px;">No disponible.</div>';
+      document.getElementById('listaHistoricoCard').innerHTML = '<div style="color:var(--muted); padding:12px;">No disponible.</div>';
+    }
+
+    function switchTab(tabId) {
+      cerrarVistaDocumento();
+      var tabs = document.querySelectorAll('.tab-content');
+      for (var i = 0; i < tabs.length; i++) {
+        tabs[i].classList.remove('active');
+      }
+      var target = document.getElementById(tabId);
+      if (target) target.classList.add('active');
+
+      var tabNames = ['tabCatalogo', 'tabCrear', 'tabHistorial'];
+      var idx = tabNames.indexOf(tabId);
+      var navItems = document.querySelectorAll('.nav-item');
+      var webNavBtns = document.querySelectorAll('.web-nav-btn');
+      
+      for (var j = 0; j < navItems.length; j++) {
+        navItems[j].classList.toggle('active', j === idx);
+      }
+      for (var k = 0; k < webNavBtns.length; k++) {
+        webNavBtns[k].classList.toggle('active', k === idx);
+      }
+    }
+
+    function procesarImagen(input) {
+      if (input.files && input.files[0]) {
+        var file = input.files[0];
+        var reader = new FileReader();
+
+        reader.onload = function(e) {
+          var img = new Image();
+          img.src = e.target.result;
+
+          img.onload = function() {
+            var canvas = document.createElement('canvas');
+            var maxDimension = 250;
+            var width = img.width;
+            var height = img.height;
+
+            if (width > height) {
+              if (width > maxDimension) {
+                height = Math.round((height * maxDimension) / width);
+                width = maxDimension;
+              }
+            } else {
+              if (height > maxDimension) {
+                width = Math.round((width * maxDimension) / height);
+                height = maxDimension;
+              }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            var ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            document.getElementById('prodFotoBase64').value = canvas.toDataURL('image/jpeg', 0.7);
+          };
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    async function cargarProductos() {
+      var c1 = document.getElementById('listaProductosCard');
+      var c2 = document.getElementById('listaSeleccionProductos');
+      if (!_supabase) return;
+
+      try {
+        var res = await _supabase.from('productos').select('*').order('id', { ascending: false });
+        var data = res.data;
+        var error = res.error;
+
+        if (error) {
+          c1.innerHTML = '<div style="color:var(--danger); padding:12px; font-weight:600;">Error de la base de datos: ' + error.message + '</div>';
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          _productosCache = [];
+          c1.innerHTML = '<div style="color:var(--muted); text-align:center; padding:16px;">Sin productos registrados todavía.</div>';
+          c2.innerHTML = '<div style="color:var(--muted); text-align:center; padding:16px;">No hay productos disponibles.</div>';
+          return;
+        }
+
+        _productosCache = data;
+
+        var htmlCard1 = '';
+        var htmlCard2 = '';
+
+        for (var i = 0; i < _productosCache.length; i++) {
+          var p = _productosCache[i];
+          var imgTag = p.url_foto ? '<img src="' + p.url_foto + '" class="product-img" alt="Foto">' : '<div class="product-img" style="display:flex;align-items:center;justify-content:center;font-size:20px;">📦</div>';
+          var notaTag = p.notas ? '<div class="product-notes">📌 ' + p.notas + '</div>' : '';
+          var precioFormatted = parseFloat(p.precio || 0).toFixed(2);
+
+          htmlCard1 += '<div class="product-item">' +
+            '<div class="product-left">' + imgTag +
+              '<div>' +
+                '<div class="product-name">' + (p.nombre || '') + '</div>' +
+                notaTag +
+                '<div class="product-price">' + precioFormatted + ' €</div>' +
+              '</div>' +
+            '</div>' +
+            '<button class="btn btn-danger btn-sm" onclick="borrarProducto(' + p.id + ')">🗑️</button>' +
+          '</div>';
+
+          htmlCard2 += '<div class="product-item">' +
+            '<div class="product-left">' +
+              '<input type="checkbox" class="prod-checkbox" value="' + p.id + '">' + imgTag +
+              '<div>' +
+                '<div class="product-name">' + (p.nombre || '') + '</div>' +
+                notaTag +
+                '<div class="product-price">' + precioFormatted + ' €</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+        }
+
+        c1.innerHTML = htmlCard1;
+        c2.innerHTML = htmlCard2;
+
+      } catch(e) {
+        c1.innerHTML = '<div style="color:var(--danger); padding:12px;">Error al cargar: ' + e.message + '</div>';
+      }
+    }
+
+    async function guardarProducto() {
+      var nombre = document.getElementById('prodNombre').value.trim();
+      var precio = parseFloat(document.getElementById('prodPrecio').value);
+      var notas = document.getElementById('prodNotas').value.trim();
+      var url_foto = document.getElementById('prodFotoBase64').value;
+
+      var btn = document.getElementById('btnGuardarProd');
+
+      if (!nombre || isNaN(precio)) {
+        alert('Escribe al menos el nombre y el precio.');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerText = 'Guardando...';
+
+      try {
+        var res = await _supabase.from('productos').insert([{ nombre: nombre, precio: precio, notas: notas, url_foto: url_foto }]);
+        if (res.error) {
+          alert('Error al guardar en Supabase: ' + res.error.message);
+        } else {
+          document.getElementById('prodNombre').value = '';
+          document.getElementById('prodPrecio').value = '';
+          document.getElementById('prodNotas').value = '';
+          document.getElementById('prodArchivoFoto').value = '';
+          document.getElementById('prodFotoBase64').value = '';
+          await cargarProductos();
+        }
+      } catch (e) {
+        alert('Error inesperado al guardar.');
+      } finally {
+        btn.disabled = false;
+        btn.innerText = 'Guardar Producto';
+      }
+    }
+
+    async function borrarProducto(id) {
+      if (!confirm('¿Eliminar producto?')) return;
+      await _supabase.from('productos').delete().eq('id', id);
+      cargarProductos();
+    }
+
+    async function generarLista() {
+      var cliente = document.getElementById('clienteNombre').value.trim();
+      if (!cliente) {
+        alert('Escribe el nombre del cliente.');
+        return;
+      }
+
+      var cbs = document.querySelectorAll('.prod-checkbox:checked');
+      var seleccionados = [];
+      for (var i = 0; i < cbs.length; i++) {
+        seleccionados.push(parseInt(cbs[i].value));
+      }
+
+      if (seleccionados.length === 0) {
+        alert('Selecciona al menos un producto.');
+        return;
+      }
+
+      var res = await _supabase.from('listas_generadas').insert([{ cliente_nombre: cliente, productos_ids: seleccionados }]).select();
+      
+      if (res.error) {
+        alert('Error al generar la lista: ' + res.error.message);
+        return;
+      }
+
+      document.getElementById('clienteNombre').value = '';
+      await cargarHistoricoListas();
+      
+      if (res.data && res.data[0]) {
+        verListaDocumento(res.data[0].id);
+      }
+    }
+
+    async function cargarHistoricoListas() {
+      var container = document.getElementById('listaHistoricoCard');
+      if (!_supabase) return;
+
+      try {
+        var res = await _supabase.from('listas_generadas').select('*').order('id', { ascending: false });
+        var data = res.data;
+
+        if (!data || data.length === 0) {
+          container.innerHTML = '<div style="color:var(--muted); text-align:center; padding:12px;">Sin historial de listas.</div>';
+          return;
+        }
+
+        var htmlHistorico = '';
+        for (var i = 0; i < data.length; i++) {
+          var l = data[i];
+          htmlHistorico += '<div class="product-item">' +
+            '<div>' +
+              '<div class="product-name">' + l.cliente_nombre + '</div>' +
+              '<div style="font-size: 12px; color: var(--muted);">' + new Date(l.fecha).toLocaleDateString('es-ES') + '</div>' +
+            '</div>' +
+            '<div style="display:flex; gap:6px;">' +
+              '<button class="btn btn-accent btn-sm" onclick="verListaDocumento(' + l.id + ')">👁️ Ver</button>' +
+              '<button class="btn btn-danger btn-sm" onclick="borrarLista(' + l.id + ')">🗑️</button>' +
+            '</div>' +
+          '</div>';
+        }
+        container.innerHTML = htmlHistorico;
+      } catch(e) {}
+    }
+
+    async function verListaDocumento(id) {
+      var res = await _supabase.from('listas_generadas').select('*').eq('id', id).single();
+      var lista = res.data;
+      if (!lista) return;
+
+      _clienteActual = lista.cliente_nombre;
+      var idsGuardados = lista.productos_ids || [];
+      var productosSeleccionados = [];
+      for (var i = 0; i < _productosCache.length; i++) {
+        if (idsGuardados.indexOf(_productosCache[i].id) !== -1) {
+          productosSeleccionados.push(_productosCache[i]);
+        }
+      }
+
+      var itemsHtml = '';
+      for (var j = 0; j < productosSeleccionados.length; j++) {
+        var p = productosSeleccionados[j];
+        var imgTag = p.url_foto ? '<img src="' + p.url_foto + '" style="width: 48px; height: 48px; border-radius: 8px; object-fit: cover;">' : '';
+        var notaTag = p.notas ? '<div style="font-size: 12px; color: #64748b; margin-top: 2px;">📌 ' + p.notas + '</div>' : '';
+
+        itemsHtml += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #e2e8f0;">' +
+          '<div style="display: flex; align-items: center; gap: 12px;">' +
+            imgTag +
+            '<div>' +
+              '<div style="font-size: 15px; font-weight: 700; color: #0f172a;">' + (p.nombre || '') + '</div>' +
+              notaTag +
+            '</div>' +
+          '</div>' +
+          '<div style="font-family: \'Oswald\', sans-serif; font-size: 20px; font-weight: 700; color: #2563eb;">' +
+            parseFloat(p.precio || 0).toFixed(2) + ' €' +
+          '</div>' +
+        '</div>';
+      }
+
+      var htmlDoc = '<div style="border-bottom: 2px solid #0f172a; padding-bottom: 18px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between;">' +
+        '<div>' +
+          '<h1 style="margin: 0; font-family: \'Oswald\', sans-serif; font-size: 28px; color: #0f172a; text-transform: uppercase;">EL ANCLA</h1>' +
+          '<p style="margin: 4px 0 0 0; font-size: 13px; color: #2563eb; font-weight: 700;">OFERTA DE PRECIOS ESPECIAL</p>' +
+        '</div>' +
+        '<div style="text-align: right; font-size: 12px; color: #475569;">' +
+          '<p style="margin: 0; font-size: 15px; color: #0f172a; font-weight: 700;">CLIENTE: <span style="color: #2563eb;">' + lista.cliente_nombre.toUpperCase() + '</span></p>' +
+          '<p style="margin: 4px 0 0 0;"><strong>Fecha:</strong> ' + new Date(lista.fecha).toLocaleDateString('es-ES') + '</p>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display: flex; flex-direction: column; gap: 10px;">' + itemsHtml + '</div>';
+
+      document.getElementById('contenidoImprimible').innerHTML = htmlDoc;
+      var noPrintEls = document.querySelectorAll('.no-print');
+      for (var k = 0; k < noPrintEls.length; k++) {
+        noPrintEls[k].style.display = 'none';
+      }
+      document.getElementById('vistaDocumento').style.display = 'block';
+      window.scrollTo(0, 0);
+    }
+
+    function descargarPDF() {
+      var elemento = document.getElementById('documentoA4');
+      var opciones = {
+        margin: 0,
+        filename: 'Lista_Precios_El_Ancla_' + (_clienteActual || 'Cliente') + '.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      html2pdf().set(opciones).from(elemento).save();
+    }
+
+    function cerrarVistaDocumento() {
+      document.getElementById('vistaDocumento').style.display = 'none';
+      var noPrintEls = document.querySelectorAll('.no-print');
+      for (var i = 0; i < noPrintEls.length; i++) {
+        noPrintEls[i].style.display = '';
+      }
+    }
+
+    async function borrarLista(id) {
+      if (!confirm('¿Borrar lista del historial?')) return;
+      await _supabase.from('listas_generadas').delete().eq('id', id);
+      cargarHistoricoListas();
+    }
+  </script>
+</body>
+</html>
