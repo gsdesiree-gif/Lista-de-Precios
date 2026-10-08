@@ -100,7 +100,7 @@
       margin-bottom: 6px;
       text-transform: uppercase;
     }
-    input[type="text"], input[type="number"], input[type="file"] {
+    input[type="text"], input[type="number"], input[type="file"], select {
       width: 100%;
       padding: 12px 16px;
       font-size: 15px;
@@ -108,6 +108,7 @@
       border: 1px solid var(--border);
       background: #f8fafc;
       color: var(--primary);
+      font-family: inherit;
     }
 
     .btn {
@@ -137,10 +138,36 @@
       border-radius: 14px;
     }
     .product-left { display: flex; align-items: center; gap: 12px; }
-    .product-img { width: 50px; height: 50px; border-radius: 10px; object-fit: cover; background: #e2e8f0; }
+    .product-img { width: 55px; height: 55px; border-radius: 10px; object-fit: cover; background: #e2e8f0; flex-shrink: 0; }
     .product-name { font-weight: 600; font-size: 15px; }
     .product-notes { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .product-badge { font-size: 11px; font-weight: 700; color: var(--accent); background: #eff6ff; padding: 2px 8px; border-radius: 6px; display: inline-block; margin-top: 4px; text-transform: uppercase; }
     .product-price { font-size: 14px; font-weight: 700; color: var(--accent); }
+
+    /* Filtro por categoría en Crear Lista */
+    .cat-filter-bar {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 16px;
+    }
+    .cat-filter-btn {
+      padding: 8px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .cat-filter-btn.active {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+    }
 
     .nav-bar {
       position: fixed;
@@ -193,7 +220,7 @@
       min-height: 297mm;
       margin: 0 auto;
       background: #ffffff;
-      padding: 20mm 15mm;
+      padding: 15mm 15mm;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
       border-radius: 4px;
       box-sizing: border-box;
@@ -239,7 +266,7 @@
       html, body { width: 210mm; height: 297mm; background: white; margin: 0 !important; padding: 0 !important; }
       .no-print { display: none !important; }
       #vistaDocumento { display: block !important; margin: 0 !important; padding: 0 !important; }
-      .page-a4 { box-shadow: none !important; border-radius: 0 !important; padding: 15mm !important; }
+      .page-a4 { box-shadow: none !important; border-radius: 0 !important; padding: 12mm !important; }
     }
   </style>
 </head>
@@ -262,16 +289,27 @@
         <div class="card">
           <div class="card-header">➕ Registrar Producto</div>
           <div class="field">
+            <label>Familia / Categoría</label>
+            <select id="prodCategoria">
+              <option value="Marisco">🦐 Marisco</option>
+              <option value="Pescados">🐟 Pescados</option>
+              <option value="Carnes">🥩 Carnes</option>
+              <option value="Verduras">🥬 Verduras</option>
+              <option value="Precocinados">🧆 Precocinados</option>
+              <option value="Varios" selected>📦 Varios</option>
+            </select>
+          </div>
+          <div class="field">
             <label>Nombre del Producto</label>
-            <input type="text" id="prodNombre" placeholder="Ej: Merluza Filete">
+            <input type="text" id="prodNombre" placeholder="Ej: Gamba Blanca de Huelva">
           </div>
           <div class="field">
             <label>Precio Base (€)</label>
-            <input type="number" step="0.01" id="prodPrecio" placeholder="6.50">
+            <input type="number" step="0.01" id="prodPrecio" placeholder="12.50">
           </div>
           <div class="field">
             <label>Observaciones / Nota (Opcional)</label>
-            <input type="text" id="prodNotas" placeholder="Ej: Caja de 5kg">
+            <input type="text" id="prodNotas" placeholder="Ej: Caja de 2kg fresco">
           </div>
           <div class="field">
             <label>Seleccionar Foto (Imagen)</label>
@@ -288,7 +326,7 @@
       </div>
     </div>
 
-    <!-- PESTAÑA CREAR LISTA CON PRECIOS EDITABLES -->
+    <!-- PESTAÑA CREAR LISTA CON FILTRO Y AGRUPACIÓN -->
     <div id="tabCrear" class="tab-content">
       <div class="card">
         <div class="card-header">🚀 Nueva Lista de Precios</div>
@@ -296,9 +334,22 @@
           <label>Nombre del Cliente</label>
           <input type="text" id="clienteNombre" placeholder="Ej: Restaurante El Faro">
         </div>
-        <div style="font-size: 13px; font-weight: 600; color: var(--muted); margin: 16px 0 8px 0;">SELECCIONA LOS PRODUCTOS Y AJUSTA EL PRECIO SI ES NECESARIO:</div>
-        <div id="listaSeleccionProductos" class="product-grid">Buscando productos...</div>
-        <button onclick="generarLista()" class="btn btn-accent" style="margin-top: 20px;">💾 Generar Lista de Precios</button>
+
+        <div style="font-size: 13px; font-weight: 700; color: var(--muted); margin: 20px 0 10px 0; text-transform: uppercase;">
+          Filtrar vista por categoría:
+        </div>
+        <div class="cat-filter-bar">
+          <button class="cat-filter-btn active" onclick="filtrarPestañaCrear('TODAS', this)">Todas</button>
+          <button class="cat-filter-btn" onclick="filtrarPestañaCrear('Marisco', this)">🦐 Marisco</button>
+          <button class="cat-filter-btn" onclick="filtrarPestañaCrear('Pescados', this)">🐟 Pescados</button>
+          <button class="cat-filter-btn" onclick="filtrarPestañaCrear('Carnes', this)">🥩 Carnes</button>
+          <button class="cat-filter-btn" onclick="filtrarPestañaCrear('Verduras', this)">🥬 Verduras</button>
+          <button class="cat-filter-btn" onclick="filtrarPestañaCrear('Precocinados', this)">🧆 Precocinados</button>
+          <button class="cat-filter-btn" onclick="filtrarPestañaCrear('Varios', this)">📦 Varios</button>
+        </div>
+
+        <div id="listaSeleccionProductos">Buscando productos...</div>
+        <button onclick="generarLista()" class="btn btn-accent" style="margin-top: 24px;">💾 Generar Lista de Precios</button>
       </div>
     </div>
 
@@ -375,6 +426,7 @@
     var _productosCache = [];
     var _configCache = { empresa: 'EL ANCLA', comercial: '', telefono: '', logo: '', es_marca_agua: false };
     var _clienteActual = '';
+    var _categoriasOrden = ['Marisco', 'Pescados', 'Carnes', 'Verduras', 'Precocinados', 'Varios'];
 
     window.addEventListener('load', function() {
       iniciarAplicacion();
@@ -435,7 +487,7 @@
 
           img.onload = function() {
             var canvas = document.createElement('canvas');
-            var maxDimension = 300;
+            var maxDimension = 500; // Calidad aumentada para fotos más grandes
             var width = img.width;
             var height = img.height;
 
@@ -456,7 +508,7 @@
             var ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
 
-            var base64 = canvas.toDataURL('image/jpeg', 0.8);
+            var base64 = canvas.toDataURL('image/jpeg', 0.85);
             document.getElementById(targetHiddenId).value = base64;
 
             if (targetHiddenId === 'cfgLogoBase64') {
@@ -520,7 +572,6 @@
 
     async function cargarProductos() {
       var c1 = document.getElementById('listaProductosCard');
-      var c2 = document.getElementById('listaSeleccionProductos');
       if (!_supabase) return;
 
       try {
@@ -536,58 +587,102 @@
         if (!data || data.length === 0) {
           _productosCache = [];
           c1.innerHTML = '<div style="color:var(--muted); text-align:center; padding:16px;">Sin productos registrados todavía.</div>';
-          c2.innerHTML = '<div style="color:var(--muted); text-align:center; padding:16px;">No hay productos disponibles.</div>';
+          document.getElementById('listaSeleccionProductos').innerHTML = '<div style="color:var(--muted); text-align:center; padding:16px;">No hay productos disponibles.</div>';
           return;
         }
 
         _productosCache = data;
 
+        // Renderizar Pestaña Catálogo
         var htmlCard1 = '';
-        var htmlCard2 = '';
-
         for (var i = 0; i < _productosCache.length; i++) {
           var p = _productosCache[i];
+          var cat = p.categoria || 'Varios';
           var imgTag = p.url_foto ? '<img src="' + p.url_foto + '" class="product-img" alt="Foto">' : '<div class="product-img" style="display:flex;align-items:center;justify-content:center;font-size:20px;">📦</div>';
           var notaTag = p.notas ? '<div class="product-notes">📌 ' + p.notas + '</div>' : '';
           var precioFormatted = parseFloat(p.precio || 0).toFixed(2);
 
-          // Card Pestaña Catálogo
           htmlCard1 += '<div class="product-item">' +
             '<div class="product-left">' + imgTag +
               '<div>' +
                 '<div class="product-name">' + (p.nombre || '') + '</div>' +
+                '<div class="product-badge">' + cat + '</div>' +
                 notaTag +
                 '<div class="product-price">' + precioFormatted + ' €</div>' +
               '</div>' +
             '</div>' +
             '<button class="btn btn-danger btn-sm" onclick="borrarProducto(' + p.id + ')">🗑️</button>' +
           '</div>';
-
-          // Card Pestaña Crear Lista con Precio Editable
-          htmlCard2 += '<div class="product-item" style="gap:10px;">' +
-            '<div class="product-left" style="flex:1;">' +
-              '<input type="checkbox" class="prod-checkbox" value="' + p.id + '">' + imgTag +
-              '<div>' +
-                '<div class="product-name">' + (p.nombre || '') + '</div>' +
-                notaTag +
-              '</div>' +
-            '</div>' +
-            '<div style="display:flex; align-items:center; gap:4px;">' +
-              '<input type="number" step="0.01" id="precio_edit_' + p.id + '" value="' + precioFormatted + '" style="width:80px; padding:6px 8px; text-align:right; font-weight:700;">' +
-              '<span style="font-weight:700; font-size:14px; color:var(--muted);">€</span>' +
-            '</div>' +
-          '</div>';
         }
 
         c1.innerHTML = htmlCard1;
-        c2.innerHTML = htmlCard2;
+
+        // Renderizar Selección agrupada en Crear Lista
+        renderizarSeleccionCrear('TODAS');
 
       } catch(e) {
         c1.innerHTML = '<div style="color:var(--danger); padding:12px;">Error al cargar: ' + e.message + '</div>';
       }
     }
 
+    function renderizarSeleccionCrear(filtroCat) {
+      var container = document.getElementById('listaSeleccionProductos');
+      var html = '';
+
+      _categoriasOrden.forEach(function(cat) {
+        if (filtroCat !== 'TODAS' && filtroCat !== cat) return;
+
+        var prodsDeCat = _productosCache.filter(function(p) { 
+          return (p.categoria || 'Varios') === cat; 
+        });
+
+        if (prodsDeCat.length > 0) {
+          html += '<div style="margin-top:18px; margin-bottom:8px; font-family:\'Oswald\', sans-serif; font-size:16px; color:var(--primary); text-transform:uppercase; border-bottom:2px solid var(--accent); padding-bottom:4px; display:flex; justify-content:space-between; align-items:center;">' +
+            '<span>📂 ' + cat + '</span>' +
+            '<span style="font-size:12px; font-family:sans-serif; color:var(--muted); font-weight:normal;">(' + prodsDeCat.length + ' productos)</span>' +
+          '</div>';
+
+          html += '<div class="product-grid">';
+          for (var i = 0; i < prodsDeCat.length; i++) {
+            var p = prodsDeCat[i];
+            var imgTag = p.url_foto ? '<img src="' + p.url_foto + '" class="product-img" alt="Foto">' : '<div class="product-img" style="display:flex;align-items:center;justify-content:center;font-size:20px;">📦</div>';
+            var notaTag = p.notas ? '<div class="product-notes">📌 ' + p.notas + '</div>' : '';
+            var precioFormatted = parseFloat(p.precio || 0).toFixed(2);
+
+            html += '<div class="product-item" style="gap:10px;">' +
+              '<div class="product-left" style="flex:1;">' +
+                '<input type="checkbox" class="prod-checkbox" value="' + p.id + '">' + imgTag +
+                '<div>' +
+                  '<div class="product-name">' + (p.nombre || '') + '</div>' +
+                  notaTag +
+                '</div>' +
+              '</div>' +
+              '<div style="display:flex; align-items:center; gap:4px;">' +
+                '<input type="number" step="0.01" id="precio_edit_' + p.id + '" value="' + precioFormatted + '" style="width:80px; padding:6px 8px; text-align:right; font-weight:700;">' +
+                '<span style="font-weight:700; font-size:14px; color:var(--muted);">€</span>' +
+              '</div>' +
+            '</div>';
+          }
+          html += '</div>';
+        }
+      });
+
+      if (!html) {
+        html = '<div style="color:var(--muted); text-align:center; padding:20px;">No hay productos en esta categoría.</div>';
+      }
+
+      container.innerHTML = html;
+    }
+
+    function filtrarPestañaCrear(categoria, btnEl) {
+      var btns = document.querySelectorAll('.cat-filter-btn');
+      btns.forEach(function(b) { b.classList.remove('active'); });
+      if (btnEl) btnEl.classList.add('active');
+      renderizarSeleccionCrear(categoria);
+    }
+
     async function guardarProducto() {
+      var categoria = document.getElementById('prodCategoria').value;
       var nombre = document.getElementById('prodNombre').value.trim();
       var precio = parseFloat(document.getElementById('prodPrecio').value);
       var notas = document.getElementById('prodNotas').value.trim();
@@ -604,7 +699,14 @@
       btn.innerText = 'Guardando...';
 
       try {
-        var res = await _supabase.from('productos').insert([{ nombre: nombre, precio: precio, notas: notas, url_foto: url_foto }]);
+        var res = await _supabase.from('productos').insert([{ 
+          categoria: categoria,
+          nombre: nombre, 
+          precio: precio, 
+          notas: notas, 
+          url_foto: url_foto 
+        }]);
+        
         if (res.error) {
           alert('Error al guardar en Supabase: ' + res.error.message);
         } else {
@@ -722,7 +824,7 @@
       // Logo en Cabecera
       var logoHeaderHtml = '';
       if (cfg.logo && !cfg.es_marca_agua) {
-        logoHeaderHtml = '<img src="' + cfg.logo + '" style="max-height: 80px; object-fit: contain;">';
+        logoHeaderHtml = '<img src="' + cfg.logo + '" style="max-height: 85px; object-fit: contain;">';
       }
 
       // Comercial + Teléfono
@@ -734,7 +836,7 @@
         '</div>';
       }
 
-      // Obtener productos y precios
+      // Obtener productos seleccionados
       var rawItems = lista.productos_ids || [];
       var productosSeleccionados = [];
 
@@ -752,26 +854,47 @@
         }
       }
 
-      var itemsHtml = '';
-      for (var j = 0; j < productosSeleccionados.length; j++) {
-        var p = productosSeleccionados[j];
-        var imgTag = p.url_foto ? '<img src="' + p.url_foto + '" style="width: 48px; height: 48px; border-radius: 8px; object-fit: cover;">' : '<div style="width:48px; height:48px; background:#f1f5f9; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:18px;">📦</div>';
-        var notaTag = p.notas ? '<div style="font-size: 12px; color: #64748b; margin-top: 2px;">📌 ' + p.notas + '</div>' : '';
+      // CONSTRUCCIÓN DEL DOCUMENTO A4 AGRUPADO POR CATEGORÍAS Y FOTOS GRANDES
+      var seccionesCategoriasHtml = '';
 
-        itemsHtml += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #e2e8f0;">' +
-          '<div style="width: 70px;">' + imgTag + '</div>' +
-          '<div style="flex: 1; padding: 0 16px;">' +
-            '<div style="font-size: 15px; font-weight: 700; color: #0f172a;">' + (p.nombre || '') + '</div>' +
-            notaTag +
-          '</div>' +
-          '<div style="font-family: \'Oswald\', sans-serif; font-size: 20px; font-weight: 700; color: #2563eb; width: 100px; text-align: right;">' +
-            parseFloat(p.precio || 0).toFixed(2) + ' €' +
-          '</div>' +
-        '</div>';
-      }
+      _categoriasOrden.forEach(function(cat) {
+        var prodsCat = productosSeleccionados.filter(function(p) {
+          return (p.categoria || 'Varios') === cat;
+        });
 
-      // ENCABEZADO CON GRID 3 COLUMNAS (1fr auto 1fr): Centrado matemático del título/comercial y cliente alineado a la derecha
-      var htmlDoc = '<div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin-bottom: 24px; padding-bottom: 12px;">' +
+        if (prodsCat.length > 0) {
+          // Encabezado de la Categoría
+          seccionesCategoriasHtml += '<div style="margin-top: 20px; margin-bottom: 10px; padding: 6px 12px; background: #032b5f; color: #ffffff; font-family: \'Oswald\', sans-serif; font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; border-radius: 6px;">' +
+            cat +
+          '</div>';
+
+          // Lista de productos de la Categoría
+          for (var j = 0; j < prodsCat.length; j++) {
+            var p = prodsCat[j];
+            
+            // FOTOS MÁS GRANDES (80px x 80px)
+            var imgTag = p.url_foto 
+              ? '<img src="' + p.url_foto + '" style="width: 80px; height: 80px; border-radius: 10px; object-fit: cover; border: 1px solid #cbd5e1;">' 
+              : '<div style="width: 80px; height: 80px; background: #f1f5f9; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 28px; border: 1px solid #e2e8f0;">📦</div>';
+            
+            var notaTag = p.notas ? '<div style="font-size: 13px; color: #64748b; margin-top: 4px;">📌 ' + p.notas + '</div>' : '';
+
+            seccionesCategoriasHtml += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid #e2e8f0;">' +
+              '<div style="width: 95px; flex-shrink: 0;">' + imgTag + '</div>' +
+              '<div style="flex: 1; padding: 0 16px;">' +
+                '<div style="font-size: 17px; font-weight: 700; color: #0f172a;">' + (p.nombre || '') + '</div>' +
+                notaTag +
+              '</div>' +
+              '<div style="font-family: \'Oswald\', sans-serif; font-size: 22px; font-weight: 700; color: #2563eb; width: 110px; text-align: right; flex-shrink: 0;">' +
+                parseFloat(p.precio || 0).toFixed(2) + ' €' +
+              '</div>' +
+            '</div>';
+          }
+        }
+      });
+
+      // ENCABEZADO CON GRID DE 3 COLUMNAS PERFECTAMENTE CENTRADO
+      var htmlDoc = '<div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #e2e8f0;">' +
         '<div style="display: flex; justify-content: flex-start; align-items: center;">' + 
           logoHeaderHtml + 
         '</div>' +
@@ -791,14 +914,14 @@
         '</div>' +
       '</div>' +
 
-      /* CABECERA DE TABLA CON LÍNEA AZUL */
-      '<div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; font-family: \'Oswald\', sans-serif; font-size: 15px; font-weight: 700; color: #032b5f; border-bottom: 3px solid #2563eb; margin-bottom: 8px;">' +
-        '<div style="width: 70px;">FOTO</div>' +
-        '<div style="flex: 1; padding: 0 16px;">PRODUCTO</div>' +
-        '<div style="width: 100px; text-align: right;">PRECIO</div>' +
+      /* CABECERA DE TABLA GENERAL */
+      '<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; font-family: \'Oswald\', sans-serif; font-size: 14px; font-weight: 700; color: #032b5f; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0;">' +
+        '<div style="width: 95px;">IMAGEN</div>' +
+        '<div style="flex: 1; padding: 0 16px;">DESCRIPCIÓN DEL PRODUCTO</div>' +
+        '<div style="width: 110px; text-align: right;">PRECIO</div>' +
       '</div>' +
 
-      '<div style="display: flex; flex-direction: column;">' + itemsHtml + '</div>';
+      '<div>' + seccionesCategoriasHtml + '</div>';
 
       document.getElementById('contenidoImprimible').innerHTML = htmlDoc;
       
