@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>El Ancla | Catálogo Pro v2.2</title>
+  <title>El Ancla | Catálogo Pro v2.3</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap" rel="stylesheet">
@@ -17,10 +17,10 @@
       --accent: #2563eb;
       --text: #1e293b;
       --muted: #64748b;
-      --border: #e2e8f0;
+      --border: #cbd5e1;
       --danger: #ef4444;
       --radius: 16px;
-      --font-main: 'Myriad Pro', Myriad, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-main: 'Myriad Pro', 'Myriad', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -176,14 +176,14 @@
     .tab-content { display: none !important; }
     .tab-content.active { display: block !important; }
 
-    /* Estilos Documento A4 */
+    /* ESTILOS DOCUMENTO A4 EXACTO AL PDF */
     .page-a4 {
       position: relative;
       width: 210mm;
       min-height: 297mm;
       margin: 0 auto;
       background: #ffffff;
-      padding: 20mm 15mm;
+      padding: 18mm 15mm;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
       border-radius: 4px;
       box-sizing: border-box;
@@ -205,6 +205,30 @@
     .doc-content {
       position: relative;
       z-index: 1;
+    }
+
+    /* Tabla de Productos formato PDF */
+    .pdf-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+
+    .pdf-table th {
+      background-color: #0f172a;
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 14px;
+      padding: 10px 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .pdf-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid #cbd5e1;
+      font-size: 15px;
+      color: #0f172a;
     }
 
     @media (min-width: 800px) {
@@ -279,7 +303,7 @@
       </div>
     </div>
 
-    <!-- PESTAÑA CREAR LISTA CON PRECIOS EDITABLES -->
+    <!-- PESTAÑA CREAR LISTA -->
     <div id="tabCrear" class="tab-content">
       <div class="card">
         <div class="card-header">🚀 Nueva Lista de Precios</div>
@@ -301,7 +325,7 @@
       </div>
     </div>
 
-    <!-- PESTAÑA DATOS EMPRESA / COMERCIAL -->
+    <!-- PESTAÑA DATOS EMPRESA -->
     <div id="tabAjustes" class="tab-content">
       <div class="card">
         <div class="card-header">⚙️ Configuración de Empresa</div>
@@ -311,11 +335,11 @@
         </div>
         <div class="field">
           <label>Nombre del Comercial / Agente</label>
-          <input type="text" id="cfgComercial" placeholder="Ej: Désirée Guerrero">
+          <input type="text" id="cfgComercial" placeholder="Ej: KIKE">
         </div>
         <div class="field">
           <label>Teléfono / WhatsApp</label>
-          <input type="text" id="cfgTelefono" placeholder="Ej: 600 000 000">
+          <input type="text" id="cfgTelefono" placeholder="Ej: 660875927">
         </div>
         <div class="field">
           <label>Logo de la Empresa (Imagen)</label>
@@ -326,7 +350,7 @@
         <div class="field" style="display:flex; align-items:center; gap:10px; margin-top:16px;">
           <input type="checkbox" id="cfgMarcaAgua" style="width:20px; height:20px;">
           <label for="cfgMarcaAgua" style="margin:0; text-transform:none; font-size:14px; cursor:pointer;">
-            Usar logo como <strong>Marca de Agua centrada</strong> (si no se marca, saldrá en la cabecera).
+            Usar logo como <strong>Marca de Agua centrada</strong>.
           </label>
         </div>
         <button id="btnGuardarCfg" onclick="guardarConfiguracionSupabase()" class="btn btn-accent" style="margin-top:16px;">💾 Guardar Ajustes en Supabase</button>
@@ -341,7 +365,7 @@
     <button class="nav-item" onclick="switchTab('tabAjustes')"><span>⚙️ Empresa</span></button>
   </div>
 
-  <!-- VISTA DOCUMENTO IMPRIMIBLE A4 -->
+  <!-- VISTA DOCUMENTO IMPRIMIBLE A4 CON FORMATO PDF SOLICITADO -->
   <div id="vistaDocumento" style="display:none;">
     <div class="no-print" style="display: flex; gap: 10px; justify-content: space-between; align-items: center; max-width: 210mm; margin: 0 auto 16px auto; padding: 10px;">
       <button onclick="cerrarVistaDocumento()" class="btn btn-sm" style="background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1;">⬅️ Volver</button>
@@ -363,7 +387,7 @@
     
     var _supabase = null;
     var _productosCache = [];
-    var _configCache = { empresa: 'EL ANCLA', comercial: '', telefono: '', logo: '', es_marca_agua: false };
+    var _configCache = { empresa: 'EL ANCLA', comercial: '', telefono: '', logo: '', es_marca_agua: true };
     var _clienteActual = '';
 
     window.addEventListener('load', function() {
@@ -458,7 +482,6 @@
       }
     }
 
-    /* GESTIÓN DE CONFIGURACIÓN */
     async function cargarConfiguracionSupabase() {
       if (!_supabase) return;
       try {
@@ -469,7 +492,7 @@
           document.getElementById('cfgComercial').value = _configCache.comercial || '';
           document.getElementById('cfgTelefono').value = _configCache.telefono || '';
           document.getElementById('cfgLogoBase64').value = _configCache.logo || '';
-          document.getElementById('cfgMarcaAgua').checked = !!_configCache.es_marca_agua;
+          document.getElementById('cfgMarcaAgua').checked = _configCache.es_marca_agua !== false;
 
           if (_configCache.logo) {
             document.getElementById('previewLogoContainer').innerHTML = '<img src="' + _configCache.logo + '" style="max-height:60px; border-radius:8px;">';
@@ -541,7 +564,6 @@
           var notaTag = p.notas ? '<div class="product-notes">📌 ' + p.notas + '</div>' : '';
           var precioFormatted = parseFloat(p.precio || 0).toFixed(2);
 
-          // Card Pestaña Catálogo
           htmlCard1 += '<div class="product-item">' +
             '<div class="product-left">' + imgTag +
               '<div>' +
@@ -553,7 +575,6 @@
             '<button class="btn btn-danger btn-sm" onclick="borrarProducto(' + p.id + ')">🗑️</button>' +
           '</div>';
 
-          // Card Pestaña Crear Lista con Precio Editable
           htmlCard2 += '<div class="product-item" style="gap:10px;">' +
             '<div class="product-left" style="flex:1;">' +
               '<input type="checkbox" class="prod-checkbox" value="' + p.id + '">' + imgTag +
@@ -703,28 +724,17 @@
 
       // Marca de Agua
       var watermarkEl = document.getElementById('watermarkElement');
-      if (cfg.logo && cfg.es_marca_agua) {
+      if (cfg.logo) {
         watermarkEl.innerHTML = '<img src="' + cfg.logo + '" style="width:100%;">';
       } else {
         watermarkEl.innerHTML = '';
       }
 
-      // Logo en Cabecera
-      var logoHeaderHtml = '';
-      if (cfg.logo && !cfg.es_marca_agua) {
-        logoHeaderHtml = '<img src="' + cfg.logo + '" style="max-height: 80px; object-fit: contain;">';
-      }
+      // Comercial + Teléfono centrado
+      var comercialTxt = cfg.comercial ? cfg.comercial.toUpperCase() : 'KIKE';
+      var telTxt = cfg.telefono ? ' | ' + cfg.telefono : ' | 660875927';
 
-      // Comercial + Teléfono en la misma línea
-      var comercialHtml = '';
-      if (cfg.comercial) {
-        var telTxt = cfg.telefono ? ' <span style="font-size: 15px; font-weight: 600; color: #475569; margin-left: 8px;">📞 💬 ' + cfg.telefono + '</span>' : '';
-        comercialHtml = '<div style="font-size: 18px; font-weight: 700; color: #2563eb; margin-top: 6px; text-transform: uppercase;">' +
-          cfg.comercial + telTxt +
-        '</div>';
-      }
-
-      // Obtener productos y precios
+      // Obtener productos y sus precios
       var rawItems = lista.productos_ids || [];
       var productosSeleccionados = [];
 
@@ -742,41 +752,65 @@
         }
       }
 
-      var itemsHtml = '';
+      // Generar Filas de la Tabla según el PDF
+      var rowsHtml = '';
       for (var j = 0; j < productosSeleccionados.length; j++) {
         var p = productosSeleccionados[j];
-        var imgTag = p.url_foto ? '<img src="' + p.url_foto + '" style="width: 48px; height: 48px; border-radius: 8px; object-fit: cover;">' : '';
-        var notaTag = p.notas ? '<div style="font-size: 12px; color: #64748b; margin-top: 2px;">📌 ' + p.notas + '</div>' : '';
+        var imgTag = p.url_foto ? '<img src="' + p.url_foto + '" style="width:40px; height:40px; border-radius:6px; object-fit:cover; margin-right:12px; vertical-align:middle;">' : '';
+        var notaTag = p.notas ? '<div style="font-size: 11px; color: #64748b; margin-top: 2px;">' + p.notas + '</div>' : '';
 
-        itemsHtml += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #e2e8f0;">' +
-          '<div style="display: flex; align-items: center; gap: 12px;">' +
-            imgTag +
-            '<div>' +
-              '<div style="font-size: 15px; font-weight: 700; color: #0f172a;">' + (p.nombre || '') + '</div>' +
-              notaTag +
+        rowsHtml += '<tr>' +
+          '<td style="text-align: left;">' +
+            '<div style="display:flex; align-items:center;">' +
+              imgTag +
+              '<div>' +
+                '<span style="font-weight: 500; font-size: 16px;">' + (p.nombre || '') + '</span>' +
+                notaTag +
+              '</div>' +
             '</div>' +
-          '</div>' +
-          '<div style="font-family: \'Oswald\', var(--font-main); font-size: 20px; font-weight: 700; color: #2563eb;">' +
+          '</td>' +
+          '<td style="text-align: right; font-weight: 700; font-size: 16px; width: 120px;">' +
             parseFloat(p.precio || 0).toFixed(2) + ' €' +
-          '</div>' +
-        '</div>';
+          '</td>' +
+        '</tr>';
       }
 
-      // Encabezado Centrado, con Cliente y Fecha alineados a la izquierda y en color de fecha (#475569)
-      var htmlDoc = '<div style="position: relative; border-bottom: 2px solid #0f172a; padding-bottom: 20px; margin-bottom: 24px;">' +
-        '<div style="position: absolute; right: 0; top: 0;">' + logoHeaderHtml + '</div>' +
-        '<div style="text-align: center;">' +
-          '<h1 style="margin: 0; font-family: \'Oswald\', var(--font-main); font-size: 36px; color: #0f172a; text-transform: uppercase; letter-spacing: 1px;">' + (cfg.empresa || 'EL ANCLA') + '</h1>' +
-          comercialHtml +
-        '</div>' +
-        '<div style="margin-top: 22px; font-size: 14px; color: #475569; text-align: left;">' +
-          '<div style="font-size: 20px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 2px;">' +
-            lista.cliente_nombre +
+      // Estructura completa réplica del PDF
+      var htmlDoc = '' +
+        '<div style="margin-bottom: 25px;">' +
+          // Encabezado Nombre Empresa
+          '<h1 style="margin: 0; text-align: center; font-family: \'Oswald\', var(--font-main); font-size: 34px; color: #0f172a; letter-spacing: 1.5px; text-transform: uppercase;">' +
+            (cfg.empresa || 'EL ANCLA') +
+          '</h1>' +
+          
+          // Línea del Comercial y Teléfono
+          '<div style="text-align: center; font-size: 15px; font-weight: 700; color: #0f172a; margin-top: 6px; letter-spacing: 0.5px; text-transform: uppercase;">' +
+            'COMERCIAL: ' + comercialTxt + telTxt +
           '</div>' +
-          '<div><strong>Fecha:</strong> ' + new Date(lista.fecha).toLocaleDateString('es-ES') + '</div>' +
+
+          // Bloque Cliente y Fecha alineados a la izquierda
+          '<div style="margin-top: 22px; text-align: left; font-size: 15px; color: #0f172a;">' +
+            '<div style="font-weight: 700; text-transform: uppercase; margin-bottom: 4px;">' +
+              'CLIENTE: ' + (lista.cliente_nombre || '') +
+            '</div>' +
+            '<div style="font-weight: 400;">' +
+              'Fecha: ' + new Date(lista.fecha).toLocaleDateString('es-ES') +
+            '</div>' +
+          '</div>' +
         '</div>' +
-      '</div>' +
-      '<div style="display: flex; flex-direction: column; gap: 10px;">' + itemsHtml + '</div>';
+
+        // Tabla con encabezado azul oscuro y bordes exactos
+        '<table class="pdf-table">' +
+          '<thead>' +
+            '<tr>' +
+              '<th style="text-align: left;">FOTO PRODUCTO</th>' +
+              '<th style="text-align: right;">PRECIO</th>' +
+            '</tr>' +
+          '</thead>' +
+          '<tbody>' +
+            rowsHtml +
+          '</tbody>' +
+        '</table>';
 
       document.getElementById('contenidoImprimible').innerHTML = htmlDoc;
       var noPrintEls = document.querySelectorAll('.no-print');
