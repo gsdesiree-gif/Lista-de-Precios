@@ -13,7 +13,7 @@
     :root {
       --bg: #f1f5f9;
       --card: #ffffff;
-      --primary: #0f172a;
+      --primary: #032b5f; /* Azul marino oscuro */
       --accent: #2563eb;
       --text: #1e293b;
       --muted: #64748b;
@@ -725,7 +725,7 @@
         logoHeaderHtml = '<img src="' + cfg.logo + '" style="max-height: 80px; object-fit: contain;">';
       }
 
-      // Comercial + Teléfono en la misma línea
+      // Comercial + Teléfono
       var comercialHtml = '';
       if (cfg.comercial) {
         var telTxt = cfg.telefono ? ' <span style="font-size: 15px; font-weight: 600; color: #475569; margin-left: 8px;">📞 💬 ' + cfg.telefono + '</span>' : '';
@@ -755,42 +755,49 @@
       var itemsHtml = '';
       for (var j = 0; j < productosSeleccionados.length; j++) {
         var p = productosSeleccionados[j];
-        var imgTag = p.url_foto ? '<img src="' + p.url_foto + '" style="width: 48px; height: 48px; border-radius: 8px; object-fit: cover;">' : '';
+        var imgTag = p.url_foto ? '<img src="' + p.url_foto + '" style="width: 48px; height: 48px; border-radius: 8px; object-fit: cover;">' : '<div style="width:48px; height:48px; background:#f1f5f9; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:18px;">📦</div>';
         var notaTag = p.notas ? '<div style="font-size: 12px; color: #64748b; margin-top: 2px;">📌 ' + p.notas + '</div>' : '';
 
         itemsHtml += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid #e2e8f0;">' +
-          '<div style="display: flex; align-items: center; gap: 12px;">' +
-            imgTag +
-            '<div>' +
-              '<div style="font-size: 15px; font-weight: 700; color: #0f172a;">' + (p.nombre || '') + '</div>' +
-              notaTag +
-            '</div>' +
+          '<div style="width: 70px;">' + imgTag + '</div>' +
+          '<div style="flex: 1; padding: 0 16px;">' +
+            '<div style="font-size: 15px; font-weight: 700; color: #0f172a;">' + (p.nombre || '') + '</div>' +
+            notaTag +
           '</div>' +
-          '<div style="font-family: \'Oswald\', sans-serif; font-size: 20px; font-weight: 700; color: #2563eb;">' +
+          '<div style="font-family: \'Oswald\', sans-serif; font-size: 20px; font-weight: 700; color: #2563eb; width: 100px; text-align: right;">' +
             parseFloat(p.precio || 0).toFixed(2) + ' €' +
           '</div>' +
         '</div>';
       }
 
-      // Encabezado Centrado con Nombre de Cliente
-      var htmlDoc = '<div style="position: relative; border-bottom: 2px solid #0f172a; padding-bottom: 20px; margin-bottom: 24px;">' +
-        '<div style="position: absolute; right: 0; top: 0;">' + logoHeaderHtml + '</div>' +
-        '<div style="text-align: center;">' +
-          '<h1 style="margin: 0; font-family: \'Oswald\', sans-serif; font-size: 36px; color: #0f172a; text-transform: uppercase; letter-spacing: 1px;">' + (cfg.empresa || 'EL ANCLA') + '</h1>' +
-          comercialHtml +
-        '</div>' +
-        '<div style="margin-top: 22px; font-size: 13px; color: #475569;">' +
-          '<div style="font-family: \'Oswald\', sans-serif; font-size: 22px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin-bottom: 2px;">' +
-            lista.cliente_nombre +
+      // Encabezado con Nombre de Empresa Azul Oscuro, Cliente a la Derecha, Cabeceras (FOTO, PRODUCTO, PRECIO) y Línea Azul
+      var htmlDoc = '<div style="position: relative; margin-bottom: 20px;">' +
+        '<div style="position: absolute; left: 0; top: 0;">' + logoHeaderHtml + '</div>' +
+        '<div style="display: flex; justify-content: space-between; align-items: flex-start;">' +
+          '<div>' +
+            '<h1 style="margin: 0; font-family: \'Oswald\', sans-serif; font-size: 38px; color: #032b5f; text-transform: uppercase; letter-spacing: 1px;">' + (cfg.empresa || 'EL ANCLA') + '</h1>' +
+            comercialHtml +
           '</div>' +
-          '<div><strong>Fecha:</strong> ' + new Date(lista.fecha).toLocaleDateString('es-ES') + '</div>' +
+          '<div style="text-align: right; font-size: 13px; color: #475569;">' +
+            '<div style="font-family: \'Oswald\', sans-serif; font-size: 22px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin-bottom: 2px;">' +
+              lista.cliente_nombre +
+            '</div>' +
+            '<div><strong>Fecha:</strong> ' + new Date(lista.fecha).toLocaleDateString('es-ES') + '</div>' +
+          '</div>' +
         '</div>' +
       '</div>' +
-      '<div style="display: flex; flex-direction: column; gap: 10px;">' + itemsHtml + '</div>';
+
+      /* CABECERA DE TABLA CON LÍNEA AZUL */
+      '<div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; font-family: \'Oswald\', sans-serif; font-size: 15px; font-weight: 700; color: #032b5f; border-bottom: 3px solid #2563eb; margin-bottom: 8px;">' +
+        '<div style="width: 70px;">FOTO</div>' +
+        '<div style="flex: 1; padding: 0 16px;">PRODUCTO</div>' +
+        '<div style="width: 100px; text-align: right;">PRECIO</div>' +
+      '</div>' +
+
+      '<div style="display: flex; flex-direction: column;">' + itemsHtml + '</div>';
 
       document.getElementById('contenidoImprimible').innerHTML = htmlDoc;
       
-      // Ocultar resto de la app y mostrar la vista previa
       var containerEl = document.querySelector('.container');
       var topBarEl = document.querySelector('.top-bar');
       var navBarEl = document.querySelector('.nav-bar');
