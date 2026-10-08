@@ -1,9 +1,9 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>El Ancla | Catálogo Pro v2.6</title>
+  <title>El Ancla | Catálogo Pro v2.7</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap" rel="stylesheet">
@@ -273,7 +273,10 @@
         </div>
 
         <div class="card">
-          <div class="card-header">📦 Productos Registrados</div>
+          <div class="card-header" style="display:flex; justify-style:space-between; align-items:center;">
+            <span>📦 Productos Registrados</span>
+            <button onclick="cargarProductos()" class="btn btn-sm btn-accent" style="width:auto; margin-left:auto;">🔄 Recargar</button>
+          </div>
           <div id="listaProductosCard" class="product-grid">Cargando datos...</div>
         </div>
       </div>
@@ -363,7 +366,7 @@
     
     var _supabase = null;
     var _productosCache = [];
-    var _configCache = { empresa: 'EL ANCLA', comercial: '', telefono: '', logo: '', es_marca_agua: true };
+    var _configCache = { empresa: 'EL ANCLA', comercial: 'KIKE', telefono: '660875927', logo: '', es_marca_agua: true };
     var _clienteActual = '';
 
     window.addEventListener('load', function() {
@@ -465,8 +468,8 @@
         if (res.data) {
           _configCache = res.data;
           document.getElementById('cfgEmpresa').value = _configCache.empresa || 'EL ANCLA';
-          document.getElementById('cfgComercial').value = _configCache.comercial || '';
-          document.getElementById('cfgTelefono').value = _configCache.telefono || '';
+          document.getElementById('cfgComercial').value = _configCache.comercial || 'KIKE';
+          document.getElementById('cfgTelefono').value = _configCache.telefono || '660875927';
           document.getElementById('cfgLogoBase64').value = _configCache.logo || '';
           document.getElementById('cfgMarcaAgua').checked = _configCache.es_marca_agua !== false;
 
@@ -485,8 +488,8 @@
       var payload = {
         id: 1,
         empresa: document.getElementById('cfgEmpresa').value.trim() || 'EL ANCLA',
-        comercial: document.getElementById('cfgComercial').value.trim(),
-        telefono: document.getElementById('cfgTelefono').value.trim(),
+        comercial: document.getElementById('cfgComercial').value.trim() || 'KIKE',
+        telefono: document.getElementById('cfgTelefono').value.trim() || '660875927',
         logo: document.getElementById('cfgLogoBase64').value,
         es_marca_agua: document.getElementById('cfgMarcaAgua').checked
       };
@@ -512,13 +515,16 @@
       var c2 = document.getElementById('listaSeleccionProductos');
       if (!_supabase) return;
 
+      c1.innerHTML = '<div style="color:var(--muted); padding:12px;">Cargando productos...</div>';
+
       try {
         var res = await _supabase.from('productos').select('*').order('id', { ascending: false });
         var data = res.data;
         var error = res.error;
 
         if (error) {
-          c1.innerHTML = '<div style="color:var(--danger); padding:12px; font-weight:600;">Error de la base de datos: ' + error.message + '</div>';
+          c1.innerHTML = '<div style="color:var(--danger); padding:12px; font-weight:600;">⚠️ Error base de datos: ' + error.message + '</div>';
+          c2.innerHTML = '<div style="color:var(--muted); padding:12px;">No disponible.</div>';
           return;
         }
 
@@ -538,12 +544,13 @@
           var p = _productosCache[i];
           var imgTag = p.url_foto ? '<img src="' + p.url_foto + '" class="product-img" alt="Foto">' : '<div class="product-img" style="display:flex;align-items:center;justify-content:center;font-size:20px;">📦</div>';
           var notaTag = p.notas ? '<div class="product-notes">📌 ' + p.notas + '</div>' : '';
-          var precioFormatted = parseFloat(p.precio || 0).toFixed(2);
+          var valPrecio = parseFloat(p.precio);
+          var precioFormatted = isNaN(valPrecio) ? '0.00' : valPrecio.toFixed(2);
 
           htmlCard1 += '<div class="product-item">' +
             '<div class="product-left">' + imgTag +
               '<div>' +
-                '<div class="product-name">' + (p.nombre || '') + '</div>' +
+                '<div class="product-name">' + (p.nombre || 'Producto sin nombre') + '</div>' +
                 notaTag +
                 '<div class="product-price">' + precioFormatted + ' €</div>' +
               '</div>' +
@@ -555,7 +562,7 @@
             '<div class="product-left" style="flex:1;">' +
               '<input type="checkbox" class="prod-checkbox" value="' + p.id + '">' + imgTag +
               '<div>' +
-                '<div class="product-name">' + (p.nombre || '') + '</div>' +
+                '<div class="product-name">' + (p.nombre || 'Producto sin nombre') + '</div>' +
                 notaTag +
               '</div>' +
             '</div>' +
@@ -570,7 +577,7 @@
         c2.innerHTML = htmlCard2;
 
       } catch(e) {
-        c1.innerHTML = '<div style="color:var(--danger); padding:12px;">Error al cargar: ' + e.message + '</div>';
+        c1.innerHTML = '<div style="color:var(--danger); padding:12px;">Error inesperado al cargar: ' + e.message + '</div>';
       }
     }
 
@@ -675,10 +682,11 @@
         var htmlHistorico = '';
         for (var i = 0; i < data.length; i++) {
           var l = data[i];
+          var fechaStr = l.fecha ? new Date(l.fecha).toLocaleDateString('es-ES') : '';
           htmlHistorico += '<div class="product-item">' +
             '<div>' +
-              '<div class="product-name">' + l.cliente_nombre + '</div>' +
-              '<div style="font-size: 12px; color: var(--muted);">' + new Date(l.fecha).toLocaleDateString('es-ES') + '</div>' +
+              '<div class="product-name">' + (l.cliente_nombre || 'Cliente sin nombre') + '</div>' +
+              '<div style="font-size: 12px; color: var(--muted);">' + fechaStr + '</div>' +
             '</div>' +
             '<div style="display:flex; gap:6px;">' +
               '<button class="btn btn-accent btn-sm" onclick="verListaDocumento(' + l.id + ')">👁️ Ver</button>' +
@@ -695,7 +703,7 @@
       var lista = res.data;
       if (!lista) return;
 
-      _clienteActual = lista.cliente_nombre;
+      _clienteActual = lista.cliente_nombre || '';
       var cfg = _configCache;
 
       // Marca de Agua
@@ -736,6 +744,7 @@
           : '<div style="width:75px; height:65px; border-radius:8px; background:#f1f5f9; display:inline-flex; align-items:center; justify-content:center; font-size:24px; margin-right:16px; vertical-align:middle;">📦</div>';
         
         var notaTag = p.notas ? '<div style="font-size: 12px; color: #64748b; margin-top: 3px;">' + p.notas + '</div>' : '';
+        var pVal = parseFloat(p.precio || 0);
 
         rowsHtml += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 6px; border-bottom: 1px solid #e2e8f0;">' +
           '<div style="display: flex; align-items: center;">' +
@@ -746,10 +755,12 @@
             '</div>' +
           '</div>' +
           '<div style="font-size: 17px; font-weight: 700; color: #0d233a; text-align: right; min-width: 90px;">' +
-            parseFloat(p.precio || 0).toFixed(2) + ' €' +
+            (isNaN(pVal) ? '0.00' : pVal.toFixed(2)) + ' €' +
           '</div>' +
         '</div>';
       }
+
+      var fechaDoc = lista.fecha ? new Date(lista.fecha).toLocaleDateString('es-ES') : new Date().toLocaleDateString('es-ES');
 
       // Estructura con TONOS DE COLOR AJUSTADOS AL PDF EXACTO:
       var htmlDoc = '' +
@@ -771,7 +782,7 @@
               'CLIENTE: ' + (lista.cliente_nombre || '') +
             '</div>' +
             '<div style="color: #6c757d; font-weight: 500;">' +
-              'Fecha: ' + new Date(lista.fecha).toLocaleDateString('es-ES') +
+              'Fecha: ' + fechaDoc +
             '</div>' +
           '</div>' +
         '</div>' +
