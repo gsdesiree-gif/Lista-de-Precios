@@ -719,7 +719,7 @@
         watermarkEl.innerHTML = '';
       }
 
-      // Logo en Cabecera (posicionamiento absoluto a la izquierda)
+      // Logo en Cabecera
       var logoHeaderHtml = '';
       if (cfg.logo && !cfg.es_marca_agua) {
         logoHeaderHtml = '<img src="' + cfg.logo + '" style="max-height: 80px; object-fit: contain;">';
@@ -770,18 +770,24 @@
         '</div>';
       }
 
-      // ENCABEZADO: Grid de 3 columnas para centrado matemático perfecto del título/comercial y alineación del cliente a la derecha
-      var htmlDoc = '<div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin-bottom: 20px;">' +
-        '<div>' + logoHeaderHtml + '</div>' +
-        '<div style="text-align: center;">' +
-          '<h1 style="margin: 0; font-family: \'Oswald\', sans-serif; font-size: 38px; color: #032b5f; text-transform: uppercase; letter-spacing: 1px; text-align: center;">' + (cfg.empresa || 'EL ANCLA') + '</h1>' +
+      // ENCABEZADO CON GRID 3 COLUMNAS (1fr auto 1fr): Centrado matemático del título/comercial y cliente alineado a la derecha
+      var htmlDoc = '<div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin-bottom: 24px; padding-bottom: 12px;">' +
+        '<div style="display: flex; justify-content: flex-start; align-items: center;">' + 
+          logoHeaderHtml + 
+        '</div>' +
+        '<div style="text-align: center; padding: 0 10px;">' +
+          '<h1 style="margin: 0; font-family: \'Oswald\', sans-serif; font-size: 36px; line-height: 1.1; color: #032b5f; text-transform: uppercase; letter-spacing: 1px;">' + 
+            (cfg.empresa || 'EL ANCLA') + 
+          '</h1>' +
           comercialHtml +
         '</div>' +
         '<div style="text-align: right; font-size: 13px; color: #475569;">' +
-          '<div style="font-family: \'Oswald\', sans-serif; font-size: 22px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin-bottom: 2px;">' +
+          '<div style="font-family: \'Oswald\', sans-serif; font-size: 20px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin-bottom: 2px;">' +
             lista.cliente_nombre +
           '</div>' +
-          '<div><strong>Fecha:</strong> ' + new Date(lista.fecha).toLocaleDateString('es-ES') + '</div>' +
+          '<div style="font-size: 12px; color: #64748b;">' +
+            '<strong>Fecha:</strong> ' + new Date(lista.fecha).toLocaleDateString('es-ES') +
+          '</div>' +
         '</div>' +
       '</div>' +
 
