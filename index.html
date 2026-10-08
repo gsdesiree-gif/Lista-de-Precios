@@ -709,18 +709,12 @@
         logoHeaderHtml = '<img src="' + cfg.logo + '" style="max-height: 80px; object-fit: contain;">';
       }
 
-      // Contactos con iconos
-      var contactoHtml = '';
-      if (cfg.telefono) {
-        contactoHtml = '<div style="font-size: 14px; font-weight: 600; color: #475569; margin-top: 4px;">' +
-          '📞 💬 ' + cfg.telefono +
-        '</div>';
-      }
-
+      // Comercial + Teléfono en la misma línea (tamaño 18px)
       var comercialHtml = '';
       if (cfg.comercial) {
-        comercialHtml = '<div style="font-size: 20px; font-weight: 700; color: #2563eb; margin-top: 6px; text-transform: uppercase;">' +
-          cfg.comercial +
+        var telTxt = cfg.telefono ? ' <span style="font-size: 15px; font-weight: 600; color: #475569; margin-left: 8px;">📞 💬 ' + cfg.telefono + '</span>' : '';
+        comercialHtml = '<div style="font-size: 18px; font-weight: 700; color: #2563eb; margin-top: 6px; text-transform: uppercase;">' +
+          cfg.comercial + telTxt +
         '</div>';
       }
 
@@ -762,16 +756,17 @@
         '</div>';
       }
 
-      // Encabezado Centrado
+      // Encabezado Centrado con Nombre de Cliente arriba de la Fecha
       var htmlDoc = '<div style="position: relative; border-bottom: 2px solid #0f172a; padding-bottom: 20px; margin-bottom: 24px;">' +
         '<div style="position: absolute; right: 0; top: 0;">' + logoHeaderHtml + '</div>' +
         '<div style="text-align: center;">' +
           '<h1 style="margin: 0; font-family: \'Oswald\', sans-serif; font-size: 36px; color: #0f172a; text-transform: uppercase; letter-spacing: 1px;">' + (cfg.empresa || 'EL ANCLA') + '</h1>' +
           comercialHtml +
-          contactoHtml +
         '</div>' +
-        '<div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 18px; font-size: 13px; color: #475569;">' +
-          '<div><strong>CLIENTE:</strong> <span style="font-size: 16px; font-weight: 700; color: #2563eb;">' + lista.cliente_nombre.toUpperCase() + '</span></div>' +
+        '<div style="margin-top: 22px; font-size: 13px; color: #475569;">' +
+          '<div style="font-family: \'Oswald\', sans-serif; font-size: 22px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin-bottom: 2px;">' +
+            lista.cliente_nombre +
+          '</div>' +
           '<div><strong>Fecha:</strong> ' + new Date(lista.fecha).toLocaleDateString('es-ES') + '</div>' +
         '</div>' +
       '</div>' +
