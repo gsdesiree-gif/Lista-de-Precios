@@ -55,9 +55,9 @@
       text-transform: uppercase;
     }
 
-    .web-nav { display: none; gap: 10px; }
+    .web-nav { display: none; gap: 8px; }
     .web-nav-btn {
-      padding: 10px 18px;
+      padding: 10px 16px;
       border-radius: 10px;
       border: 1px solid var(--border);
       background: #f8fafc;
@@ -164,14 +164,16 @@
       color: var(--muted);
       border: none;
       background: none;
-      width: 33.33%;
+      width: 25%;
     }
     .nav-item.active { color: var(--accent); }
 
     .tab-content { display: none !important; }
     .tab-content.active { display: block !important; }
 
+    /* Estilos Documento A4 */
     .page-a4 {
+      position: relative;
       width: 210mm;
       min-height: 297mm;
       margin: 0 auto;
@@ -180,6 +182,23 @@
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
       border-radius: 4px;
       box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    .watermark-bg {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 60%;
+      opacity: 0.08;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .doc-content {
+      position: relative;
+      z-index: 1;
     }
 
     @media (min-width: 800px) {
@@ -218,10 +237,12 @@
       <button class="web-nav-btn active" onclick="switchTab('tabCatalogo')">📦 Productos</button>
       <button class="web-nav-btn" onclick="switchTab('tabCrear')">📝 Crear Lista</button>
       <button class="web-nav-btn" onclick="switchTab('tabHistorial')">📜 Histórico</button>
+      <button class="web-nav-btn" onclick="switchTab('tabAjustes')">⚙️ Empresa</button>
     </div>
   </div>
 
   <div class="container no-print">
+    <!-- PESTAÑA CATALOGO -->
     <div id="tabCatalogo" class="tab-content active">
       <div class="grid-layout">
         <div class="card">
@@ -240,7 +261,7 @@
           </div>
           <div class="field">
             <label>Seleccionar Foto (Imagen)</label>
-            <input type="file" id="prodArchivoFoto" accept="image/*" onchange="procesarImagen(this)">
+            <input type="file" id="prodArchivoFoto" accept="image/*" onchange="procesarImagen(this, 'prodFotoBase64')">
             <input type="hidden" id="prodFotoBase64">
           </div>
           <button id="btnGuardarProd" onclick="guardarProducto()" class="btn">Guardar Producto</button>
@@ -253,6 +274,7 @@
       </div>
     </div>
 
+    <!-- PESTAÑA CREAR LISTA -->
     <div id="tabCrear" class="tab-content">
       <div class="card">
         <div class="card-header">🚀 Nueva Lista de Precios</div>
@@ -266,20 +288,55 @@
       </div>
     </div>
 
+    <!-- PESTAÑA HISTORIAL -->
     <div id="tabHistorial" class="tab-content">
       <div class="card">
         <div class="card-header">📜 Listas Guardadas</div>
         <div id="listaHistoricoCard" class="product-grid">Cargando historial...</div>
       </div>
     </div>
+
+    <!-- PESTAÑA DATOS EMPRESA / COMERCIAL -->
+    <div id="tabAjustes" class="tab-content">
+      <div class="card">
+        <div class="card-header">⚙️ Configuración de Empresa</div>
+        <div class="field">
+          <label>Nombre de la Empresa</label>
+          <input type="text" id="cfgEmpresa" placeholder="Ej: EL ANCLA">
+        </div>
+        <div class="field">
+          <label>Nombre del Comercial / Agente</label>
+          <input type="text" id="cfgComercial" placeholder="Ej: Désirée Guerrero">
+        </div>
+        <div class="field">
+          <label>Teléfono / Contacto</label>
+          <input type="text" id="cfgTelefono" placeholder="Ej: 600 000 000">
+        </div>
+        <div class="field">
+          <label>Logo de la Empresa (Imagen)</label>
+          <input type="file" id="cfgLogoFile" accept="image/*" onchange="procesarImagen(this, 'cfgLogoBase64')">
+          <input type="hidden" id="cfgLogoBase64">
+          <div id="previewLogoContainer" style="margin-top:10px;"></div>
+        </div>
+        <div class="field" style="display:flex; align-items:center; gap:10px; margin-top:16px;">
+          <input type="checkbox" id="cfgMarcaAgua" style="width:20px; height:20px;">
+          <label for="cfgMarcaAgua" style="margin:0; text-transform:none; font-size:14px; cursor:pointer;">
+            Usar logo como <strong>Marca de Agua centrada</strong> (si no se marca, saldrá arriba a un lado en el encabezado).
+          </label>
+        </div>
+        <button onclick="guardarConfiguracion()" class="btn btn-accent" style="margin-top:16px;">💾 Guardar Ajustes de Empresa</button>
+      </div>
+    </div>
   </div>
 
   <div class="nav-bar no-print">
     <button class="nav-item active" onclick="switchTab('tabCatalogo')"><span>📦 Productos</span></button>
-    <button class="nav-item" onclick="switchTab('tabCrear')"><span>📝 Crear Lista</span></button>
+    <button class="nav-item" onclick="switchTab('tabCrear')"><span>📝 Crear</span></button>
     <button class="nav-item" onclick="switchTab('tabHistorial')"><span>📜 Histórico</span></button>
+    <button class="nav-item" onclick="switchTab('tabAjustes')"><span>⚙️ Empresa</span></button>
   </div>
 
+  <!-- VISTA DOCUMENTO IMPRIMIBLE A4 -->
   <div id="vistaDocumento" style="display:none;">
     <div class="no-print" style="display: flex; gap: 10px; justify-content: space-between; align-items: center; max-width: 210mm; margin: 0 auto 16px auto; padding: 10px;">
       <button onclick="cerrarVistaDocumento()" class="btn btn-sm" style="background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1;">⬅️ Volver</button>
@@ -290,7 +347,8 @@
     </div>
 
     <div class="page-a4" id="documentoA4">
-      <div id="contenidoImprimible"></div>
+      <div id="watermarkElement" class="watermark-bg"></div>
+      <div id="contenidoImprimible" class="doc-content"></div>
     </div>
   </div>
 
@@ -304,6 +362,7 @@
 
     window.addEventListener('load', function() {
       iniciarAplicacion();
+      cargarConfiguracion();
     });
 
     function iniciarAplicacion() {
@@ -336,7 +395,7 @@
       var target = document.getElementById(tabId);
       if (target) target.classList.add('active');
 
-      var tabNames = ['tabCatalogo', 'tabCrear', 'tabHistorial'];
+      var tabNames = ['tabCatalogo', 'tabCrear', 'tabHistorial', 'tabAjustes'];
       var idx = tabNames.indexOf(tabId);
       var navItems = document.querySelectorAll('.nav-item');
       var webNavBtns = document.querySelectorAll('.web-nav-btn');
@@ -349,7 +408,7 @@
       }
     }
 
-    function procesarImagen(input) {
+    function procesarImagen(input, targetHiddenId) {
       if (input.files && input.files[0]) {
         var file = input.files[0];
         var reader = new FileReader();
@@ -360,7 +419,7 @@
 
           img.onload = function() {
             var canvas = document.createElement('canvas');
-            var maxDimension = 250;
+            var maxDimension = 300;
             var width = img.width;
             var height = img.height;
 
@@ -381,11 +440,58 @@
             var ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
 
-            document.getElementById('prodFotoBase64').value = canvas.toDataURL('image/jpeg', 0.7);
+            var base64 = canvas.toDataURL('image/jpeg', 0.8);
+            document.getElementById(targetHiddenId).value = base64;
+
+            if (targetHiddenId === 'cfgLogoBase64') {
+              document.getElementById('previewLogoContainer').innerHTML = '<img src="' + base64 + '" style="max-height:60px; border-radius:8px;">';
+            }
           };
         };
         reader.readAsDataURL(file);
       }
+    }
+
+    /* CONFIGURACIÓN Y PERSISTENCIA DE LA EMPRESA */
+    function guardarConfiguracion() {
+      var cfg = {
+        empresa: document.getElementById('cfgEmpresa').value.trim() || 'EL ANCLA',
+        comercial: document.getElementById('cfgComercial').value.trim(),
+        telefono: document.getElementById('cfgTelefono').value.trim(),
+        logo: document.getElementById('cfgLogoBase64').value,
+        esMarcaAgua: document.getElementById('cfgMarcaAgua').checked
+      };
+
+      localStorage.setItem('el_ancla_config', JSON.stringify(cfg));
+      alert('¡Ajustes de empresa guardados correctamente!');
+    }
+
+    function cargarConfiguracion() {
+      var saved = localStorage.getItem('el_ancla_config');
+      if (saved) {
+        try {
+          var cfg = JSON.parse(saved);
+          document.getElementById('cfgEmpresa').value = cfg.empresa || 'EL ANCLA';
+          document.getElementById('cfgComercial').value = cfg.comercial || '';
+          document.getElementById('cfgTelefono').value = cfg.telefono || '';
+          document.getElementById('cfgLogoBase64').value = cfg.logo || '';
+          document.getElementById('cfgMarcaAgua').checked = !!cfg.esMarcaAgua;
+
+          if (cfg.logo) {
+            document.getElementById('previewLogoContainer').innerHTML = '<img src="' + cfg.logo + '" style="max-height:60px; border-radius:8px;">';
+          }
+        } catch(e) {}
+      } else {
+        document.getElementById('cfgEmpresa').value = 'EL ANCLA';
+      }
+    }
+
+    function obtenerConfiguracion() {
+      var saved = localStorage.getItem('el_ancla_config');
+      if (saved) {
+        try { return JSON.parse(saved); } catch(e){}
+      }
+      return { empresa: 'EL ANCLA', comercial: '', telefono: '', logo: '', esMarcaAgua: false };
     }
 
     async function cargarProductos() {
@@ -564,6 +670,23 @@
       if (!lista) return;
 
       _clienteActual = lista.cliente_nombre;
+      var cfg = obtenerConfiguracion();
+
+      // Configurar Marca de Agua o Logo Lateral
+      var watermarkEl = document.getElementById('watermarkElement');
+      if (cfg.logo && cfg.esMarcaAgua) {
+        watermarkEl.innerHTML = '<img src="' + cfg.logo + '" style="width:100%;">';
+      } else {
+        watermarkEl.innerHTML = '';
+      }
+
+      var logoHeaderHtml = '';
+      if (cfg.logo && !cfg.esMarcaAgua) {
+        logoHeaderHtml = '<img src="' + cfg.logo + '" style="max-height: 65px; object-fit: contain;">';
+      }
+
+      var comercialHtml = cfg.comercial ? '<p style="margin: 2px 0 0 0; font-size: 12px; color: #64748b;"><strong>Comercial:</strong> ' + cfg.comercial + (cfg.telefono ? ' (' + cfg.telefono + ')' : '') + '</p>' : '';
+
       var idsGuardados = lista.productos_ids || [];
       var productosSeleccionados = [];
       for (var i = 0; i < _productosCache.length; i++) {
@@ -594,12 +717,14 @@
 
       var htmlDoc = '<div style="border-bottom: 2px solid #0f172a; padding-bottom: 18px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between;">' +
         '<div>' +
-          '<h1 style="margin: 0; font-family: \'Oswald\', sans-serif; font-size: 28px; color: #0f172a; text-transform: uppercase;">EL ANCLA</h1>' +
+          '<h1 style="margin: 0; font-family: \'Oswald\', sans-serif; font-size: 28px; color: #0f172a; text-transform: uppercase;">' + (cfg.empresa || 'EL ANCLA') + '</h1>' +
           '<p style="margin: 4px 0 0 0; font-size: 13px; color: #2563eb; font-weight: 700;">OFERTA DE PRECIOS ESPECIAL</p>' +
+          comercialHtml +
         '</div>' +
         '<div style="text-align: right; font-size: 12px; color: #475569;">' +
-          '<p style="margin: 0; font-size: 15px; color: #0f172a; font-weight: 700;">CLIENTE: <span style="color: #2563eb;">' + lista.cliente_nombre.toUpperCase() + '</span></p>' +
-          '<p style="margin: 4px 0 0 0;"><strong>Fecha:</strong> ' + new Date(lista.fecha).toLocaleDateString('es-ES') + '</p>' +
+          logoHeaderHtml +
+          '<p style="margin: 6px 0 0 0; font-size: 15px; color: #0f172a; font-weight: 700;">CLIENTE: <span style="color: #2563eb;">' + lista.cliente_nombre.toUpperCase() + '</span></p>' +
+          '<p style="margin: 2px 0 0 0;"><strong>Fecha:</strong> ' + new Date(lista.fecha).toLocaleDateString('es-ES') + '</p>' +
         '</div>' +
       '</div>' +
       '<div style="display: flex; flex-direction: column; gap: 10px;">' + itemsHtml + '</div>';
