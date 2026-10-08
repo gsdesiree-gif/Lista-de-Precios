@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>El Ancla | Catálogo Pro v2.1</title>
+  <title>El Ancla | Catálogo Pro v2.2</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
@@ -20,12 +20,13 @@
       --border: #e2e8f0;
       --danger: #ef4444;
       --radius: 16px;
+      --font-main: 'Myriad Pro', Myriad, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     }
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     
     body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: var(--font-main);
       background-color: var(--bg);
       color: var(--text);
       margin: 0;
@@ -47,7 +48,7 @@
       z-index: 10;
     }
     .brand-title {
-      font-family: 'Oswald', sans-serif;
+      font-family: 'Oswald', var(--font-main);
       font-size: 24px;
       color: var(--primary);
       margin: 0;
@@ -65,6 +66,7 @@
       font-weight: 600;
       color: var(--muted);
       cursor: pointer;
+      font-family: var(--font-main);
     }
     .web-nav-btn.active {
       background: var(--accent);
@@ -81,7 +83,7 @@
     }
 
     .card-header {
-      font-family: 'Oswald', sans-serif;
+      font-family: 'Oswald', var(--font-main);
       font-size: 18px;
       color: var(--primary);
       letter-spacing: 0.5px;
@@ -108,6 +110,7 @@
       border: 1px solid var(--border);
       background: #f8fafc;
       color: var(--primary);
+      font-family: var(--font-main);
     }
 
     .btn {
@@ -120,6 +123,7 @@
       font-weight: 600;
       font-size: 15px;
       cursor: pointer;
+      font-family: var(--font-main);
     }
     .btn-accent { background: var(--accent); }
     .btn-danger { background: #fef2f2; color: var(--danger); }
@@ -165,6 +169,7 @@
       border: none;
       background: none;
       width: 25%;
+      font-family: var(--font-main);
     }
     .nav-item.active { color: var(--accent); }
 
@@ -183,6 +188,7 @@
       border-radius: 4px;
       box-sizing: border-box;
       overflow: hidden;
+      font-family: var(--font-main);
     }
 
     .watermark-bg {
@@ -709,7 +715,7 @@
         logoHeaderHtml = '<img src="' + cfg.logo + '" style="max-height: 80px; object-fit: contain;">';
       }
 
-      // Comercial + Teléfono en la misma línea (tamaño 18px)
+      // Comercial + Teléfono en la misma línea
       var comercialHtml = '';
       if (cfg.comercial) {
         var telTxt = cfg.telefono ? ' <span style="font-size: 15px; font-weight: 600; color: #475569; margin-left: 8px;">📞 💬 ' + cfg.telefono + '</span>' : '';
@@ -750,21 +756,21 @@
               notaTag +
             '</div>' +
           '</div>' +
-          '<div style="font-family: \'Oswald\', sans-serif; font-size: 20px; font-weight: 700; color: #2563eb;">' +
+          '<div style="font-family: \'Oswald\', var(--font-main); font-size: 20px; font-weight: 700; color: #2563eb;">' +
             parseFloat(p.precio || 0).toFixed(2) + ' €' +
           '</div>' +
         '</div>';
       }
 
-      // Encabezado Centrado con Nombre de Cliente arriba de la Fecha
+      // Encabezado Centrado, con Cliente y Fecha alineados a la izquierda y en color de fecha (#475569)
       var htmlDoc = '<div style="position: relative; border-bottom: 2px solid #0f172a; padding-bottom: 20px; margin-bottom: 24px;">' +
         '<div style="position: absolute; right: 0; top: 0;">' + logoHeaderHtml + '</div>' +
         '<div style="text-align: center;">' +
-          '<h1 style="margin: 0; font-family: \'Oswald\', sans-serif; font-size: 36px; color: #0f172a; text-transform: uppercase; letter-spacing: 1px;">' + (cfg.empresa || 'EL ANCLA') + '</h1>' +
+          '<h1 style="margin: 0; font-family: \'Oswald\', var(--font-main); font-size: 36px; color: #0f172a; text-transform: uppercase; letter-spacing: 1px;">' + (cfg.empresa || 'EL ANCLA') + '</h1>' +
           comercialHtml +
         '</div>' +
-        '<div style="margin-top: 22px; font-size: 13px; color: #475569;">' +
-          '<div style="font-family: \'Oswald\', sans-serif; font-size: 22px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin-bottom: 2px;">' +
+        '<div style="margin-top: 22px; font-size: 14px; color: #475569; text-align: left;">' +
+          '<div style="font-size: 20px; font-weight: 700; color: #475569; text-transform: uppercase; margin-bottom: 2px;">' +
             lista.cliente_nombre +
           '</div>' +
           '<div><strong>Fecha:</strong> ' + new Date(lista.fecha).toLocaleDateString('es-ES') + '</div>' +
