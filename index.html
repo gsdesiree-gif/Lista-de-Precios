@@ -273,7 +273,7 @@
       </div>
     </div>
 
-    <!-- PESTAÑA CREAR LISTA CON PRECIOS EDITABLES POR CLIENTE -->
+    <!-- PESTAÑA CREAR LISTA CON PRECIOS EDITABLES -->
     <div id="tabCrear" class="tab-content">
       <div class="card">
         <div class="card-header">🚀 Nueva Lista de Precios</div>
@@ -638,7 +638,6 @@
         });
       }
 
-      // Se guardan los IDs y precios personalizados
       var res = await _supabase.from('listas_generadas').insert([{ 
         cliente_nombre: cliente, 
         productos_ids: itemsPersonalizados 
@@ -704,13 +703,13 @@
         watermarkEl.innerHTML = '';
       }
 
-      // Logo en Cabecera (si no es marca de agua)
+      // Logo en Cabecera
       var logoHeaderHtml = '';
       if (cfg.logo && !cfg.es_marca_agua) {
         logoHeaderHtml = '<img src="' + cfg.logo + '" style="max-height: 80px; object-fit: contain;">';
       }
 
-      // Datos de contacto con iconos de Teléfono y WhatsApp
+      // Contactos con iconos
       var contactoHtml = '';
       if (cfg.telefono) {
         contactoHtml = '<div style="font-size: 14px; font-weight: 600; color: #475569; margin-top: 4px;">' +
@@ -725,7 +724,7 @@
         '</div>';
       }
 
-      // Obtener los productos seleccionados con sus precios personalizados
+      // Obtener productos y precios
       var rawItems = lista.productos_ids || [];
       var productosSeleccionados = [];
 
