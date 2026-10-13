@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -162,6 +162,48 @@
     .stat-box .label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
     .stat-box .value { font-family: 'Oswald', sans-serif; font-size: 24px; font-weight: 700; color: var(--primary); }
     .stat-box.highlight .value { color: var(--success); }
+
+    /* ESTILOS DE LA TABLA COMPACTA DE CAJA */
+    .caja-table-container {
+      width: 100%;
+      overflow-x: auto;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+    .caja-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+    .caja-table th {
+      background: #f8fafc;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .caja-table td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .caja-table tr:last-child td { border-bottom: none; }
+    .caja-table tr:hover { background: #f8fafc; }
+    
+    .pay-tag {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #f1f5f9;
+      color: var(--text);
+      display: inline-block;
+      white-space: nowrap;
+    }
 
     .cat-filter-bar {
       display: flex;
@@ -419,7 +461,7 @@
       </div>
     </div>
 
-    <!-- PESTAÑA CAJA & COMISIÓN 3% -->
+    <!-- PESTAÑA CAJA & COMISIÓN 3% CON LISTADO COMPACTO -->
     <div id="tabCaja" class="tab-content">
       <div class="card">
         <div class="card-header">💰 Control Diario de Cobros & Comisión (3%)</div>
@@ -476,11 +518,11 @@
           <button onclick="guardarRegistroCaja()" class="btn btn-success">💾 Guardar Cobro del Día</button>
         </div>
 
-        <!-- Histórico Filtrado por Mes -->
+        <!-- Histórico Filtrado en Tabla Compacta -->
         <div style="font-family: 'Oswald', sans-serif; font-size: 16px; color: var(--primary); margin-bottom: 12px; text-transform: uppercase;">
           📅 Cobros del Mes Seleccionado
         </div>
-        <div id="listaCajaCard" class="product-grid">Cargando registros de caja...</div>
+        <div id="listaCajaCard">Cargando registros de caja...</div>
       </div>
     </div>
 
@@ -555,14 +597,11 @@
     var _nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
     window.addEventListener('load', function() {
-      // 1. Inicializar fechas de formulario y desplegable de meses primero
       var hoy = new Date().toISOString().split('T')[0];
       var inputFecha = document.getElementById('cajaFecha');
       if (inputFecha) inputFecha.value = hoy;
 
       poblarDesplegableMeses();
-
-      // 2. Iniciar conexión a Supabase y carga de datos
       iniciarAplicacion();
     });
 
@@ -575,8 +614,8 @@
 
       for (var i = 0; i < 12; i++) {
         var anio = fechaRef.getFullYear();
-        var mesNum = fechaRef.getMonth(); // 0-11
-        var mesVal = anio + '-' + String(mesNum + 1).padStart(2, '0'); // Formato YYYY-MM
+        var mesNum = fechaRef.getMonth();
+        var mesVal = anio + '-' + String(mesNum + 1).padStart(2, '0');
         var mesTexto = _nombresMeses[mesNum] + ' ' + anio;
 
         var opt = document.createElement('option');
@@ -584,7 +623,6 @@
         opt.textContent = mesTexto + (i === 0 ? ' (Mes en curso)' : '');
         select.appendChild(opt);
 
-        // Retroceder 1 mes
         fechaRef.setMonth(fechaRef.getMonth() - 1);
       }
     }
@@ -890,7 +928,7 @@
       cargarProductos();
     }
 
-    // ================= FUNCIONES DE CAJA SINCRONIZADAS =================
+    // ================= CAJA Y COMISIÓN EN TABLA COMPACTA =================
     async function guardarRegistroCaja() {
       var fecha = document.getElementById('cajaFecha').value;
       var efectivo = parseFloat(document.getElementById('cajaEfectivo').value) || 0;
@@ -928,13 +966,12 @@
           document.getElementById('cajaTransferencia').value = '0.00';
           document.getElementById('cajaNota').value = '';
           
-          // Seleccionar automáticamente en el desplegable el mes del cobro registrado
           var mesDelRegistro = fecha.substring(0, 7);
           var selectMes = document.getElementById('selectMesCaja');
           if (selectMes) selectMes.value = mesDelRegistro;
 
           await cargarRegistrosCaja();
-          alert('¡Cobro guardado y sincronizado correctamente en Supabase!');
+          alert('¡Cobro guardado y sincronizado correctamente!');
         }
       } catch (e) {
         alert('Error inesperado al guardar el registro de caja.');
@@ -944,7 +981,7 @@
     async function cargarRegistrosCaja() {
       var container = document.getElementById('listaCajaCard');
       var selectMes = document.getElementById('selectMesCaja');
-      var mesSeleccionado = selectMes ? selectMes.value : ''; // Formato "YYYY-MM"
+      var mesSeleccionado = selectMes ? selectMes.value : '';
       if (!_supabase || !mesSeleccionado) return;
 
       try {
@@ -971,41 +1008,55 @@
         }
 
         var acumuladoTotalMes = 0;
-        var html = '';
 
         if (registrosFiltrados.length === 0) {
-          html = '<div style="color:var(--muted); text-align:center; padding:20px;">No hay cobros registrados para este mes.</div>';
+          container.innerHTML = '<div style="color:var(--muted); text-align:center; padding:20px;">No hay cobros registrados para este mes.</div>';
         } else {
+          // RENDERIZADO EN TABLA COMPACTA QUE OCUPA POCO ESPACIO
+          var htmlTable = '<div class="caja-table-container">' +
+            '<table class="caja-table">' +
+              '<thead>' +
+                '<tr>' +
+                  '<th>Fecha / Nota</th>' +
+                  '<th>Cobros</th>' +
+                  '<th style="text-align:right;">Total</th>' +
+                  '<th style="text-align:right;">3% Com.</th>' +
+                  '<th style="text-align:center; width:40px;"></th>' +
+                '</tr>' +
+              '</thead>' +
+              '<tbody>';
+
           for (var j = 0; j < registrosFiltrados.length; j++) {
             var r = registrosFiltrados[j];
             var totalR = parseFloat(r.total || 0);
+            var comisionR = totalR * 0.03;
             acumuladoTotalMes += totalR;
 
-            var notaTxt = r.notas || r.nota ? '<div style="font-size:12px; color:var(--muted); margin-top:2px;">💬 ' + (r.notas || r.nota) + '</div>' : '';
-            var fechaFmt = new Date(r.fecha).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' });
+            var notaTxt = r.notas || r.nota ? '<div style="font-size:11px; color:var(--muted);">💬 ' + (r.notas || r.nota) + '</div>' : '';
+            var fechaFmt = new Date(r.fecha).toLocaleDateString('es-ES', { month: 'numeric', day: 'numeric', year: '2-digit' });
 
-            html += '<div class="product-item" style="align-items: flex-start;">' +
-              '<div>' +
-                '<div style="font-family:\'Oswald\', sans-serif; font-size:16px; color:var(--primary);">' + fechaFmt + '</div>' +
-                '<div style="font-size:13px; color:var(--muted); margin-top:2px;">' +
-                  '💵 Ef: <b>' + parseFloat(r.efectivo || 0).toFixed(2) + '€</b> | ' +
-                  '📱 Bizum: <b>' + parseFloat(r.bizum || 0).toFixed(2) + '€</b> | ' +
-                  '🏦 Transf: <b>' + parseFloat(r.transferencia || 0).toFixed(2) + '€</b>' +
-                '</div>' +
+            var desgloseTags = '';
+            if (r.efectivo > 0) desgloseTags += '<span class="pay-tag">💵 ' + parseFloat(r.efectivo).toFixed(2) + '€</span> ';
+            if (r.bizum > 0) desgloseTags += '<span class="pay-tag">📱 ' + parseFloat(r.bizum).toFixed(2) + '€</span> ';
+            if (r.transferencia > 0) desgloseTags += '<span class="pay-tag">🏦 ' + parseFloat(r.transferencia).toFixed(2) + '€</span>';
+
+            htmlTable += '<tr>' +
+              '<td>' +
+                '<strong style="color:var(--primary);">' + fechaFmt + '</strong>' +
                 notaTxt +
-              '</div>' +
-              '<div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">' +
-                '<div>' +
-                  '<div style="font-family:\'Oswald\', sans-serif; font-size:18px; font-weight:700; color:var(--primary);">' + totalR.toFixed(2) + ' €</div>' +
-                  '<div style="font-size:11px; font-weight:700; color:var(--success);">Comisión (3%): + ' + (totalR * 0.03).toFixed(2) + ' €</div>' +
-                '</div>' +
-                '<button class="btn btn-danger btn-sm" style="padding: 4px 8px; font-size:11px;" onclick="borrarRegistroCaja(' + r.id + ')">🗑️</button>' +
-              '</div>' +
-            '</div>';
+              '</td>' +
+              '<td>' + desgloseTags + '</td>' +
+              '<td style="text-align:right; font-weight:700; color:var(--primary); font-family:\'Oswald\', sans-serif; font-size:15px;">' + totalR.toFixed(2) + ' €</td>' +
+              '<td style="text-align:right; font-weight:700; color:var(--success); font-family:\'Oswald\', sans-serif; font-size:15px;">+' + comisionR.toFixed(2) + ' €</td>' +
+              '<td style="text-align:center;">' +
+                '<button class="btn btn-danger btn-sm" style="padding:2px 6px; font-size:11px;" onclick="borrarRegistroCaja(' + r.id + ')">🗑️</button>' +
+              '</td>' +
+            '</tr>';
           }
-        }
 
-        container.innerHTML = html;
+          htmlTable += '</tbody></table></div>';
+          container.innerHTML = htmlTable;
+        }
 
         var comisionTotalMes = acumuladoTotalMes * 0.03;
         document.getElementById('statTotalCobrado').innerText = acumuladoTotalMes.toFixed(2) + ' €';
