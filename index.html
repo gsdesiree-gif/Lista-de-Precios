@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>El Ancla | Catálogo Pro</title>
+  
+  <!-- Icono de la App para Pantalla de Inicio (iPhone / Android) -->
+  <link rel="apple-touch-icon" href="https://raw.githubusercontent.com/gsdesiree-gif/gsdesiree-gif.github.io/main/image_f8d631.png">
+  <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/gsdesiree-gif/gsdesiree-gif.github.io/main/image_f8d631.png">
+  
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -163,7 +168,6 @@
     .stat-box .value { font-family: 'Oswald', sans-serif; font-size: 24px; font-weight: 700; color: var(--primary); }
     .stat-box.highlight .value { color: var(--success); }
 
-    /* ESTILOS DE LA TABLA COMPACTA DE CAJA */
     .caja-table-container {
       width: 100%;
       overflow-x: auto;
@@ -471,7 +475,6 @@
           <div style="flex: 1; min-width: 220px;">
             <label for="selectMesCaja" style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 6px; display: block;">📅 Seleccionar Mes:</label>
             <select id="selectMesCaja" onchange="cargarRegistrosCaja()" style="background: #ffffff; font-weight: 700; color: var(--primary);">
-              <!-- Opciones generadas automáticamente por JS -->
             </select>
           </div>
         </div>
@@ -1012,7 +1015,6 @@
         if (registrosFiltrados.length === 0) {
           container.innerHTML = '<div style="color:var(--muted); text-align:center; padding:20px;">No hay cobros registrados para este mes.</div>';
         } else {
-          // RENDERIZADO EN TABLA COMPACTA QUE OCUPA POCO ESPACIO
           var htmlTable = '<div class="caja-table-container">' +
             '<table class="caja-table">' +
               '<thead>' +
