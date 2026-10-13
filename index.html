@@ -19,6 +19,7 @@
       --muted: #64748b;
       --border: #e2e8f0;
       --danger: #ef4444;
+      --success: #16a34a;
       --radius: 16px;
     }
 
@@ -55,13 +56,13 @@
       text-transform: uppercase;
     }
 
-    .web-nav { display: flex; gap: 8px; }
+    .web-nav { display: flex; gap: 6px; flex-wrap: wrap; }
     .web-nav-btn {
-      padding: 10px 14px;
+      padding: 8px 12px;
       border-radius: 10px;
       border: 1px solid var(--border);
       background: #f8fafc;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 600;
       color: var(--muted);
       cursor: pointer;
@@ -100,7 +101,7 @@
       margin-bottom: 6px;
       text-transform: uppercase;
     }
-    input[type="text"], input[type="number"], input[type="file"], select {
+    input[type="text"], input[type="number"], input[type="file"], input[type="date"], select {
       width: 100%;
       padding: 12px 16px;
       font-size: 15px;
@@ -124,6 +125,7 @@
     }
     .btn-accent { background: var(--accent); }
     .btn-danger { background: #fef2f2; color: var(--danger); }
+    .btn-success { background: var(--success); color: #fff; }
     .btn-sm { width: auto; padding: 10px 16px; font-size: 14px; font-weight: 600; }
 
     .product-grid { display: flex; flex-direction: column; gap: 10px; }
@@ -144,7 +146,24 @@
     .product-badge { font-size: 11px; font-weight: 700; color: var(--accent); background: #eff6ff; padding: 2px 8px; border-radius: 6px; display: inline-block; margin-top: 4px; text-transform: uppercase; }
     .product-price { font-size: 14px; font-weight: 700; color: var(--accent); }
 
-    /* Filtro por categoría */
+    /* Estilos para el panel de caja */
+    .caja-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat-box {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-box .label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; margin-bottom: 4px; }
+    .stat-box .value { font-family: 'Oswald', sans-serif; font-size: 24px; font-weight: 700; color: var(--primary); }
+    .stat-box.highlight .value { color: var(--success); }
+
     .cat-filter-bar {
       display: flex;
       gap: 8px;
@@ -186,21 +205,19 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
-      font-size: 11px;
+      gap: 2px;
+      font-size: 10px;
       font-weight: 600;
       color: var(--muted);
       border: none;
       background: none;
-      width: 25%;
+      width: 20%;
     }
     .nav-item.active { color: var(--accent); }
 
-    /* Control de pestañas sin !important conflictivo */
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    /* Barra de Acción Superior al Visualizar la Lista */
     .doc-actions-bar {
       display: flex;
       gap: 10px;
@@ -215,7 +232,6 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
 
-    /* Estilos Documento A4 */
     .page-a4-wrapper {
       width: 100%;
       overflow-x: auto;
@@ -247,11 +263,9 @@
 
     .doc-content { position: relative; z-index: 1; }
 
-    /* --- ADAPTACIÓN ESPECÍFICA PARA MÓVILES (< 768px) --- */
     @media (max-width: 767px) {
       .web-nav { display: none; }
       .top-bar { justify-content: center; padding: 12px; }
-      
       .container { padding: 12px; }
       .card { padding: 16px; border-radius: 14px; }
       
@@ -283,14 +297,9 @@
       }
       .doc-actions-bar > div { display: flex; gap: 8px; width: 100%; }
       .doc-actions-bar .btn { flex: 1; text-align: center; justify-content: center; }
-
-      .prod-checkbox {
-        transform: scale(1.4);
-        margin-right: 10px;
-      }
+      .prod-checkbox { transform: scale(1.4); margin-right: 10px; }
     }
 
-    /* --- ADAPTACIÓN PARA ESCRITORIO (>= 768px) --- */
     @media (min-width: 768px) {
       body { padding-bottom: 30px; }
       .container { max-width: 1280px; padding: 24px; }
@@ -327,6 +336,7 @@
       <button class="web-nav-btn active" onclick="switchTab('tabCatalogo')">📦 Productos</button>
       <button class="web-nav-btn" onclick="switchTab('tabCrear')">📝 Crear Lista</button>
       <button class="web-nav-btn" onclick="switchTab('tabHistorial')">📜 Histórico</button>
+      <button class="web-nav-btn" onclick="switchTab('tabCaja')">💰 Caja & 3%</button>
       <button class="web-nav-btn" onclick="switchTab('tabAjustes')">⚙️ Empresa</button>
     </div>
   </div>
@@ -375,7 +385,7 @@
       </div>
     </div>
 
-    <!-- PESTAÑA CREAR LISTA CON FILTRO Y AGRUPACIÓN -->
+    <!-- PESTAÑA CREAR LISTA -->
     <div id="tabCrear" class="tab-content">
       <div class="card">
         <div class="card-header">🚀 Nueva Lista de Precios</div>
@@ -402,11 +412,66 @@
       </div>
     </div>
 
-    <!-- PESTAÑA HISTORIAL -->
+    <!-- PESTAÑA HISTORIAL DE LISTAS -->
     <div id="tabHistorial" class="tab-content">
       <div class="card">
         <div class="card-header">📜 Listas Guardadas</div>
         <div id="listaHistoricoCard" class="product-grid">Cargando historial...</div>
+      </div>
+    </div>
+
+    <!-- PESTAÑA NUEVA: CAJA DIARIA & COMISIÓN 3% -->
+    <div id="tabCaja" class="tab-content">
+      <div class="card">
+        <div class="card-header">💰 Control Diario de Cobros & Comisión (3%)</div>
+        
+        <!-- Tarjetas de Resumen -->
+        <div class="caja-stats-grid">
+          <div class="stat-box">
+            <div class="label">Total Cobrado (Mes)</div>
+            <div class="value" id="statTotalCobrado">0.00 €</div>
+          </div>
+          <div class="stat-box highlight">
+            <div class="label">Tu Comisión 3%</div>
+            <div class="value" id="statTotalComision">0.00 €</div>
+          </div>
+        </div>
+
+        <!-- Formulario de Registro Diario -->
+        <div style="background: #f8fafc; border: 1px solid var(--border); padding: 18px; border-radius: 12px; margin-bottom: 24px;">
+          <div style="font-family: 'Oswald', sans-serif; font-size: 15px; color: var(--primary); margin-bottom: 14px; text-transform: uppercase;">
+            ➕ Registrar Cobro de Hoy
+          </div>
+          <div class="grid-layout" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+            <div class="field" style="margin:0;">
+              <label>Fecha</label>
+              <input type="date" id="cajaFecha">
+            </div>
+            <div class="field" style="margin:0;">
+              <label>Efectivo (€)</label>
+              <input type="number" step="0.01" id="cajaEfectivo" placeholder="0.00" value="0.00">
+            </div>
+            <div class="field" style="margin:0;">
+              <label>Bizum (€)</label>
+              <input type="number" step="0.01" id="cajaBizum" placeholder="0.00" value="0.00">
+            </div>
+            <div class="field" style="margin:0;">
+              <label>Transferencia (€)</label>
+              <input type="number" step="0.01" id="cajaTransferencia" placeholder="0.00" value="0.00">
+            </div>
+          </div>
+          <div class="field" style="margin-top: 12px; margin-bottom: 12px;">
+            <label>Nota / Comentario (Opcional)</label>
+            <input type="text" id="cajaNota" placeholder="Ej: Cobro clientes zona norte o varios">
+          </div>
+          <button onclick="guardarRegistroCaja()" class="btn btn-success">💾 Guardar Cobro del Día</button>
+        </div>
+
+        <!-- Histórico de Caja -->
+        <div style="font-family: 'Oswald', sans-serif; font-size: 16px; color: var(--primary); margin-bottom: 12px; text-transform: uppercase;">
+          📅 Histórico de Cobros Registrados
+        </div>
+        <div id="listaCajaCard" class="product-grid">Cargando registros de caja...</div>
       </div>
     </div>
 
@@ -446,7 +511,8 @@
   <div class="nav-bar no-print">
     <button class="nav-item active" onclick="switchTab('tabCatalogo')"><span>📦 Productos</span></button>
     <button class="nav-item" onclick="switchTab('tabCrear')"><span>📝 Crear</span></button>
-    <button class="nav-item" onclick="switchTab('tabHistorial')"><span>📜 Histórico</span></button>
+    <button class="nav-item" onclick="switchTab('tabHistorial')"><span>📜 Historial</span></button>
+    <button class="nav-item" onclick="switchTab('tabCaja')"><span>💰 Caja 3%</span></button>
     <button class="nav-item" onclick="switchTab('tabAjustes')"><span>⚙️ Empresa</span></button>
   </div>
 
@@ -480,6 +546,10 @@
 
     window.addEventListener('load', function() {
       iniciarAplicacion();
+      // Poner fecha de hoy por defecto en el formulario de caja
+      var hoy = new Date().toISOString().split('T')[0];
+      var inputFecha = document.getElementById('cajaFecha');
+      if (inputFecha) inputFecha.value = hoy;
     });
 
     function iniciarAplicacion() {
@@ -492,6 +562,7 @@
         }
         cargarProductos();
         cargarHistoricoListas();
+        cargarRegistrosCaja();
         cargarConfiguracionSupabase();
       } catch (e) {
         mostrarError('Error al conectar: ' + e.message);
@@ -500,8 +571,6 @@
 
     function mostrarError(msj) {
       document.getElementById('listaProductosCard').innerHTML = '<div style="color:var(--danger); padding:12px; font-weight:600;">⚠️ ' + msj + '</div>';
-      document.getElementById('listaSeleccionProductos').innerHTML = '<div style="color:var(--muted); padding:12px;">No disponible.</div>';
-      document.getElementById('listaHistoricoCard').innerHTML = '<div style="color:var(--muted); padding:12px;">No disponible.</div>';
     }
 
     function switchTab(tabId) {
@@ -513,7 +582,7 @@
       var target = document.getElementById(tabId);
       if (target) target.classList.add('active');
 
-      var tabNames = ['tabCatalogo', 'tabCrear', 'tabHistorial', 'tabAjustes'];
+      var tabNames = ['tabCatalogo', 'tabCrear', 'tabHistorial', 'tabCaja', 'tabAjustes'];
       var idx = tabNames.indexOf(tabId);
       var navItems = document.querySelectorAll('.nav-item');
       var webNavBtns = document.querySelectorAll('.web-nav-btn');
@@ -626,16 +695,14 @@
       try {
         var res = await _supabase.from('productos').select('*').order('id', { ascending: false });
         var data = res.data;
-        var error = res.error;
-
-        if (error) {
-          c1.innerHTML = '<div style="color:var(--danger); padding:12px; font-weight:600;">Error de la base de datos: ' + error.message + '</div>';
+        if (res.error) {
+          c1.innerHTML = '<div style="color:var(--danger); padding:12px; font-weight:600;">Error: ' + res.error.message + '</div>';
           return;
         }
 
         if (!data || data.length === 0) {
           _productosCache = [];
-          c1.innerHTML = '<div style="color:var(--muted); text-align:center; padding:16px;">Sin productos registrados todavía.</div>';
+          c1.innerHTML = '<div style="color:var(--muted); text-align:center; padding:16px;">Sin productos registrados.</div>';
           document.getElementById('listaSeleccionProductos').innerHTML = '<div style="color:var(--muted); text-align:center; padding:16px;">No hay productos disponibles.</div>';
           return;
         }
@@ -667,7 +734,7 @@
         renderizarSeleccionCrear('TODAS');
 
       } catch(e) {
-        c1.innerHTML = '<div style="color:var(--danger); padding:12px;">Error al cargar: ' + e.message + '</div>';
+        c1.innerHTML = '<div style="color:var(--danger); padding:12px;">Error al cargar productos.</div>';
       }
     }
 
@@ -785,6 +852,121 @@
       await _supabase.from('productos').delete().eq('id', id);
       cargarProductos();
     }
+
+    // ================= FUNCIONES DE CAJA Y COMISIÓN 3% =================
+    async function guardarRegistroCaja() {
+      var fecha = document.getElementById('cajaFecha').value;
+      var efectivo = parseFloat(document.getElementById('cajaEfectivo').value) || 0;
+      var bizum = parseFloat(document.getElementById('cajaBizum').value) || 0;
+      var transferencia = parseFloat(document.getElementById('cajaTransferencia').value) || 0;
+      var nota = document.getElementById('cajaNota').value.trim();
+
+      if (!fecha) {
+        alert('Por favor, selecciona una fecha.');
+        return;
+      }
+
+      var totalDia = efectivo + bizum + transferencia;
+      if (totalDia <= 0) {
+        alert('Introduce al menos una cantidad en Efectivo, Bizum o Transferencia.');
+        return;
+      }
+
+      var payload = {
+        fecha: fecha,
+        efectivo: efectivo,
+        bizum: bizum,
+        transferencia: transferencia,
+        total: totalDia,
+        nota: nota
+      };
+
+      try {
+        var res = await _supabase.from('caja_registros').insert([payload]);
+        if (res.error) {
+          alert('Error al guardar en Supabase: ' + res.error.message + '\n\nNota: Asegúrate de haber creado la tabla "caja_registros" en Supabase.');
+        } else {
+          document.getElementById('cajaEfectivo').value = '0.00';
+          document.getElementById('cajaBizum').value = '0.00';
+          document.getElementById('cajaTransferencia').value = '0.00';
+          document.getElementById('cajaNota').value = '';
+          await cargarRegistrosCaja();
+          alert('¡Cobro guardado correctamente!');
+        }
+      } catch (e) {
+        alert('Error inesperado al guardar el registro de caja.');
+      }
+    }
+
+    async function cargarRegistrosCaja() {
+      var container = document.getElementById('listaCajaCard');
+      if (!_supabase) return;
+
+      try {
+        var res = await _supabase.from('caja_registros').select('*').order('fecha', { ascending: false });
+        var data = res.data;
+
+        if (res.error) {
+          container.innerHTML = '<div style="color:var(--muted); padding:12px; font-size:13px;">⚠️ Para usar esta sección, crea la tabla <b>caja_registros</b> en Supabase (con columnas: id, fecha, efectivo, bizum, transferencia, total, nota).</div>';
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          container.innerHTML = '<div style="color:var(--muted); text-align:center; padding:16px;">Sin registros de cobros todavía.</div>';
+          document.getElementById('statTotalCobrado').innerText = '0.00 €';
+          document.getElementById('statTotalComision').innerText = '0.00 €';
+          return;
+        }
+
+        var acumuladoTotal = 0;
+        var html = '';
+
+        for (var i = 0; i < data.length; i++) {
+          var r = data[i];
+          var totalR = parseFloat(r.total || 0);
+          acumuladoTotal += totalR;
+
+          var notaTxt = r.notas || r.nota ? '<div style="font-size:12px; color:var(--muted); margin-top:2px;">💬 ' + (r.notas || r.nota) + '</div>' : '';
+          var fechaFmt = new Date(r.fecha).toLocaleDateString('es-ES', { year: 'numeric', month: 'short', day: 'numeric' });
+
+          html += '<div class="product-item" style="align-items: flex-start;">' +
+            '<div>' +
+              '<div style="font-family:\'Oswald\', sans-serif; font-size:16px; color:var(--primary);">' + fechaFmt + '</div>' +
+              '<div style="font-size:13px; color:var(--muted); margin-top:2px;">' +
+                '💵 Ef: <b>' + parseFloat(r.efectivo || 0).toFixed(2) + '€</b> | ' +
+                '📱 Bizum: <b>' + parseFloat(r.bizum || 0).toFixed(2) + '€</b> | ' +
+                '🏦 Transf: <b>' + parseFloat(r.transferencia || 0).toFixed(2) + '€</b>' +
+              '</div>' +
+              notaTxt +
+            '</div>' +
+            '<div style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">' +
+              '<div>' +
+                '<div style="font-family:\'Oswald\', sans-serif; font-size:18px; font-weight:700; color:var(--primary);">' + totalR.toFixed(2) + ' €</div>' +
+                '<div style="font-size:11px; font-weight:700; color:var(--success);">Comisión (3%): + ' + (totalR * 0.03).toFixed(2) + ' €</div>' +
+              '</div>' +
+              '<button class="btn btn-danger btn-sm" style="padding: 4px 8px; font-size:11px;" onclick="borrarRegistroCaja(' + r.id + ')">🗑️</button>' +
+            '</div>' +
+          '</div>';
+        }
+
+        container.innerHTML = html;
+
+        // Actualizar estadísticas superiores
+        var comisionTotal = acumuladoTotal * 0.03;
+        document.getElementById('statTotalCobrado').innerText = acumuladoTotal.toFixed(2) + ' €';
+        document.getElementById('statTotalComision').innerText = comisionTotal.toFixed(2) + ' €';
+
+      } catch(e) {
+        container.innerHTML = '<div style="color:var(--muted); padding:12px;">Error al cargar el histórico de caja.</div>';
+      }
+    }
+
+    async function borrarRegistroCaja(id) {
+      if (!confirm('¿Eliminar este registro de cobro?')) return;
+      await _supabase.from('caja_registros').delete().eq('id', id);
+      cargarRegistrosCaja();
+    }
+    // ===================================================================
 
     async function generarLista() {
       var cliente = document.getElementById('clienteNombre').value.trim();
