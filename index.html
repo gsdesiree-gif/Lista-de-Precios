@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -419,7 +419,7 @@
       </div>
     </div>
 
-    <!-- PESTAÑA CAJA & COMISIÓN 3% CON DESPLEGABLE DE MESES -->
+    <!-- PESTAÑA CAJA & COMISIÓN 3% -->
     <div id="tabCaja" class="tab-content">
       <div class="card">
         <div class="card-header">💰 Control Diario de Cobros & Comisión (3%)</div>
@@ -555,15 +555,15 @@
     var _nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
     window.addEventListener('load', function() {
-      iniciarAplicacion();
-      
-      // Fecha de hoy para el formulario de registro
+      // 1. Inicializar fechas de formulario y desplegable de meses primero
       var hoy = new Date().toISOString().split('T')[0];
       var inputFecha = document.getElementById('cajaFecha');
       if (inputFecha) inputFecha.value = hoy;
 
-      // Generar desplegable con los últimos 12 meses en español
       poblarDesplegableMeses();
+
+      // 2. Iniciar conexión a Supabase y carga de datos
+      iniciarAplicacion();
     });
 
     function poblarDesplegableMeses() {
@@ -890,7 +890,7 @@
       cargarProductos();
     }
 
-    // ================= FUNCIONES DE CAJA FILTRADAS POR DESPLEGABLE =================
+    // ================= FUNCIONES DE CAJA SINCRONIZADAS =================
     async function guardarRegistroCaja() {
       var fecha = document.getElementById('cajaFecha').value;
       var efectivo = parseFloat(document.getElementById('cajaEfectivo').value) || 0;
@@ -934,7 +934,7 @@
           if (selectMes) selectMes.value = mesDelRegistro;
 
           await cargarRegistrosCaja();
-          alert('¡Cobro guardado correctamente!');
+          alert('¡Cobro guardado y sincronizado correctamente en Supabase!');
         }
       } catch (e) {
         alert('Error inesperado al guardar el registro de caja.');
@@ -945,7 +945,7 @@
       var container = document.getElementById('listaCajaCard');
       var selectMes = document.getElementById('selectMesCaja');
       var mesSeleccionado = selectMes ? selectMes.value : ''; // Formato "YYYY-MM"
-      if (!_supabase) return;
+      if (!_supabase || !mesSeleccionado) return;
 
       try {
         var res = await _supabase.from('caja_registros').select('*').order('fecha', { ascending: false });
@@ -1011,7 +1011,6 @@
         document.getElementById('statTotalCobrado').innerText = acumuladoTotalMes.toFixed(2) + ' €';
         document.getElementById('statTotalComision').innerText = comisionTotalMes.toFixed(2) + ' €';
 
-        // Obtener texto formateado de la opción seleccionada
         var textoOpcion = selectMes.options[selectMes.selectedIndex] ? selectMes.options[selectMes.selectedIndex].text : mesSeleccionado;
         document.getElementById('labelTotalCobrado').innerText = 'Total Cobrado (' + textoOpcion.replace(' (Mes en curso)', '') + ')';
         document.getElementById('labelTotalComision').innerText = 'Tu Comisión 3% (' + textoOpcion.replace(' (Mes en curso)', '') + ')';
