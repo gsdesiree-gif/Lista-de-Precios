@@ -1,4 +1,4 @@
-      <!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -101,7 +101,7 @@
       margin-bottom: 6px;
       text-transform: uppercase;
     }
-    input[type="text"], input[type="number"], input[type="file"], input[type="date"], input[type="month"], select {
+    input[type="text"], input[type="number"], input[type="file"], input[type="date"], select {
       width: 100%;
       padding: 12px 16px;
       font-size: 15px;
@@ -419,30 +419,29 @@
       </div>
     </div>
 
-    <!-- PESTAÑA CAJA & COMISIÓN 3% CON SELECTOR DE MES -->
+    <!-- PESTAÑA CAJA & COMISIÓN 3% CON DESPLEGABLE DE MESES -->
     <div id="tabCaja" class="tab-content">
       <div class="card">
         <div class="card-header">💰 Control Diario de Cobros & Comisión (3%)</div>
         
-        <!-- Selector de Mes a Visualizar -->
-        <div style="background: #e2e8f0; padding: 14px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
-          <div>
-            <label for="filtroMesCaja" style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 4px; display: block;">📅 Seleccionar Mes a Consultar:</label>
-            <input type="month" id="filtroMesCaja" onchange="cargarRegistrosCaja()" style="background: #ffffff; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border); font-weight: 700; color: var(--primary);">
-          </div>
-          <div style="font-size: 13px; color: var(--muted); font-weight: 600; align-self: flex-end;">
-            (Por defecto: mes actual)
+        <!-- Desplegable de Meses -->
+        <div style="background: #e2e8f0; padding: 14px 16px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+          <div style="flex: 1; min-width: 220px;">
+            <label for="selectMesCaja" style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 6px; display: block;">📅 Seleccionar Mes:</label>
+            <select id="selectMesCaja" onchange="cargarRegistrosCaja()" style="background: #ffffff; font-weight: 700; color: var(--primary);">
+              <!-- Opciones generadas automáticamente por JS -->
+            </select>
           </div>
         </div>
 
         <!-- Tarjetas de Resumen del Mes Seleccionado -->
         <div class="caja-stats-grid">
           <div class="stat-box">
-            <div class="label" id="labelTotalCobrado">Total Cobrado (Mes)</div>
+            <div class="label" id="labelTotalCobrado">Total Cobrado</div>
             <div class="value" id="statTotalCobrado">0.00 €</div>
           </div>
           <div class="stat-box highlight">
-            <div class="label" id="labelTotalComision">Tu Comisión 3% (Mes)</div>
+            <div class="label" id="labelTotalComision">Tu Comisión 3%</div>
             <div class="value" id="statTotalComision">0.00 €</div>
           </div>
         </div>
@@ -478,7 +477,7 @@
         </div>
 
         <!-- Histórico Filtrado por Mes -->
-        <div style="font-family: 'Oswald', sans-serif; font-size: 16px; color: var(--primary); margin-bottom: 12px; text-transform: uppercase;" id="tituloHistoricoCaja">
+        <div style="font-family: 'Oswald', sans-serif; font-size: 16px; color: var(--primary); margin-bottom: 12px; text-transform: uppercase;">
           📅 Cobros del Mes Seleccionado
         </div>
         <div id="listaCajaCard" class="product-grid">Cargando registros de caja...</div>
@@ -553,20 +552,42 @@
     var _configCache = { empresa: 'EL ANCLA', comercial: '', telefono: '', logo: '', es_marca_agua: false };
     var _clienteActual = '';
     var _categoriasOrden = ['Marisco', 'Pescados', 'Carnes', 'Verduras', 'Precocinados', 'Varios'];
+    var _nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
     window.addEventListener('load', function() {
       iniciarAplicacion();
       
-      // Inicializar fecha de hoy en el formulario
+      // Fecha de hoy para el formulario de registro
       var hoy = new Date().toISOString().split('T')[0];
       var inputFecha = document.getElementById('cajaFecha');
       if (inputFecha) inputFecha.value = hoy;
 
-      // Inicializar el selector de mes con el mes en curso (YYYY-MM)
-      var mesActual = hoy.substring(0, 7);
-      var inputMesFiltro = document.getElementById('filtroMesCaja');
-      if (inputMesFiltro) inputMesFiltro.value = mesActual;
+      // Generar desplegable con los últimos 12 meses en español
+      poblarDesplegableMeses();
     });
+
+    function poblarDesplegableMeses() {
+      var select = document.getElementById('selectMesCaja');
+      if (!select) return;
+
+      select.innerHTML = '';
+      var fechaRef = new Date();
+
+      for (var i = 0; i < 12; i++) {
+        var anio = fechaRef.getFullYear();
+        var mesNum = fechaRef.getMonth(); // 0-11
+        var mesVal = anio + '-' + String(mesNum + 1).padStart(2, '0'); // Formato YYYY-MM
+        var mesTexto = _nombresMeses[mesNum] + ' ' + anio;
+
+        var opt = document.createElement('option');
+        opt.value = mesVal;
+        opt.textContent = mesTexto + (i === 0 ? ' (Mes en curso)' : '');
+        select.appendChild(opt);
+
+        // Retroceder 1 mes
+        fechaRef.setMonth(fechaRef.getMonth() - 1);
+      }
+    }
 
     function iniciarAplicacion() {
       try {
@@ -869,7 +890,7 @@
       cargarProductos();
     }
 
-    // ================= FUNCIONES DE CAJA FILTRADAS POR MES =================
+    // ================= FUNCIONES DE CAJA FILTRADAS POR DESPLEGABLE =================
     async function guardarRegistroCaja() {
       var fecha = document.getElementById('cajaFecha').value;
       var efectivo = parseFloat(document.getElementById('cajaEfectivo').value) || 0;
@@ -907,9 +928,10 @@
           document.getElementById('cajaTransferencia').value = '0.00';
           document.getElementById('cajaNota').value = '';
           
-          // Actualizar automáticamente el selector de mes al mes del registro guardado
+          // Seleccionar automáticamente en el desplegable el mes del cobro registrado
           var mesDelRegistro = fecha.substring(0, 7);
-          document.getElementById('filtroMesCaja').value = mesDelRegistro;
+          var selectMes = document.getElementById('selectMesCaja');
+          if (selectMes) selectMes.value = mesDelRegistro;
 
           await cargarRegistrosCaja();
           alert('¡Cobro guardado correctamente!');
@@ -921,7 +943,8 @@
 
     async function cargarRegistrosCaja() {
       var container = document.getElementById('listaCajaCard');
-      var mesSeleccionado = document.getElementById('filtroMesCaja').value; // Formato "YYYY-MM"
+      var selectMes = document.getElementById('selectMesCaja');
+      var mesSeleccionado = selectMes ? selectMes.value : ''; // Formato "YYYY-MM"
       if (!_supabase) return;
 
       try {
@@ -940,7 +963,6 @@
           return;
         }
 
-        // Filtrar registros por el mes seleccionado (YYYY-MM)
         var registrosFiltrados = [];
         for (var i = 0; i < data.length; i++) {
           if (data[i].fecha && data[i].fecha.substring(0, 7) === mesSeleccionado) {
@@ -985,14 +1007,14 @@
 
         container.innerHTML = html;
 
-        // Actualizar estadísticas superiores solo del mes seleccionado
         var comisionTotalMes = acumuladoTotalMes * 0.03;
         document.getElementById('statTotalCobrado').innerText = acumuladoTotalMes.toFixed(2) + ' €';
         document.getElementById('statTotalComision').innerText = comisionTotalMes.toFixed(2) + ' €';
 
-        // Actualizar etiqueta del mes en curso
-        document.getElementById('labelTotalCobrado').innerText = 'Total Cobrado (' + mesSeleccionado + ')';
-        document.getElementById('labelTotalComision').innerText = 'Tu Comisión 3% (' + mesSeleccionado + ')';
+        // Obtener texto formateado de la opción seleccionada
+        var textoOpcion = selectMes.options[selectMes.selectedIndex] ? selectMes.options[selectMes.selectedIndex].text : mesSeleccionado;
+        document.getElementById('labelTotalCobrado').innerText = 'Total Cobrado (' + textoOpcion.replace(' (Mes en curso)', '') + ')';
+        document.getElementById('labelTotalComision').innerText = 'Tu Comisión 3% (' + textoOpcion.replace(' (Mes en curso)', '') + ')';
 
       } catch(e) {
         container.innerHTML = '<div style="color:var(--muted); padding:12px;">Error al cargar el histórico de caja.</div>';
