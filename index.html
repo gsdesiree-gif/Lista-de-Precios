@@ -13,7 +13,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
   <style>
     :root {
       --bg: #f1f5f9;
@@ -285,11 +287,10 @@
     .page-a4 {
       position: relative;
       width: 210mm;
-      height: 295mm;
-      max-height: 295mm;
+      height: 297mm;
       margin: 0 auto 20px auto;
       background: #ffffff;
-      padding: 12mm 12mm 12mm 12mm;
+      padding: 15mm;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
       border-radius: 4px;
       box-sizing: border-box;
@@ -310,7 +311,7 @@
       z-index: 0;
     }
 
-    .doc-content { position: relative; z-index: 1; flex: 1; overflow: hidden; }
+    .doc-content { position: relative; z-index: 1; flex: 1; }
 
     .doc-footer-bar {
       position: relative;
@@ -318,7 +319,7 @@
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
-      padding-top: 8px;
+      padding-top: 10px;
       border-top: 1px solid #cbd5e1;
       font-size: 11px;
       color: #64748b;
@@ -395,7 +396,7 @@
       html, body { width: 210mm; height: auto; background: white; margin: 0 !important; padding: 0 !important; }
       .no-print { display: none !important; }
       #vistaDocumento { display: block !important; margin: 0 !important; padding: 0 !important; }
-      .page-a4 { box-shadow: none !important; border-radius: 0 !important; padding: 10mm 10mm 10mm 10mm !important; margin: 0 !important; height: 297mm !important; page-break-after: always; break-after: page; }
+      .page-a4 { box-shadow: none !important; border-radius: 0 !important; padding: 15mm !important; margin: 0 !important; page-break-after: always; break-after: page; }
       .page-a4:last-child { page-break-after: avoid !important; break-after: avoid !important; }
       .page-a4-wrapper { overflow: visible; }
     }
@@ -1354,8 +1355,7 @@
         var canvas = await html2canvas(paginas[i], {
           scale: 2,
           useCORS: true,
-          scrollY: 0,
-          windowWidth: 1000
+          scrollY: 0
         });
         var imgData = canvas.toDataURL('image/jpeg', 0.98);
         pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
