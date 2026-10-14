@@ -285,10 +285,10 @@
     .page-a4 {
       position: relative;
       width: 210mm;
-      min-height: 297mm;
+      height: 296mm;
       margin: 0 auto 20px auto;
       background: #ffffff;
-      padding: 15mm 15mm 20mm 15mm;
+      padding: 15mm 15mm 15mm 15mm;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
       border-radius: 4px;
       box-sizing: border-box;
@@ -298,6 +298,13 @@
       justify-content: space-between;
       page-break-after: always;
       break-after: page;
+    }
+
+    /* En la última página no forzamos salto para evitar hoja en blanco sobrante */
+    .page-a4:last-child {
+      page-break-after: avoid !important;
+      break-after: avoid !important;
+      margin-bottom: 0 !important;
     }
 
     .watermark-bg {
@@ -323,7 +330,6 @@
       border-top: 1px solid #cbd5e1;
       font-size: 11px;
       color: #64748b;
-      margin-top: 15px;
     }
     .doc-footer-center {
       text-align: center;
@@ -397,7 +403,8 @@
       html, body { width: 210mm; height: auto; background: white; margin: 0 !important; padding: 0 !important; }
       .no-print { display: none !important; }
       #vistaDocumento { display: block !important; margin: 0 !important; padding: 0 !important; }
-      .page-a4 { box-shadow: none !important; border-radius: 0 !important; padding: 12mm 12mm 16mm 12mm !important; page-break-after: always; break-after: page; }
+      .page-a4 { box-shadow: none !important; border-radius: 0 !important; padding: 12mm 12mm 12mm 12mm !important; margin: 0 !important; }
+      .page-a4:not(:last-child) { page-break-after: always; break-after: page; }
       .page-a4-wrapper { overflow: visible; }
     }
   </style>
@@ -754,9 +761,7 @@
             document.getElementById('previewLogoContainer').innerHTML = '<img src="' + _configCache.logo + '" style="max-height:60px; border-radius:8px;">';
           }
         }
-      } catch(e) {
-        // Ignora error de configuración para evitar bloqueos
-      }
+      } catch(e) {}
     }
 
     async function guardarConfiguracionSupabase() {
@@ -1352,8 +1357,9 @@
         margin: 0,
         filename: 'Lista_Precios_El_Ancla_' + (_clienteActual || 'Cliente') + '.pdf',
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'] }
       };
       html2pdf().set(opciones).from(elemento).save();
     }
