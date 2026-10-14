@@ -1,4 +1,4 @@
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -297,7 +297,6 @@
       break-after: page;
     }
 
-    /* Marca de agua repetida en cada página A4 impresa */
     .watermark-bg {
       position: absolute;
       top: 50%;
@@ -580,7 +579,6 @@
     </div>
 
     <div class="page-a4-wrapper" id="contenedorPaginasA4">
-      <!-- Las páginas se generan dinámicamente aquí para asegurar marca de agua en cada una -->
     </div>
   </div>
 
@@ -1193,7 +1191,6 @@
         }
       }
 
-      // Generar bloques de productos agrupados por categorías con salto inteligente en páginas múltiples
       var categoriasHtmlPorBloques = [];
       var bloqueActualHtml = '';
       var productosEnBloque = 0;
@@ -1233,8 +1230,7 @@
             '</div>';
 
             productosEnBloque++;
-            // Si una página acumula muchos productos, dividimos en otra página limpia para que no se amontone
-            if (productosEnBloque >= 8) {
+            if (productosEnBloque >= 9) {
               bloqueActualHtml += catHeader + itemsCatHtml;
               categoriasHtmlPorBloques.push(bloqueActualHtml);
               bloqueActualHtml = '';
@@ -1254,7 +1250,6 @@
         categoriasHtmlPorBloques.push(bloqueActualHtml);
       }
 
-      // Si no hay productos, creamos al menos una página vacía
       if (categoriasHtmlPorBloques.length === 0) {
         categoriasHtmlPorBloques.push('<div style="color:var(--muted); text-align:center; padding:40px;">No hay productos seleccionados.</div>');
       }
@@ -1272,7 +1267,7 @@
         htmlPaginasTotal += '<div class="page-a4" id="pagina_' + pageIdx + '">' +
           marcaAguaHtml +
           '<div class="doc-content">' +
-            '<div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid #e2e8f0;">' +
+            '<div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #e2e8f0;">' +
               '<div style="display: flex; justify-content: flex-start; align-items: center;">' + logoHeaderHtml + '</div>' +
               '<div style="text-align: center; padding: 0 10px;">' +
                 '<h1 style="margin: 0; font-family: \'Oswald\', sans-serif; font-size: 32px; line-height: 1.1; color: #032b5f; text-transform: uppercase; letter-spacing: 1px;">' + (cfg.empresa || 'EL ANCLA') + '</h1>' +
@@ -1282,12 +1277,6 @@
                 '<div style="font-family: \'Oswald\', sans-serif; font-size: 18px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin-bottom: 2px;">' + lista.cliente_nombre + '</div>' +
                 '<div style="font-size: 12px; color: #64748b;"><strong>Fecha:</strong> ' + new Date(lista.fecha).toLocaleDateString('es-ES') + '</div>' +
               '</div>' +
-            '</div>' +
-
-            '<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; font-family: \'Oswald\', sans-serif; font-size: 13px; font-weight: 700; color: #032b5f; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0;">' +
-              '<div style="width: 85px;">IMAGEN</div>' +
-              '<div style="flex: 1; padding: 0 14px;">DESCRIPCIÓN DEL PRODUCTO</div>' +
-              '<div style="width: 100px; text-align: right;">PRECIO</div>' +
             '</div>' +
 
             '<div>' + contenidoBloque + '</div>' +
