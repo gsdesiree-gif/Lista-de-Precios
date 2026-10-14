@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+    <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>El Ancla | Catálogo Pro</title>
   
-  <!-- Icono Integrado en Base64 para Pantalla de Inicio (iPhone / Android / Web) -->
+  <!-- Icono Integrado para Pantalla de Inicio -->
   <link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='110' fill='%231e88e5'/><circle cx='256' cy='256' r='210' fill='%23fbc02d'/><path d='M110 60h240v392H110z' fill='%231565c0'/><path d='M200 60h150v392H200z' fill='%231e88e5'/><path d='M150 160l40 40 70-70' stroke='%23aed581' stroke-width='32' stroke-linecap='round' stroke-linejoin='round' fill='none'/><path d='M150 280l40 40 70-70' stroke='%23aed581' stroke-width='32' stroke-linecap='round' stroke-linejoin='round' fill='none'/><path d='M250 170h110M250 290h110M250 400h110' stroke='%23ffffff' stroke-width='24' stroke-linecap='round'/><path d='M170 100h200' stroke='%23fbc02d' stroke-width='28' stroke-linecap='round'/><text x='256' y='125' font-family='sans-serif' font-weight='bold' font-size='90' fill='%23fbc02d' text-anchor='middle'>$</text></svg>">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='110' fill='%231e88e5'/><circle cx='256' cy='256' r='210' fill='%23fbc02d'/><path d='M110 60h240v392H110z' fill='%231565c0'/><path d='M200 60h150v392H200z' fill='%231e88e5'/><path d='M150 160l40 40 70-70' stroke='%23aed581' stroke-width='32' stroke-linecap='round' stroke-linejoin='round' fill='none'/><path d='M150 280l40 40 70-70' stroke='%23aed581' stroke-width='32' stroke-linecap='round' stroke-linejoin='round' fill='none'/><path d='M250 170h110M250 290h110M250 400h110' stroke='%23ffffff' stroke-width='24' stroke-linecap='round'/><path d='M170 100h200' stroke='%23fbc02d' stroke-width='28' stroke-linecap='round'/><text x='256' y='125' font-family='sans-serif' font-weight='bold' font-size='90' fill='%23fbc02d' text-anchor='middle'>$</text></svg>">
   
@@ -293,8 +293,11 @@
       border-radius: 4px;
       box-sizing: border-box;
       overflow: hidden;
+      page-break-after: always;
+      break-after: page;
     }
 
+    /* Marca de agua repetida en cada página A4 impresa */
     .watermark-bg {
       position: absolute;
       top: 50%;
@@ -365,10 +368,10 @@
 
     @media print {
       @page { size: A4 portrait; margin: 0; }
-      html, body { width: 210mm; height: 297mm; background: white; margin: 0 !important; padding: 0 !important; }
+      html, body { width: 210mm; height: auto; background: white; margin: 0 !important; padding: 0 !important; }
       .no-print { display: none !important; }
       #vistaDocumento { display: block !important; margin: 0 !important; padding: 0 !important; }
-      .page-a4 { box-shadow: none !important; border-radius: 0 !important; padding: 12mm !important; }
+      .page-a4 { box-shadow: none !important; border-radius: 0 !important; padding: 12mm !important; page-break-after: always; break-after: page; }
       .page-a4-wrapper { overflow: visible; }
     }
   </style>
@@ -465,12 +468,11 @@
       </div>
     </div>
 
-    <!-- PESTAÑA CAJA & COMISIÓN 3% CON LISTADO COMPACTO -->
+    <!-- PESTAÑA CAJA & COMISIÓN 3% -->
     <div id="tabCaja" class="tab-content">
       <div class="card">
         <div class="card-header">💰 Control Diario de Cobros & Comisión (3%)</div>
         
-        <!-- Desplegable de Meses -->
         <div style="background: #e2e8f0; padding: 14px 16px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
           <div style="flex: 1; min-width: 220px;">
             <label for="selectMesCaja" style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 6px; display: block;">📅 Seleccionar Mes:</label>
@@ -479,7 +481,6 @@
           </div>
         </div>
 
-        <!-- Tarjetas de Resumen del Mes Seleccionado -->
         <div class="caja-stats-grid">
           <div class="stat-box">
             <div class="label" id="labelTotalCobrado">Total Cobrado</div>
@@ -491,7 +492,6 @@
           </div>
         </div>
 
-        <!-- Formulario de Registro Diario -->
         <div style="background: #f8fafc; border: 1px solid var(--border); padding: 18px; border-radius: 12px; margin-bottom: 24px;">
           <div style="font-family: 'Oswald', sans-serif; font-size: 15px; color: var(--primary); margin-bottom: 14px; text-transform: uppercase;">
             ➕ Registrar Cobro Diario
@@ -521,7 +521,6 @@
           <button onclick="guardarRegistroCaja()" class="btn btn-success">💾 Guardar Cobro del Día</button>
         </div>
 
-        <!-- Histórico Filtrado en Tabla Compacta -->
         <div style="font-family: 'Oswald', sans-serif; font-size: 16px; color: var(--primary); margin-bottom: 12px; text-transform: uppercase;">
           📅 Cobros del Mes Seleccionado
         </div>
@@ -580,11 +579,8 @@
       </div>
     </div>
 
-    <div class="page-a4-wrapper">
-      <div class="page-a4" id="documentoA4">
-        <div id="watermarkElement" class="watermark-bg"></div>
-        <div id="contenidoImprimible" class="doc-content"></div>
-      </div>
+    <div class="page-a4-wrapper" id="contenedorPaginasA4">
+      <!-- Las páginas se generan dinámicamente aquí para asegurar marca de agua en cada una -->
     </div>
   </div>
 
@@ -931,7 +927,6 @@
       cargarProductos();
     }
 
-    // ================= CAJA Y COMISIÓN EN TABLA COMPACTA =================
     async function guardarRegistroCaja() {
       var fecha = document.getElementById('cajaFecha').value;
       var efectivo = parseFloat(document.getElementById('cajaEfectivo').value) || 0;
@@ -1078,7 +1073,6 @@
       await _supabase.from('caja_registros').delete().eq('id', id);
       cargarRegistrosCaja();
     }
-    // ===================================================================
 
     async function generarLista() {
       var cliente = document.getElementById('clienteNombre').value.trim();
@@ -1162,13 +1156,6 @@
       _clienteActual = lista.cliente_nombre;
       var cfg = _configCache;
 
-      var watermarkEl = document.getElementById('watermarkElement');
-      if (cfg.logo && cfg.es_marca_agua) {
-        watermarkEl.innerHTML = '<img src="' + cfg.logo + '" style="width:100%;">';
-      } else {
-        watermarkEl.innerHTML = '';
-      }
-
       var logoHeaderHtml = '';
       if (cfg.logo && !cfg.es_marca_agua) {
         logoHeaderHtml = '<img src="' + cfg.logo + '" style="max-height: 85px; object-fit: contain;">';
@@ -1206,7 +1193,10 @@
         }
       }
 
-      var seccionesCategoriasHtml = '';
+      // Generar bloques de productos agrupados por categorías con salto inteligente en páginas múltiples
+      var categoriasHtmlPorBloques = [];
+      var bloqueActualHtml = '';
+      var productosEnBloque = 0;
 
       for (var cIdx = 0; cIdx < _categoriasOrden.length; cIdx++) {
         var cat = _categoriasOrden[cIdx];
@@ -1218,62 +1208,94 @@
         }
 
         if (prodsCat.length > 0) {
-          seccionesCategoriasHtml += '<div style="margin-top: 20px; margin-bottom: 10px; padding: 6px 12px; background: #032b5f; color: #ffffff; font-family: \'Oswald\', sans-serif; font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; border-radius: 6px;">' +
+          var catHeader = '<div style="margin-top: 15px; margin-bottom: 8px; padding: 6px 12px; background: #032b5f; color: #ffffff; font-family: \'Oswald\', sans-serif; font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; border-radius: 6px;">' +
             cat +
           '</div>';
 
+          var itemsCatHtml = '';
           for (var j = 0; j < prodsCat.length; j++) {
             var p = prodsCat[j];
-            
             var imgTag = p.url_foto 
-              ? '<img src="' + p.url_foto + '" style="width: 80px; height: 80px; border-radius: 10px; object-fit: cover; border: 1px solid #cbd5e1;">' 
-              : '<div style="width: 80px; height: 80px; background: #f1f5f9; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 28px; border: 1px solid #e2e8f0;">📦</div>';
+              ? '<img src="' + p.url_foto + '" style="width: 70px; height: 70px; border-radius: 10px; object-fit: cover; border: 1px solid #cbd5e1;">' 
+              : '<div style="width: 70px; height: 70px; background: #f1f5f9; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 26px; border: 1px solid #e2e8f0;">📦</div>';
             
-            var notaTag = p.notas ? '<div style="font-size: 13px; color: #64748b; margin-top: 4px;">📌 ' + p.notas + '</div>' : '';
+            var notaTag = p.notas ? '<div style="font-size: 12px; color: #64748b; margin-top: 2px;">📌 ' + p.notas + '</div>' : '';
 
-            seccionesCategoriasHtml += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1px solid #e2e8f0;">' +
-              '<div style="width: 95px; flex-shrink: 0;">' + imgTag + '</div>' +
-              '<div style="flex: 1; padding: 0 16px;">' +
-                '<div style="font-size: 17px; font-weight: 700; color: #0f172a;">' + (p.nombre || '') + '</div>' +
+            itemsCatHtml += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid #e2e8f0;">' +
+              '<div style="width: 85px; flex-shrink: 0;">' + imgTag + '</div>' +
+              '<div style="flex: 1; padding: 0 14px;">' +
+                '<div style="font-size: 16px; font-weight: 700; color: #0f172a;">' + (p.nombre || '') + '</div>' +
                 notaTag +
               '</div>' +
-              '<div style="font-family: \'Oswald\', sans-serif; font-size: 22px; font-weight: 700; color: #2563eb; width: 110px; text-align: right; flex-shrink: 0;">' +
+              '<div style="font-family: \'Oswald\', sans-serif; font-size: 20px; font-weight: 700; color: #2563eb; width: 100px; text-align: right; flex-shrink: 0;">' +
                 parseFloat(p.precio || 0).toFixed(2) + ' €' +
               '</div>' +
             '</div>';
+
+            productosEnBloque++;
+            // Si una página acumula muchos productos, dividimos en otra página limpia para que no se amontone
+            if (productosEnBloque >= 8) {
+              bloqueActualHtml += catHeader + itemsCatHtml;
+              categoriasHtmlPorBloques.push(bloqueActualHtml);
+              bloqueActualHtml = '';
+              itemsCatHtml = '';
+              catHeader = '';
+              productosEnBloque = 0;
+            }
+          }
+
+          if (itemsCatHtml) {
+            bloqueActualHtml += catHeader + itemsCatHtml;
           }
         }
       }
 
-      var htmlDoc = '<div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #e2e8f0;">' +
-        '<div style="display: flex; justify-content: flex-start; align-items: center;">' + 
-          logoHeaderHtml + 
-        '</div>' +
-        '<div style="text-align: center; padding: 0 10px;">' +
-          '<h1 style="margin: 0; font-family: \'Oswald\', sans-serif; font-size: 36px; line-height: 1.1; color: #032b5f; text-transform: uppercase; letter-spacing: 1px;">' + 
-            (cfg.empresa || 'EL ANCLA') + 
-          '</h1>' +
-          comercialHtml +
-        '</div>' +
-        '<div style="text-align: right; font-size: 13px; color: #475569;">' +
-          '<div style="font-family: \'Oswald\', sans-serif; font-size: 20px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin-bottom: 2px;">' +
-            lista.cliente_nombre +
+      if (bloqueActualHtml) {
+        categoriasHtmlPorBloques.push(bloqueActualHtml);
+      }
+
+      // Si no hay productos, creamos al menos una página vacía
+      if (categoriasHtmlPorBloques.length === 0) {
+        categoriasHtmlPorBloques.push('<div style="color:var(--muted); text-align:center; padding:40px;">No hay productos seleccionados.</div>');
+      }
+
+      var marcaAguaHtml = '';
+      if (cfg.logo && cfg.es_marca_agua) {
+        marcaAguaHtml = '<div class="watermark-bg"><img src="' + cfg.logo + '" style="width:100%;"></div>';
+      }
+
+      var htmlPaginasTotal = '';
+
+      for (var pageIdx = 0; pageIdx < categoriasHtmlPorBloques.length; pageIdx++) {
+        var contenidoBloque = categoriasHtmlPorBloques[pageIdx];
+
+        htmlPaginasTotal += '<div class="page-a4" id="pagina_' + pageIdx + '">' +
+          marcaAguaHtml +
+          '<div class="doc-content">' +
+            '<div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid #e2e8f0;">' +
+              '<div style="display: flex; justify-content: flex-start; align-items: center;">' + logoHeaderHtml + '</div>' +
+              '<div style="text-align: center; padding: 0 10px;">' +
+                '<h1 style="margin: 0; font-family: \'Oswald\', sans-serif; font-size: 32px; line-height: 1.1; color: #032b5f; text-transform: uppercase; letter-spacing: 1px;">' + (cfg.empresa || 'EL ANCLA') + '</h1>' +
+                comercialHtml +
+              '</div>' +
+              '<div style="text-align: right; font-size: 13px; color: #475569;">' +
+                '<div style="font-family: \'Oswald\', sans-serif; font-size: 18px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin-bottom: 2px;">' + lista.cliente_nombre + '</div>' +
+                '<div style="font-size: 12px; color: #64748b;"><strong>Fecha:</strong> ' + new Date(lista.fecha).toLocaleDateString('es-ES') + '</div>' +
+              '</div>' +
+            '</div>' +
+
+            '<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; font-family: \'Oswald\', sans-serif; font-size: 13px; font-weight: 700; color: #032b5f; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0;">' +
+              '<div style="width: 85px;">IMAGEN</div>' +
+              '<div style="flex: 1; padding: 0 14px;">DESCRIPCIÓN DEL PRODUCTO</div>' +
+              '<div style="width: 100px; text-align: right;">PRECIO</div>' +
+            '</div>' +
+
+            '<div>' + contenidoBloque + '</div>' +
           '</div>' +
-          '<div style="font-size: 12px; color: #64748b;">' +
-            '<strong>Fecha:</strong> ' + new Date(lista.fecha).toLocaleDateString('es-ES') +
-          '</div>' +
-        '</div>' +
-      '</div>' +
+        '</div>';
+      }
 
-      '<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; font-family: \'Oswald\', sans-serif; font-size: 14px; font-weight: 700; color: #032b5f; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0;">' +
-        '<div style="width: 95px;">IMAGEN</div>' +
-        '<div style="flex: 1; padding: 0 16px;">DESCRIPCIÓN DEL PRODUCTO</div>' +
-        '<div style="width: 110px; text-align: right;">PRECIO</div>' +
-      '</div>' +
-
-      '<div>' + seccionesCategoriasHtml + '</div>';
-
-      document.getElementById('contenidoImprimible').innerHTML = htmlDoc;
+      document.getElementById('contenedorPaginasA4').innerHTML = htmlPaginasTotal;
       
       var containerEl = document.querySelector('.container');
       var topBarEl = document.querySelector('.top-bar');
@@ -1287,7 +1309,7 @@
     }
 
     function descargarPDF() {
-      var elemento = document.getElementById('documentoA4');
+      var elemento = document.getElementById('contenedorPaginasA4');
       var opciones = {
         margin: 0,
         filename: 'Lista_Precios_El_Ancla_' + (_clienteActual || 'Cliente') + '.pdf',
