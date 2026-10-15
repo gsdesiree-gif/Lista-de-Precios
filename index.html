@@ -280,22 +280,17 @@
       overflow-x: auto;
       padding-bottom: 20px;
     }
+    
+    /* Documento A4 fluido sin restricciones de altura fija */
     .page-a4 {
       position: relative;
       width: 210mm;
-      height: 297mm;
       margin: 0 auto 20px auto;
       background: #ffffff;
-      padding: 15mm 15mm 12mm 15mm;
+      padding: 15mm 15mm 15mm 15mm;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
       border-radius: 4px;
       box-sizing: border-box;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      page-break-after: always;
-      break-after: page;
     }
 
     .watermark-bg {
@@ -309,7 +304,7 @@
       z-index: 0;
     }
 
-    .doc-content { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; }
+    .doc-content { position: relative; z-index: 1; }
 
     .doc-footer-bar {
       position: relative;
@@ -317,7 +312,8 @@
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
-      padding-top: 8px;
+      margin-top: 24px;
+      padding-top: 10px;
       border-top: 1px solid #cbd5e1;
       font-size: 11px;
       color: #64748b;
@@ -390,13 +386,11 @@
     }
 
     @media print {
-      @page { size: A4 portrait; margin: 0; }
+      @page { size: A4 portrait; margin: 10mm; }
       html, body { width: 210mm; height: auto; background: white; margin: 0 !important; padding: 0 !important; }
       .no-print { display: none !important; }
       #vistaDocumento { display: block !important; margin: 0 !important; padding: 0 !important; }
-      .page-a4 { box-shadow: none !important; border-radius: 0 !important; padding: 15mm 15mm 12mm 15mm !important; margin: 0 !important; page-break-after: always; break-after: page; }
-      .page-a4:last-child { page-break-after: avoid !important; break-after: avoid !important; }
-      .page-a4-wrapper { overflow: visible; }
+      .page-a4 { box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
     }
   </style>
 </head>
@@ -919,7 +913,6 @@
         }
       }
 
-      // Agrupamos productos por categoría
       var categoriasMap = {};
       for (var c = 0; c < _categoriasOrden.length; c++) categoriasMap[_categoriasOrden[c]] = [];
       for (var p = 0; p < productosSeleccionados.length; p++) {
@@ -933,8 +926,8 @@
         var catNombre = _categoriasOrden[k];
         var prodsCat = categoriasMap[catNombre];
         if (prodsCat && prodsCat.length > 0) {
-          htmlCategoriasRender += '<div style="margin-bottom: 16px;">' +
-            '<div style="margin-top: 8px; margin-bottom: 8px; padding: 6px 12px; background: #032b5f; color: #ffffff; font-family: \'Oswald\', sans-serif; font-size: 15px; font-weight: 700; text-transform: uppercase; border-radius: 4px;">' + catNombre + '</div>';
+          htmlCategoriasRender += '<div style="margin-bottom: 20px;">' +
+            '<div style="margin-top: 12px; margin-bottom: 8px; padding: 6px 12px; background: #032b5f; color: #ffffff; font-family: \'Oswald\', sans-serif; font-size: 15px; font-weight: 700; text-transform: uppercase; border-radius: 4px;">' + catNombre + '</div>';
           
           for (var pr = 0; pr < prodsCat.length; pr++) {
             var prod = prodsCat[pr];
@@ -957,7 +950,6 @@
       var marcaAgua = cfg.logo && cfg.es_marca_agua ? '<div class="watermark-bg"><img src="' + cfg.logo + '" style="width:100%;"></div>' : '';
       var footerTxt = cfg.comercial ? cfg.comercial + (cfg.telefono ? ' | 📞 ' + cfg.telefono : '') : (cfg.empresa || 'EL ANCLA');
 
-      // Creamos una única página A4 fluida con todo el contenido. El navegador y el motor de impresión/PDF se encargarán de distribuirlo correctamente sin cortes bruscos.
       var htmlPagina = '<div class="page-a4">' +
         marcaAgua +
         '<div class="doc-content">' +
