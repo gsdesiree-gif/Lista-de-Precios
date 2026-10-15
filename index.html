@@ -277,17 +277,18 @@
 
     .page-a4-wrapper {
       width: 100%;
-      overflow-x: auto;
-      padding-bottom: 20px;
+      display: flex;
+      justify-content: center;
     }
     
-    /* Documento A4 fluido sin restricciones de altura fija */
+    /* HOJA A4 FLUIDA REAL PARA IMPRESIÓN */
     .page-a4 {
       position: relative;
       width: 210mm;
+      min-height: 297mm;
       margin: 0 auto 20px auto;
       background: #ffffff;
-      padding: 15mm 15mm 15mm 15mm;
+      padding: 15mm 18mm 15mm 18mm;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
       border-radius: 4px;
       box-sizing: border-box;
@@ -306,13 +307,30 @@
 
     .doc-content { position: relative; z-index: 1; }
 
+    /* EVITAR CORTES FEOS EN PRODUCTOS AL CAMBIAR DE PÁGINA */
+    .catalog-item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .catalog-category-box {
+      margin-bottom: 16px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
     .doc-footer-bar {
       position: relative;
       z-index: 2;
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
-      margin-top: 24px;
+      margin-top: 30px;
       padding-top: 10px;
       border-top: 1px solid #cbd5e1;
       font-size: 11px;
@@ -390,7 +408,7 @@
       html, body { width: 210mm; height: auto; background: white; margin: 0 !important; padding: 0 !important; }
       .no-print { display: none !important; }
       #vistaDocumento { display: block !important; margin: 0 !important; padding: 0 !important; }
-      .page-a4 { box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; margin: 0 !important; width: 100% !important; }
+      .page-a4 { box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; margin: 0 !important; width: 100% !important; min-height: auto !important; }
     }
   </style>
 </head>
@@ -926,15 +944,15 @@
         var catNombre = _categoriasOrden[k];
         var prodsCat = categoriasMap[catNombre];
         if (prodsCat && prodsCat.length > 0) {
-          htmlCategoriasRender += '<div style="margin-bottom: 20px;">' +
-            '<div style="margin-top: 12px; margin-bottom: 8px; padding: 6px 12px; background: #032b5f; color: #ffffff; font-family: \'Oswald\', sans-serif; font-size: 15px; font-weight: 700; text-transform: uppercase; border-radius: 4px;">' + catNombre + '</div>';
+          htmlCategoriasRender += '<div class="catalog-category-box">' +
+            '<div style="margin-top: 14px; margin-bottom: 8px; padding: 6px 12px; background: #032b5f; color: #ffffff; font-family: \'Oswald\', sans-serif; font-size: 15px; font-weight: 700; text-transform: uppercase; border-radius: 4px;">' + catNombre + '</div>';
           
           for (var pr = 0; pr < prodsCat.length; pr++) {
             var prod = prodsCat[pr];
             var imgT = prod.url_foto ? '<img src="' + prod.url_foto + '" style="width: 50px; height: 50px; border-radius: 6px; object-fit: cover; border: 1px solid #cbd5e1;">' : '<div style="width: 50px; height: 50px; background: #f1f5f9; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 1px solid #e2e8f0;">📦</div>';
             var notaT = prod.notas ? '<div style="font-size: 11px; color: #64748b; margin-top: 2px;">📌 ' + prod.notas + '</div>' : '';
 
-            htmlCategoriasRender += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 8px; border-bottom: 1px solid #e2e8f0;">' +
+            htmlCategoriasRender += '<div class="catalog-item-row">' +
               '<div style="width: 50px; flex-shrink: 0;">' + imgT + '</div>' +
               '<div style="flex: 1; padding: 0 10px; overflow: hidden;">' +
                 '<div style="font-size: 14px; font-weight: 700; color: #0f172a; line-height: 1.2;">' + prod.nombre + '</div>' +
