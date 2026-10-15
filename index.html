@@ -277,21 +277,31 @@
 
     .page-a4-wrapper {
       width: 100%;
-      display: flex;
-      justify-content: center;
+      overflow-x: auto;
+      padding-bottom: 20px;
     }
-    
-    /* HOJA A4 FLUIDA REAL PARA IMPRESIÓN */
+
+    /* PÁGINAS A4 INDIVIDUALES PARA ASEGURAR QUE CADA UNA LLEVE SU PIE Y SU MARCA DE AGUA */
     .page-a4 {
       position: relative;
       width: 210mm;
-      min-height: 297mm;
+      height: 297mm;
       margin: 0 auto 20px auto;
       background: #ffffff;
-      padding: 15mm 18mm 15mm 18mm;
+      padding: 14mm 14mm 12mm 14mm;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
       border-radius: 4px;
       box-sizing: border-box;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      page-break-after: always;
+      break-after: page;
+    }
+    .page-a4:last-child {
+      page-break-after: avoid;
+      break-after: avoid;
     }
 
     .watermark-bg {
@@ -305,24 +315,7 @@
       z-index: 0;
     }
 
-    .doc-content { position: relative; z-index: 1; }
-
-    /* EVITAR CORTES FEOS EN PRODUCTOS AL CAMBIAR DE PÁGINA */
-    .catalog-item-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 10px;
-      border-bottom: 1px solid #e2e8f0;
-      break-inside: avoid;
-      page-break-inside: avoid;
-    }
-
-    .catalog-category-box {
-      margin-bottom: 16px;
-      break-inside: avoid;
-      page-break-inside: avoid;
-    }
+    .doc-content { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; }
 
     .doc-footer-bar {
       position: relative;
@@ -330,8 +323,7 @@
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
-      margin-top: 30px;
-      padding-top: 10px;
+      padding-top: 6px;
       border-top: 1px solid #cbd5e1;
       font-size: 11px;
       color: #64748b;
@@ -339,8 +331,10 @@
     .doc-footer-center {
       text-align: center;
       flex: 1;
-      font-weight: 600;
-      color: #1e293b;
+      font-weight: 700;
+      color: #032b5f;
+      text-transform: uppercase;
+      font-size: 12px;
     }
     .doc-footer-right {
       text-align: right;
@@ -404,11 +398,13 @@
     }
 
     @media print {
-      @page { size: A4 portrait; margin: 10mm; }
+      @page { size: A4 portrait; margin: 0; }
       html, body { width: 210mm; height: auto; background: white; margin: 0 !important; padding: 0 !important; }
       .no-print { display: none !important; }
       #vistaDocumento { display: block !important; margin: 0 !important; padding: 0 !important; }
-      .page-a4 { box-shadow: none !important; border-radius: 0 !important; padding: 0 !important; margin: 0 !important; width: 100% !important; min-height: auto !important; }
+      .page-a4 { box-shadow: none !important; border-radius: 0 !important; padding: 14mm 14mm 12mm 14mm !important; margin: 0 !important; page-break-after: always; break-after: page; }
+      .page-a4:last-child { page-break-after: avoid !important; break-after: avoid !important; }
+      .page-a4-wrapper { overflow: visible; }
     }
   </style>
 </head>
@@ -913,8 +909,7 @@
       _clienteActual = lista.cliente_nombre;
       var cfg = _configCache;
 
-      var logoHeader = cfg.logo && !cfg.es_marca_agua ? '<img src="' + cfg.logo + '" style="max-height: 80px; max-width: 150px; object-fit: contain;">' : '';
-      var comercialHeader = cfg.comercial ? '<div style="font-size: 16px; font-weight: 700; color: #2563eb; text-transform: uppercase;">' + cfg.comercial + (cfg.telefono ? ' | 📞 ' + cfg.telefono : '') + '</div>' : '';
+      var logoHeader = cfg.logo && !cfg.es_marca_agua ? '<img src="' + cfg.logo + '" style="max-height: 70px; max-width: 140px; object-fit: contain;">' : '';
 
       var rawItems = lista.productos_ids || [];
       var productosSeleccionados = [];
@@ -931,6 +926,13 @@
         }
       }
 
+      // DISTRIBUCIÓN INTELIGENTE Y FLUIDA: Máximo 9 productos por página para que llene bien el folio sin dejar espacios vacíos exagerados
+      var itemsPorPagina = 9;
+      var bloquesDePagina = [];
+      var productosActualesBloque = [];
+      var categoriaActualEnBloque = '';
+
+      // Organizar por categorías de forma continua
       var categoriasMap = {};
       for (var c = 0; c < _categoriasOrden.length; c++) categoriasMap[_categoriasOrden[c]] = [];
       for (var p = 0; p < productosSeleccionados.length; p++) {
@@ -939,55 +941,100 @@
         categoriasMap[cat].push(productosSeleccionados[p]);
       }
 
-      var htmlCategoriasRender = '';
+      var listaPlanaProductosConCat = [];
       for (var k = 0; k < _categoriasOrden.length; k++) {
         var catNombre = _categoriasOrden[k];
         var prodsCat = categoriasMap[catNombre];
         if (prodsCat && prodsCat.length > 0) {
-          htmlCategoriasRender += '<div class="catalog-category-box">' +
-            '<div style="margin-top: 14px; margin-bottom: 8px; padding: 6px 12px; background: #032b5f; color: #ffffff; font-family: \'Oswald\', sans-serif; font-size: 15px; font-weight: 700; text-transform: uppercase; border-radius: 4px;">' + catNombre + '</div>';
-          
           for (var pr = 0; pr < prodsCat.length; pr++) {
-            var prod = prodsCat[pr];
-            var imgT = prod.url_foto ? '<img src="' + prod.url_foto + '" style="width: 50px; height: 50px; border-radius: 6px; object-fit: cover; border: 1px solid #cbd5e1;">' : '<div style="width: 50px; height: 50px; background: #f1f5f9; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 1px solid #e2e8f0;">📦</div>';
-            var notaT = prod.notas ? '<div style="font-size: 11px; color: #64748b; margin-top: 2px;">📌 ' + prod.notas + '</div>' : '';
-
-            htmlCategoriasRender += '<div class="catalog-item-row">' +
-              '<div style="width: 50px; flex-shrink: 0;">' + imgT + '</div>' +
-              '<div style="flex: 1; padding: 0 10px; overflow: hidden;">' +
-                '<div style="font-size: 14px; font-weight: 700; color: #0f172a; line-height: 1.2;">' + prod.nombre + '</div>' +
-                notaT +
-              '</div>' +
-              '<div style="font-family: \'Oswald\', sans-serif; font-size: 18px; font-weight: 700; color: #2563eb; width: 85px; text-align: right; flex-shrink: 0;">' + parseFloat(prod.precio || 0).toFixed(2) + ' €</div>' +
-            '</div>';
+            listaPlanaProductosConCat.push({ categoria: catNombre, producto: prodsCat[pr] });
           }
-          htmlCategoriasRender += '</div>';
         }
       }
 
-      var marcaAgua = cfg.logo && cfg.es_marca_agua ? '<div class="watermark-bg"><img src="' + cfg.logo + '" style="width:100%;"></div>' : '';
-      var footerTxt = cfg.comercial ? cfg.comercial + (cfg.telefono ? ' | 📞 ' + cfg.telefono : '') : (cfg.empresa || 'EL ANCLA');
+      var paginaHtmlActual = '';
+      var contadorEnPagina = 0;
+      var ultimaCatPintada = '';
 
-      var htmlPagina = '<div class="page-a4">' +
-        marcaAgua +
-        '<div class="doc-content">' +
-          '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 3px solid #032b5f;">' +
-            '<div style="display: flex; align-items: center; gap: 12px;">' + logoHeader + '<div><h1 style="margin: 0; font-family: \'Oswald\', sans-serif; font-size: 36px; line-height: 1.0; color: #032b5f; text-transform: uppercase;">' + (cfg.empresa || 'EL ANCLA') + '</h1>' + comercialHeader + '</div></div>' +
-            '<div style="text-align: right; font-size: 13px; color: #475569;">' +
-              '<div style="font-family: \'Oswald\', sans-serif; font-size: 18px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin-bottom: 2px;">' + lista.cliente_nombre + '</div>' +
+      for (var idx = 0; idx < listaPlanaProductosConCat.length; idx++) {
+        var itemData = listaPlanaProductosConCat[idx];
+        
+        if (contadorEnPagina >= itemsPorPagina) {
+          bloquesDePagina.push(paginaHtmlActual);
+          paginaHtmlActual = '';
+          contadorEnPagina = 0;
+          ultimaCatPintada = ''; // Forzar repetir cabecera de categoría si continúa en la siguiente hoja
+        }
+
+        if (itemData.categoria !== ultimaCatPintada) {
+          paginaHtmlActual += '<div style="margin-top: 10px; margin-bottom: 6px; padding: 5px 10px; background: #032b5f; color: #ffffff; font-family: \'Oswald\', sans-serif; font-size: 14px; font-weight: 700; text-transform: uppercase; border-radius: 4px;">' + itemData.categoria + '</div>';
+          ultimaCatPintada = itemData.categoria;
+          contadorEnPagina += 0.5; // La cabecera ocupa un pequeño espacio visual
+        }
+
+        var prod = itemData.producto;
+        var imgT = prod.url_foto ? '<img src="' + prod.url_foto + '" style="width: 45px; height: 45px; border-radius: 6px; object-fit: cover; border: 1px solid #cbd5e1;">' : '<div style="width: 45px; height: 45px; background: #f1f5f9; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 16px; border: 1px solid #e2e8f0;">📦</div>';
+        var notaT = prod.notas ? '<div style="font-size: 10px; color: #64748b; margin-top: 1px;">📌 ' + prod.notas + '</div>' : '';
+
+        paginaHtmlActual += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 5px 8px; border-bottom: 1px solid #e2e8f0; height: 58px;">' +
+          '<div style="width: 45px; flex-shrink: 0;">' + imgT + '</div>' +
+          '<div style="flex: 1; padding: 0 10px; overflow: hidden;">' +
+            '<div style="font-size: 13px; font-weight: 700; color: #0f172a; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + prod.nombre + '</div>' +
+            notaT +
+          '</div>' +
+          '<div style="font-family: \'Oswald\', sans-serif; font-size: 17px; font-weight: 700; color: #2563eb; width: 80px; text-align: right; flex-shrink: 0;">' + parseFloat(prod.precio || 0).toFixed(2) + ' €</div>' +
+        '</div>';
+
+        contadorEnPagina++;
+      }
+
+      if (paginaHtmlActual) {
+        bloquesDePagina.push(paginaHtmlActual);
+      }
+
+      var totalPaginas = bloquesDePagina.length;
+      var marcaAgua = cfg.logo && cfg.es_marca_agua ? '<div class="watermark-bg"><img src="' + cfg.logo + '" style="width:100%;"></div>' : '';
+      
+      // Texto obligatorio del pie de página para cada hoja: Nombre del comercial + teléfono
+      var footerComercialTxt = cfg.comercial ? cfg.comercial + (cfg.telefono ? ' | 📞 ' + cfg.telefono : '') : (cfg.empresa || 'EL ANCLA');
+
+      var htmlPaginasTotal = '';
+
+      for (var pIdx = 0; pIdx < totalPaginas; pIdx++) {
+        var contenidoBloque = bloquesDePagina[pIdx];
+        var numPaginaActual = pIdx + 1;
+
+        var cabeceraPagina = '';
+        if (numPaginaActual === 1) {
+          cabeceraPagina = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 3px solid #032b5f;">' +
+            '<div style="display: flex; align-items: center; gap: 10px;">' + logoHeader + '<div><h1 style="margin: 0; font-family: \'Oswald\', sans-serif; font-size: 32px; line-height: 1.0; color: #032b5f; text-transform: uppercase;">' + (cfg.empresa || 'EL ANCLA') + '</h1></div></div>' +
+            '<div style="text-align: right; font-size: 12px; color: #475569;">' +
+              '<div style="font-family: \'Oswald\', sans-serif; font-size: 16px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin-bottom: 2px;">' + lista.cliente_nombre + '</div>' +
               '<div><strong>Fecha:</strong> ' + new Date(lista.fecha).toLocaleDateString('es-ES') + '</div>' +
             '</div>' +
-          '</div>' +
-          '<div>' + htmlCategoriasRender + '</div>' +
-        '</div>' +
-        '<div class="doc-footer-bar">' +
-          '<div style="flex:1;"></div>' +
-          '<div class="doc-footer-center">' + footerTxt + '</div>' +
-          '<div class="doc-footer-right" style="flex:1; text-align:right;">Catálogo de Precios</div>' +
-        '</div>' +
-      '</div>';
+          '</div>';
+        } else {
+          cabeceraPagina = '<div style="margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #cbd5e1; display:flex; justify-content: space-between; font-size:11px; color:#64748b;">' +
+            '<span><strong>' + (cfg.empresa || 'EL ANCLA') + '</strong> - Continuación</span>' +
+            '<span>Cliente: <strong>' + lista.cliente_nombre + '</strong></span>' +
+          '</div>';
+        }
 
-      document.getElementById('contenedorPaginasA4').innerHTML = htmlPagina;
+        htmlPaginasTotal += '<div class="page-a4">' +
+          marcaAgua +
+          '<div class="doc-content">' +
+            cabeceraPagina +
+            '<div>' + contenidoBloque + '</div>' +
+          '</div>' +
+          '<div class="doc-footer-bar">' +
+            '<div style="flex:1; font-size: 10px; color:#64748b;">Ref: ' + lista.cliente_nombre + '</div>' +
+            '<div class="doc-footer-center">' + footerComercialTxt + '</div>' +
+            '<div class="doc-footer-right" style="flex:1; text-align:right;">Página ' + numPaginaActual + ' de ' + totalPaginas + '</div>' +
+          '</div>' +
+        '</div>';
+      }
+
+      document.getElementById('contenedorPaginasA4').innerHTML = htmlPaginasTotal;
       document.querySelector('.container').style.display = 'none';
       document.querySelector('.top-bar').style.display = 'none';
       document.querySelector('.nav-bar').style.display = 'none';
@@ -996,24 +1043,16 @@
     }
 
     async function descargarPDF() {
-      var pagina = document.querySelector('.page-a4');
-      if (!pagina) return;
+      var paginas = document.querySelectorAll('.page-a4');
+      if (!paginas || paginas.length === 0) return;
+
       var pdf = new jspdf.jsPDF('p', 'mm', 'a4');
-      var canvas = await html2canvas(pagina, { scale: 2, useCORS: true, scrollY: 0 });
-      var imgData = canvas.toDataURL('image/jpeg', 0.98);
-      
-      var imgHeight = (canvas.height * 210) / canvas.width;
-      var heightLeft = imgHeight;
-      var position = 0;
 
-      pdf.addImage(imgData, 'JPEG', 0, position, 210, imgHeight);
-      heightLeft -= 297;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'JPEG', 0, position, 210, imgHeight);
-        heightLeft -= 297;
+      for (var i = 0; i < paginas.length; i++) {
+        if (i > 0) pdf.addPage();
+        var canvas = await html2canvas(paginas[i], { scale: 2, useCORS: true, scrollY: 0 });
+        var imgData = canvas.toDataURL('image/jpeg', 0.98);
+        pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
       }
 
       pdf.save('Lista_Precios_El_Ancla_' + (_clienteActual || 'Cliente') + '.pdf');
