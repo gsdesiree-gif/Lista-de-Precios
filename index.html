@@ -290,7 +290,7 @@
       height: 297mm;
       margin: 0 auto 20px auto;
       background: #ffffff;
-      padding: 10mm 12mm 10mm 12mm;
+      padding: 10mm 14mm 10mm 14mm;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
       border-radius: 4px;
       box-sizing: border-box;
@@ -396,7 +396,7 @@
       html, body { width: 210mm; height: auto; background: white; margin: 0 !important; padding: 0 !important; }
       .no-print { display: none !important; }
       #vistaDocumento { display: block !important; margin: 0 !important; padding: 0 !important; }
-      .page-a4 { box-shadow: none !important; border-radius: 0 !important; padding: 10mm 12mm !important; margin: 0 !important; page-break-after: always; break-after: page; }
+      .page-a4 { box-shadow: none !important; border-radius: 0 !important; padding: 10mm 14mm !important; margin: 0 !important; page-break-after: always; break-after: page; }
       .page-a4:last-child { page-break-after: avoid !important; break-after: avoid !important; }
       .page-a4-wrapper { overflow: visible; }
     }
@@ -1183,13 +1183,13 @@
 
       var logoHeaderHtml = '';
       if (cfg.logo && !cfg.es_marca_agua) {
-        logoHeaderHtml = '<img src="' + cfg.logo + '" style="max-height: 160px; max-width: 240px; object-fit: contain;">';
+        logoHeaderHtml = '<img src="' + cfg.logo + '" style="max-height: 140px; max-width: 220px; object-fit: contain;">';
       }
 
       var comercialHtml = '';
       if (cfg.comercial) {
-        var telTxt = cfg.telefono ? ' <span style="font-size: 16px; font-weight: 600; color: #475569; margin-left: 8px;">📞 💬 ' + cfg.telefono + '</span>' : '';
-        comercialHtml = '<div style="font-size: 20px; font-weight: 700; color: #2563eb; margin-top: 8px; text-transform: uppercase; text-align: center;">' +
+        var telTxt = cfg.telefono ? ' <span style="font-size: 15px; font-weight: 600; color: #475569; margin-left: 6px;">📞 💬 ' + cfg.telefono + '</span>' : '';
+        comercialHtml = '<div style="font-size: 18px; font-weight: 700; color: #2563eb; margin-top: 6px; text-transform: uppercase; text-align: center;">' +
           cfg.comercial + telTxt +
         '</div>';
       }
@@ -1203,7 +1203,7 @@
         
         var prodEncontrado = null;
         for (var pIdx = 0; pIdx < _productosCache.length; pIdx++) {
-          if (_productosCache[pIdx].id === itemObj.id)  {
+          if (_productosCache[pIdx].id === itemObj.id) {
             prodEncontrado = _productosCache[pIdx];
             break;
           }
@@ -1218,8 +1218,8 @@
         }
       }
 
-      // LÓGICA DE PAGINACIÓN SEGURA: CADA CATEGORÍA EMPIEZA EN PÁGINA NUEVA
-      // LÍMITES ESTRICTOS PARA EVITAR CORTES EN LA PARTE INFERIOR
+      // MOTOR DE PAGINACIÓN ESTRICTO Y SEGURO (MÁXIMO 5 PRODUCTOS POR PÁGINA)
+      // Garantiza 100% que ningún artículo se corte jamás en la parte inferior.
       var bloquesDePagina = [];
       var esPrimeraHojaAbsoluta = true;
 
@@ -1233,9 +1233,8 @@
         }
 
         if (prodsCat.length > 0) {
-          // Página 1 (portada con cabecera grande) admite máximo 5 productos para no desbordar
-          // Páginas siguientes admiten máximo 6 productos con total seguridad contra cortes
-          var limitePorPagina = esPrimeraHojaAbsoluta ? 5 : 6;
+          // Límite estricto y seguro: máximo 5 productos por página en todas las hojas.
+          var limitePorPagina = 5;
           var subPaginasCount = Math.ceil(prodsCat.length / limitePorPagina);
 
           for (var sp = 0; sp < subPaginasCount; sp++) {
@@ -1243,7 +1242,7 @@
             var fin = inicio + limitePorPagina;
             var loteProds = prodsCat.slice(inicio, fin);
 
-            var catHeader = '<div style="margin-top: 4px; margin-bottom: 10px; padding: 7px 12px; background: #032b5f; color: #ffffff; font-family: \'Oswald\', sans-serif; font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">' +
+            var catHeader = '<div style="margin-top: 2px; margin-bottom: 8px; padding: 6px 12px; background: #032b5f; color: #ffffff; font-family: \'Oswald\', sans-serif; font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">' +
               '<span>' + cat + '</span>' +
               (subPaginasCount > 1 ? '<span style="font-size:11px; font-family:sans-serif; opacity:0.85;">(Parte ' + (sp + 1) + ' de ' + subPaginasCount + ')</span>' : '') +
             '</div>';
@@ -1252,28 +1251,25 @@
             for (var j = 0; j < loteProds.length; j++) {
               var p = loteProds[j];
               var imgTag = p.url_foto 
-                ? '<img src="' + p.url_foto + '" style="width: 75px; height: 75px; border-radius: 8px; object-fit: cover; border: 1px solid #cbd5e1;">' 
-                : '<div style="width: 75px; height: 75px; background: #f1f5f9; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; border: 1px solid #e2e8f0;">📦</div>';
+                ? '<img src="' + p.url_foto + '" style="width: 65px; height: 65px; border-radius: 8px; object-fit: cover; border: 1px solid #cbd5e1;">' 
+                : '<div style="width: 65px; height: 65px; background: #f1f5f9; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 22px; border: 1px solid #e2e8f0;">📦</div>';
               
-              var notaTag = p.notas ? '<div style="font-size: 12px; color: #64748b; margin-top: 2px;">📌 ' + p.notas + '</div>' : '';
+              var notaTag = p.notas ? '<div style="font-size: 11px; color: #64748b; margin-top: 2px;">📌 ' + p.notas + '</div>' : '';
 
-              itemsCatHtml += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; border-bottom: 1px solid #e2e8f0; height: 86px;">' +
-                '<div style="width: 75px; flex-shrink: 0;">' + imgTag + '</div>' +
-                '<div style="flex: 1; padding: 0 14px; overflow: hidden;">' +
-                  '<div style="font-size: 16px; font-weight: 700; color: #0f172a; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + (p.nombre || '') + '</div>' +
+              itemsCatHtml += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 5px 8px; border-bottom: 1px solid #e2e8f0; height: 76px;">' +
+                '<div style="width: 65px; flex-shrink: 0;">' + imgTag + '</div>' +
+                '<div style="flex: 1; padding: 0 12px; overflow: hidden;">' +
+                  '<div style="font-size: 15px; font-weight: 700; color: #0f172a; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + (p.nombre || '') + '</div>' +
                   notaTag +
                 '</div>' +
-                '<div style="font-family: \'Oswald\', sans-serif; font-size: 20px; font-weight: 700; color: #2563eb; width: 100px; text-align: right; flex-shrink: 0;">' +
+                '<div style="font-family: \'Oswald\', sans-serif; font-size: 19px; font-weight: 700; color: #2563eb; width: 95px; text-align: right; flex-shrink: 0;">' +
                   parseFloat(p.precio || 0).toFixed(2) + ' €' +
                 '</div>' +
               '</div>';
             }
 
             bloquesDePagina.push(catHeader + itemsCatHtml);
-
-            // Una vez pasada la portada, las siguientes hojas usan el límite seguro de 6 productos
             esPrimeraHojaAbsoluta = false;
-            limitePorPagina = 6; 
           }
         }
       }
@@ -1299,19 +1295,19 @@
 
         var cabeceraPaginaHtml = '';
         if (numPaginaActual === 1) {
-          cabeceraPaginaHtml = '<div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 3px solid #032b5f;">' +
+          cabeceraPaginaHtml = '<div style="display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 3px solid #032b5f;">' +
             '<div style="display: flex; justify-content: flex-start; align-items: center;">' + logoHeaderHtml + '</div>' +
             '<div style="text-align: center; padding: 0 10px;">' +
-              '<h1 style="margin: 0; font-family: \'Oswald\', sans-serif; font-size: 52px; line-height: 1.0; color: #032b5f; text-transform: uppercase; letter-spacing: 2px;">' + (cfg.empresa || 'EL ANCLA') + '</h1>' +
+              '<h1 style="margin: 0; font-family: \'Oswald\', sans-serif; font-size: 48px; line-height: 1.0; color: #032b5f; text-transform: uppercase; letter-spacing: 2px;">' + (cfg.empresa || 'EL ANCLA') + '</h1>' +
               comercialHtml +
             '</div>' +
             '<div style="text-align: right; font-size: 13px; color: #475569;">' +
-              '<div style="font-family: \'Oswald\', sans-serif; font-size: 20px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin-bottom: 2px;">' + lista.cliente_nombre + '</div>' +
+              '<div style="font-family: \'Oswald\', sans-serif; font-size: 19px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin-bottom: 2px;">' + lista.cliente_nombre + '</div>' +
               '<div style="font-size: 12px; color: #64748b;"><strong>Fecha:</strong> ' + new Date(lista.fecha).toLocaleDateString('es-ES') + '</div>' +
             '</div>' +
           '</div>';
         } else {
-          cabeceraPaginaHtml = '<div style="margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid #cbd5e1; display:flex; justify-content: space-between; font-size:12px; color:#64748b;">' +
+          cabeceraPaginaHtml = '<div style="margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid #cbd5e1; display:flex; justify-content: space-between; font-size:12px; color:#64748b;">' +
             '<span><strong>' + (cfg.empresa || 'EL ANCLA') + '</strong> - Lista de Precios</span>' +
             '<span>Cliente: <strong>' + lista.cliente_nombre + '</strong></span>' +
           '</div>';
