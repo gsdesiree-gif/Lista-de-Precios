@@ -925,8 +925,8 @@
         }
       }
 
-      // DISTRIBUCIÓN EXACTA DE 14 ARTÍCULOS POR PÁGINA CON FOTOS MÁS GRANDES
-      var itemsPorPagina = 14;
+      // LÍMITE EXACTO DE 13 ARTÍCULOS POR PÁGINA (Con fotos grandes)
+      var itemsPorPagina = 13;
       var bloquesDePagina = [];
 
       var categoriasMap = {};
@@ -969,7 +969,7 @@
         }
 
         var prod = itemData.producto;
-        // FOTO MÁS GRANDE (62px en lugar de 45px)
+        // FOTO GRANDE (62px)
         var imgT = prod.url_foto ? '<img src="' + prod.url_foto + '" style="width: 62px; height: 62px; border-radius: 8px; object-fit: cover; border: 1px solid #cbd5e1;">' : '<div style="width: 62px; height: 62px; background: #f1f5f9; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; border: 1px solid #e2e8f0;">📦</div>';
         var notaT = prod.notas ? '<div style="font-size: 11px; color: #64748b; margin-top: 1px;">📌 ' + prod.notas + '</div>' : '';
 
