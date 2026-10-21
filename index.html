@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>El Ancla | Catálogo Pro V2</title>
+  <title>El Ancla | Catálogo Pro & Tienda</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -148,6 +148,58 @@
     .product-notes { font-size: 12px; color: var(--muted); margin-top: 2px; }
     .product-badge { font-size: 11px; font-weight: 700; color: var(--accent); background: #eff6ff; padding: 2px 8px; border-radius: 6px; display: inline-block; margin-top: 4px; text-transform: uppercase; }
     .product-price { font-size: 14px; font-weight: 700; color: var(--accent); }
+
+    /* ESTILOS CATÁLOGO PÚBLICO DE CLIENTES (GRID DE TARJETAS SIN PRECIO) */
+    .public-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 14px;
+    }
+    .public-card {
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+    }
+    .public-img-wrapper {
+      position: relative;
+      width: 100%;
+      padding-top: 85%;
+      background: #f1f5f9;
+      cursor: pointer;
+    }
+    .public-img-wrapper img {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      object-fit: cover;
+    }
+    .public-card-body {
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    /* LIGHTBOX FOTO GRANDE */
+    .lightbox-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.88);
+      z-index: 2000;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .lightbox-img {
+      max-width: 95%;
+      max-height: 85vh;
+      border-radius: 12px;
+      object-fit: contain;
+    }
 
     .caja-stats-grid {
       display: grid;
@@ -421,6 +473,11 @@
         grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
         gap: 14px !important;
       }
+
+      .public-grid {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 20px;
+      }
     }
 
     @media print {
@@ -437,12 +494,13 @@
 <body>
 
   <div class="top-bar no-print">
-    <div class="brand-title">EL ANCLA | V2</div>
-    <div class="web-nav">
+    <div class="brand-title" id="topBrandTitle">EL ANCLA</div>
+    <div class="web-nav" id="adminWebNav">
       <button class="web-nav-btn active" onclick="switchTab('tabCatalogo')">📦 Productos</button>
       <button class="web-nav-btn" onclick="switchTab('tabCrear')">📝 Crear Lista</button>
       <button class="web-nav-btn" onclick="switchTab('tabHistorial')">📜 Histórico</button>
       <button class="web-nav-btn" onclick="switchTab('tabCaja')">💰 Caja & 3%</button>
+      <button class="web-nav-btn" onclick="switchTab('tabClienteView')">🌐 Vista Cliente</button>
       <button class="web-nav-btn" onclick="switchTab('tabAjustes')">⚙️ Empresa</button>
     </div>
   </div>
@@ -487,6 +545,31 @@
           <div class="card-header">📦 Productos Registrados</div>
           <div id="listaProductosCard" class="product-grid">Cargando datos...</div>
         </div>
+      </div>
+    </div>
+
+    <!-- PESTAÑA VISTA CLIENTE (PÚBLICA SIN PRECIOS Y FOTOS AMPLIABLES) -->
+    <div id="tabClienteView" class="tab-content">
+      <div class="card" style="background: transparent; border: none; padding: 0;">
+        <div style="background:#ffffff; border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:16px; display:flex; justify-content:space-between; align-align:center; flex-wrap:wrap; gap:10px;" class="no-client-view">
+          <div>
+            <strong style="color:var(--primary);">🌐 Vista previa para clientes:</strong>
+            <div style="font-size:12px; color:var(--muted);">Así verán tus clientes el catálogo sin precios cuando les mandes el enlace.</div>
+          </div>
+          <button onclick="copiarEnlaceCliente()" class="btn btn-accent btn-sm">📋 Copiar Enlace para WhatsApp</button>
+        </div>
+
+        <div class="cat-filter-bar">
+          <button class="cat-filter-btn active" onclick="filtrarCliente('TODAS', this)">Todas</button>
+          <button class="cat-filter-btn" onclick="filtrarCliente('Marisco', this)">🦐 Marisco</button>
+          <button class="cat-filter-btn" onclick="filtrarCliente('Pescados', this)">🐟 Pescados</button>
+          <button class="cat-filter-btn" onclick="filtrarCliente('Carnes', this)">🥩 Carnes</button>
+          <button class="cat-filter-btn" onclick="filtrarCliente('Verduras', this)">🥬 Verduras</button>
+          <button class="cat-filter-btn" onclick="filtrarCliente('Precocinados', this)">🧆 Precocinados</button>
+          <button class="cat-filter-btn" onclick="filtrarCliente('Varios', this)">📦 Varios</button>
+        </div>
+
+        <div id="publicCatalogGrid" class="public-grid">Cargando catálogo público...</div>
       </div>
     </div>
 
@@ -584,6 +667,12 @@
     </div>
   </div>
 
+  <!-- VISOR DE FOTO AMPLIADA (LIGHTBOX) -->
+  <div id="lightboxModal" class="lightbox-modal" onclick="cerrarFotoGrande()">
+    <span style="position:absolute; top:20px; right:20px; color:#ffffff; font-size:32px; cursor:pointer;">&times;</span>
+    <img id="lightboxImg" class="lightbox-img" src="">
+  </div>
+
   <!-- VENTANA MODAL PARA EDITAR PRODUCTOS -->
   <div id="modalEditarProducto" class="modal-overlay">
     <div class="modal-card">
@@ -631,12 +720,12 @@
     </div>
   </div>
 
-  <div class="nav-bar no-print">
+  <div class="nav-bar no-print" id="adminBottomNav">
     <button class="nav-item active" onclick="switchTab('tabCatalogo')"><span>📦 Productos</span></button>
     <button class="nav-item" onclick="switchTab('tabCrear')"><span>📝 Crear</span></button>
     <button class="nav-item" onclick="switchTab('tabHistorial')"><span>📜 Historial</span></button>
     <button class="nav-item" onclick="switchTab('tabCaja')"><span>💰 Caja 3%</span></button>
-    <button class="nav-item" onclick="switchTab('tabAjustes')"><span>⚙️ Empresa</span></button>
+    <button class="nav-item" onclick="switchTab('tabClienteView')"><span>🌐 Cliente</span></button>
   </div>
 
   <div id="vistaDocumento" style="display:none; padding: 10px;">
@@ -666,7 +755,12 @@
       var inputFecha = document.getElementById('cajaFecha');
       if (inputFecha) inputFecha.value = hoy;
       poblarDesplegableMeses();
-      iniciarAplicacion();
+
+      // MODO CLIENTE POR ENLACE PARÁMETRO URL (?modo=cliente)
+      var urlParams = new URLSearchParams(window.location.search);
+      var esModoCliente = urlParams.get('modo') === 'cliente';
+
+      iniciarAplicacion(esModoCliente);
     });
 
     function poblarDesplegableMeses() {
@@ -687,7 +781,7 @@
       }
     }
 
-    function iniciarAplicacion() {
+    function iniciarAplicacion(esModoCliente) {
       try {
         if (window.supabase) {
           _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -698,7 +792,19 @@
         cargarProductos();
         cargarHistoricoListas();
         cargarRegistrosCaja();
+
+        if (esModoCliente) {
+          activarModoClienteEstricto();
+        }
       } catch (e) {}
+    }
+
+    function activarModoClienteEstricto() {
+      document.getElementById('adminWebNav').style.display = 'none';
+      document.getElementById('adminBottomNav').style.display = 'none';
+      var elementsNoClient = document.querySelectorAll('.no-client-view');
+      for (var i = 0; i < elementsNoClient.length; i++) elementsNoClient[i].style.display = 'none';
+      switchTab('tabClienteView');
     }
 
     function switchTab(tabId) {
@@ -708,12 +814,16 @@
       var target = document.getElementById(tabId);
       if (target) target.classList.add('active');
 
-      var tabNames = ['tabCatalogo', 'tabCrear', 'tabHistorial', 'tabCaja', 'tabAjustes'];
+      var tabNames = ['tabCatalogo', 'tabCrear', 'tabHistorial', 'tabCaja', 'tabClienteView', 'tabAjustes'];
       var idx = tabNames.indexOf(tabId);
       var navItems = document.querySelectorAll('.nav-item');
       var webNavBtns = document.querySelectorAll('.web-nav-btn');
-      for (var j = 0; j < navItems.length; j++) navItems[j].classList.toggle('active', j === idx);
-      for (var k = 0; k < webNavBtns.length; k++) webNavBtns[k].classList.toggle('active', k === idx);
+      for (var j = 0; j < navItems.length; j++) if(navItems[j]) navItems[j].classList.toggle('active', j === idx);
+      for (var k = 0; k < webNavBtns.length; k++) if(webNavBtns[k]) webNavBtns[k].classList.toggle('active', k === idx);
+
+      if (tabId === 'tabClienteView') {
+        renderizarGridCliente('TODAS');
+      }
     }
 
     function procesarImagen(input, targetHiddenId) {
@@ -819,7 +929,73 @@
         }
         c1.innerHTML = htmlCard1;
         renderizarSeleccionCrear('TODAS');
+        renderizarGridCliente('TODAS');
       } catch(e) {}
+    }
+
+    /* RENDERIZAR VISTA PÚBLICA DE CLIENTES (SIN PRECIO, FOTOGRAFÍAS AMPLIABLES) */
+    function renderizarGridCliente(filtroCat) {
+      var grid = document.getElementById('publicCatalogGrid');
+      if (!grid) return;
+      var html = '';
+
+      var filtrados = _productosCache.filter(function(p) {
+        return filtroCat === 'TODAS' || (p.categoria || 'Varios') === filtroCat;
+      });
+
+      if (filtrados.length === 0) {
+        grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; color:var(--muted); padding: 40px;">No hay productos registrados en esta categoría.</div>';
+        return;
+      }
+
+      for (var i = 0; i < filtrados.length; i++) {
+        var p = filtrados[i];
+        var imgHtml = p.url_foto 
+          ? '<img src="' + p.url_foto + '" alt="' + p.nombre + '">'
+          : '<div style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:32px;">📦</div>';
+
+        var notaTxt = p.notas ? '<div style="font-size:12px; color:var(--muted); margin-top:4px; line-height:1.3;">💬 ' + p.notas + '</div>' : '';
+
+        html += '<div class="public-card">' +
+          '<div class="public-img-wrapper" onclick="abrirFotoGrande(\'' + (p.url_foto || '') + '\')">' +
+            imgHtml +
+          '</div>' +
+          '<div class="public-card-body">' +
+            '<div style="font-size:10px; font-weight:700; color:var(--accent); text-transform:uppercase; margin-bottom:2px;">' + (p.categoria || 'Varios') + '</div>' +
+            '<div style="font-size:14px; font-weight:700; color:var(--primary); line-height:1.2;">' + p.nombre + '</div>' +
+            notaTxt +
+          '</div>' +
+        '</div>';
+      }
+
+      grid.innerHTML = html;
+    }
+
+    function filtrarCliente(categoria, btn) {
+      var btns = document.querySelectorAll('#tabClienteView .cat-filter-btn');
+      for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+      if (btn) btn.classList.add('active');
+      renderizarGridCliente(categoria);
+    }
+
+    function abrirFotoGrande(url) {
+      if (!url) return;
+      document.getElementById('lightboxImg').src = url;
+      document.getElementById('lightboxModal').style.display = 'flex';
+    }
+
+    function cerrarFotoGrande() {
+      document.getElementById('lightboxModal').style.display = 'none';
+    }
+
+    function copiarEnlaceCliente() {
+      var baseUrl = window.location.href.split('?')[0];
+      var enlaceCliente = baseUrl + '?modo=cliente';
+      navigator.clipboard.writeText(enlaceCliente).then(function() {
+        alert('¡Enlace de catálogo copiado!\n\nPégalo en WhatsApp para que tus clientes lo vean sin precios.');
+      }).catch(function() {
+        prompt('Copia este enlace para enviarlo por WhatsApp:', enlaceCliente);
+      });
     }
 
     function abrirModalEditar(id) {
@@ -903,7 +1079,7 @@
     }
 
     function filtrarPestañaCrear(categoria, btnEl) {
-      var btns = document.querySelectorAll('.cat-filter-btn');
+      var btns = document.querySelectorAll('#tabCrear .cat-filter-btn');
       for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
       if (btnEl) btnEl.classList.add('active');
       renderizarSeleccionCrear(categoria);
