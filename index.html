@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>El Ancla | Catálogo Pro</title>
+  <title>El Ancla | Catálogo Pro V2</title>
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -129,7 +129,7 @@
     .btn-accent { background: var(--accent); }
     .btn-danger { background: #fef2f2; color: var(--danger); }
     .btn-success { background: var(--success); color: #fff; }
-    .btn-sm { width: auto; padding: 10px 16px; font-size: 14px; font-weight: 600; }
+    .btn-sm { width: auto; padding: 8px 12px; font-size: 13px; font-weight: 600; }
 
     .product-grid { display: flex; flex-direction: column; gap: 10px; }
 
@@ -142,7 +142,7 @@
       border: 1px solid var(--border);
       border-radius: 14px;
     }
-    .product-left { display: flex; align-items: center; gap: 12px; }
+    .product-left { display: flex; align-items: center; gap: 12px; flex: 1; overflow: hidden; }
     .product-img { width: 55px; height: 55px; border-radius: 10px; object-fit: cover; background: #e2e8f0; flex-shrink: 0; }
     .product-name { font-weight: 600; font-size: 15px; }
     .product-notes { font-size: 12px; color: var(--muted); margin-top: 2px; }
@@ -261,6 +261,28 @@
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
+    /* MODAL EDITAR PRODUCTO */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+    }
+    .modal-card {
+      background: #ffffff;
+      width: 100%;
+      max-width: 500px;
+      border-radius: 16px;
+      padding: 24px;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+    }
+
     .doc-actions-bar {
       display: flex;
       gap: 10px;
@@ -281,7 +303,6 @@
       padding-bottom: 20px;
     }
 
-    /* ESTRUCTURA RIGIDA Y PROFESIONAL A4 (ALTURA EXACTA Y PIE ABSOLUTO) */
     .page-a4 {
       position: relative;
       width: 210mm;
@@ -317,7 +338,6 @@
 
     .doc-content { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; }
 
-    /* PIE FIJO ABSOLUTO EXACTAMENTE AL MISMO NIVEL EN TODAS LAS HOJAS */
     .doc-footer-bar {
       position: absolute;
       bottom: 12mm;
@@ -417,7 +437,7 @@
 <body>
 
   <div class="top-bar no-print">
-    <div class="brand-title">EL ANCLA</div>
+    <div class="brand-title">EL ANCLA | V2</div>
     <div class="web-nav">
       <button class="web-nav-btn active" onclick="switchTab('tabCatalogo')">📦 Productos</button>
       <button class="web-nav-btn" onclick="switchTab('tabCrear')">📝 Crear Lista</button>
@@ -452,7 +472,7 @@
             <input type="number" step="0.01" id="prodPrecio" placeholder="12.50">
           </div>
           <div class="field">
-            <label>Observaciones / Nota (Opcional)</label>
+            <label>Observaciones / Descripción (Opcional)</label>
             <input type="text" id="prodNotas" placeholder="Ej: Caja de 2kg fresco">
           </div>
           <div class="field">
@@ -560,6 +580,53 @@
           <label for="cfgMarcaAgua" style="margin:0; text-transform:none; font-size:14px; cursor:pointer;">Usar logo como <strong>Marca de Agua centrada</strong>.</label>
         </div>
         <button id="btnGuardarCfg" onclick="guardarConfiguracionSupabase()" class="btn btn-accent" style="margin-top:16px;">💾 Guardar Ajustes en Supabase</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VENTANA MODAL PARA EDITAR PRODUCTOS -->
+  <div id="modalEditarProducto" class="modal-overlay">
+    <div class="modal-card">
+      <div class="card-header" style="margin-bottom: 14px;">✏️ Editar Producto</div>
+      <input type="hidden" id="editProdId">
+      
+      <div class="field">
+        <label>Familia / Categoría</label>
+        <select id="editProdCategoria">
+          <option value="Marisco">🦐 Marisco</option>
+          <option value="Pescados">🐟 Pescados</option>
+          <option value="Carnes">🥩 Carnes</option>
+          <option value="Verduras">🥬 Verduras</option>
+          <option value="Precocinados">🧆 Precocinados</option>
+          <option value="Varios">📦 Varios</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Nombre del Producto</label>
+        <input type="text" id="editProdNombre">
+      </div>
+
+      <div class="field">
+        <label>Precio Base (€)</label>
+        <input type="number" step="0.01" id="editProdPrecio">
+      </div>
+
+      <div class="field">
+        <label>Observaciones / Descripción</label>
+        <input type="text" id="editProdNotas">
+      </div>
+
+      <div class="field">
+        <label>Cambiar Foto (Opcional)</label>
+        <input type="file" id="editProdArchivoFoto" accept="image/*" onchange="procesarImagen(this, 'editProdFotoBase64')">
+        <input type="hidden" id="editProdFotoBase64">
+        <div id="previewEditFotoContainer" style="margin-top: 8px;"></div>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button onclick="cerrarModalEditar()" class="btn btn-danger" style="flex: 1;">Cancelar</button>
+        <button onclick="actualizarProductoSupabase()" class="btn btn-success" style="flex: 1;">💾 Guardar Cambios</button>
       </div>
     </div>
   </div>
@@ -672,8 +739,11 @@
             ctx.drawImage(img, 0, 0, width, height);
             var base64 = canvas.toDataURL('image/jpeg', 0.85);
             document.getElementById(targetHiddenId).value = base64;
+            
             if (targetHiddenId === 'cfgLogoBase64') {
               document.getElementById('previewLogoContainer').innerHTML = '<img src="' + base64 + '" style="max-height:60px; border-radius:8px;">';
+            } else if (targetHiddenId === 'editProdFotoBase64') {
+              document.getElementById('previewEditFotoContainer').innerHTML = '<img src="' + base64 + '" style="max-height:60px; border-radius:8px;">';
             }
           };
         };
@@ -738,11 +808,73 @@
           var imgTag = p.url_foto ? '<img src="' + p.url_foto + '" class="product-img">' : '<div class="product-img" style="display:flex;align-items:center;justify-content:center;font-size:20px;">📦</div>';
           var notaTag = p.notas ? '<div class="product-notes">📌 ' + p.notas + '</div>' : '';
           var precioFormatted = parseFloat(p.precio || 0).toFixed(2);
-          htmlCard1 += '<div class="product-item"><div class="product-left">' + imgTag + '<div><div class="product-name">' + p.nombre + '</div><div class="product-badge">' + cat + '</div>' + notaTag + '<div class="product-price">' + precioFormatted + ' €</div></div></div><button class="btn btn-danger btn-sm" onclick="borrarProducto(' + p.id + ')">🗑️</button></div>';
+          
+          htmlCard1 += '<div class="product-item">' +
+            '<div class="product-left">' + imgTag + '<div style="overflow:hidden;"><div class="product-name">' + p.nombre + '</div><div class="product-badge">' + cat + '</div>' + notaTag + '<div class="product-price">' + precioFormatted + ' €</div></div></div>' +
+            '<div style="display:flex; gap:6px; flex-shrink:0;">' +
+              '<button class="btn btn-accent btn-sm" onclick="abrirModalEditar(' + p.id + ')">✏️</button>' +
+              '<button class="btn btn-danger btn-sm" onclick="borrarProducto(' + p.id + ')">🗑️</button>' +
+            '</div>' +
+          '</div>';
         }
         c1.innerHTML = htmlCard1;
         renderizarSeleccionCrear('TODAS');
       } catch(e) {}
+    }
+
+    function abrirModalEditar(id) {
+      var prod = null;
+      for (var i = 0; i < _productosCache.length; i++) {
+        if (_productosCache[i].id === id) { prod = _productosCache[i]; break; }
+      }
+      if (!prod) return;
+
+      document.getElementById('editProdId').value = prod.id;
+      document.getElementById('editProdCategoria').value = prod.categoria || 'Varios';
+      document.getElementById('editProdNombre').value = prod.nombre || '';
+      document.getElementById('editProdPrecio').value = prod.precio || 0;
+      document.getElementById('editProdNotas').value = prod.notas || '';
+      document.getElementById('editProdFotoBase64').value = prod.url_foto || '';
+      document.getElementById('editProdArchivoFoto').value = '';
+      
+      if (prod.url_foto) {
+        document.getElementById('previewEditFotoContainer').innerHTML = '<img src="' + prod.url_foto + '" style="max-height:60px; border-radius:8px;">';
+      } else {
+        document.getElementById('previewEditFotoContainer').innerHTML = '';
+      }
+
+      document.getElementById('modalEditarProducto').style.display = 'flex';
+    }
+
+    function cerrarModalEditar() {
+      document.getElementById('modalEditarProducto').style.display = 'none';
+    }
+
+    async function actualizarProductoSupabase() {
+      var id = parseInt(document.getElementById('editProdId').value);
+      var categoria = document.getElementById('editProdCategoria').value;
+      var nombre = document.getElementById('editProdNombre').value.trim();
+      var precio = parseFloat(document.getElementById('editProdPrecio').value);
+      var notas = document.getElementById('editProdNotas').value.trim();
+      var url_foto = document.getElementById('editProdFotoBase64').value;
+
+      if (!nombre || isNaN(precio)) {
+        alert('Escribe un nombre y un precio válido.');
+        return;
+      }
+
+      try {
+        var res = await _supabase.from('productos').update({ categoria, nombre, precio, notas, url_foto }).eq('id', id);
+        if (res.error) {
+          alert('Error al actualizar: ' + res.error.message);
+        } else {
+          cerrarModalEditar();
+          await cargarProductos();
+          alert('¡Producto actualizado correctamente!');
+        }
+      } catch (e) {
+        alert('Hubo un error de conexión.');
+      }
     }
 
     function renderizarSeleccionCrear(filtroCat) {
@@ -762,7 +894,7 @@
             var imgTag = p.url_foto ? '<img src="' + p.url_foto + '" class="product-img">' : '<div class="product-img" style="display:flex;align-items:center;justify-content:center;font-size:20px;">📦</div>';
             var notaTag = p.notas ? '<div class="product-notes">📌 ' + p.notas + '</div>' : '';
             var precioFormatted = parseFloat(p.precio || 0).toFixed(2);
-            html += '<div class="product-item"><div class="product-left"><input type="checkbox" class="prod-checkbox" value="' + p.id + '">' + imgTag + '<div style="flex:1;"><div class="product-name">' + p.nombre + '</div>' + notaTag + '</div></div><div class="prod-mobile-controls"><span style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase;">Precio:</span><div style="display:flex; align-items:center; gap:4px;"><input type="number" step="0.01" id="precio_edit_' + p.id + '" value="' + precioFormatted + '" style="width:85px; padding:8px; text-align:right; font-weight:700;"><span style="font-weight:700; font-size:14px; color:var(--muted);">€</span></div></div></div>';
+            html += '<div class="product-item"><div class="product-left"><input type="checkbox" class="prod-checkbox" value="' + p.id + '">' + imgTag + '<div style="flex:1; overflow:hidden;"><div class="product-name">' + p.nombre + '</div>' + notaTag + '</div></div><div class="prod-mobile-controls"><span style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase;">Precio:</span><div style="display:flex; align-items:center; gap:4px;"><input type="number" step="0.01" id="precio_edit_' + p.id + '" value="' + precioFormatted + '" style="width:85px; padding:8px; text-align:right; font-weight:700;"><span style="font-weight:700; font-size:14px; color:var(--muted);">€</span></div></div></div>';
           }
           html += '</div>';
         }
@@ -932,7 +1064,6 @@
         }
       }
 
-      // CÁLCULO AUTOMÁTICO EXACTO DE 13 ARTÍCULOS POR PÁGINA (Con fotos grandes)
       var itemsPorPagina = 13;
       var bloquesDePagina = [];
 
@@ -976,7 +1107,6 @@
         }
 
         var prod = itemData.producto;
-        // FOTO GRANDE (55px)
         var imgT = prod.url_foto ? '<img src="' + prod.url_foto + '" style="width: 55px; height: 55px; border-radius: 6px; object-fit: cover; border: 1px solid #cbd5e1;">' : '<div style="width: 55px; height: 55px; background: #f1f5f9; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 1px solid #e2e8f0;">📦</div>';
         var notaT = prod.notas ? '<div style="font-size: 10px; color: #64748b; margin-top: 1px;">📌 ' + prod.notas + '</div>' : '';
 
