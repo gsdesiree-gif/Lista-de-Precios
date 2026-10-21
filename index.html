@@ -281,13 +281,14 @@
       padding-bottom: 20px;
     }
 
+    /* ESTRUCTURA RIGIDA Y PROFESIONAL A4 (ALTURA EXACTA Y PIE ABSOLUTO) */
     .page-a4 {
       position: relative;
       width: 210mm;
       height: 297mm;
-      margin: 0 auto 20px auto;
+      margin: 0 auto 20mm auto;
       background: #ffffff;
-      padding: 14mm 14mm 12mm 14mm;
+      padding: 12mm 14mm 16mm 14mm;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
       border-radius: 4px;
       box-sizing: border-box;
@@ -316,16 +317,21 @@
 
     .doc-content { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; }
 
+    /* PIE FIJO ABSOLUTO EXACTAMENTE AL MISMO NIVEL EN TODAS LAS HOJAS */
     .doc-footer-bar {
-      position: relative;
+      position: absolute;
+      bottom: 12mm;
+      left: 14mm;
+      right: 14mm;
       z-index: 2;
       display: flex;
       justify-content: space-between;
-      align-items: flex-end;
-      padding-top: 6px;
+      align-items: center;
+      padding-top: 8px;
       border-top: 1px solid #cbd5e1;
       font-size: 11px;
       color: #64748b;
+      background: #ffffff;
     }
     .doc-footer-center {
       text-align: center;
@@ -334,6 +340,7 @@
       color: #032b5f;
       text-transform: uppercase;
       font-size: 12px;
+      letter-spacing: 0.5px;
     }
     .doc-footer-right {
       text-align: right;
@@ -401,7 +408,7 @@
       html, body { width: 210mm; height: auto; background: white; margin: 0 !important; padding: 0 !important; }
       .no-print { display: none !important; }
       #vistaDocumento { display: block !important; margin: 0 !important; padding: 0 !important; }
-      .page-a4 { box-shadow: none !important; border-radius: 0 !important; padding: 14mm 14mm 12mm 14mm !important; margin: 0 !important; page-break-after: always; break-after: page; }
+      .page-a4 { box-shadow: none !important; border-radius: 0 !important; padding: 12mm 14mm 16mm 14mm !important; margin: 0 !important; page-break-after: always; break-after: page; }
       .page-a4:last-child { page-break-after: avoid !important; break-after: avoid !important; }
       .page-a4-wrapper { overflow: visible; }
     }
@@ -908,7 +915,7 @@
       _clienteActual = lista.cliente_nombre;
       var cfg = _configCache;
 
-      var logoHeader = cfg.logo && !cfg.es_marca_agua ? '<img src="' + cfg.logo + '" style="max-height: 70px; max-width: 140px; object-fit: contain;">' : '';
+      var logoHeader = cfg.logo && !cfg.es_marca_agua ? '<img src="' + cfg.logo + '" style="max-height: 65px; max-width: 130px; object-fit: contain;">' : '';
 
       var rawItems = lista.productos_ids || [];
       var productosSeleccionados = [];
@@ -925,7 +932,7 @@
         }
       }
 
-      // LÍMITE EXACTO DE 13 ARTÍCULOS POR PÁGINA (Con fotos grandes)
+      // CÁLCULO AUTOMÁTICO EXACTO DE 13 ARTÍCULOS POR PÁGINA (Con fotos grandes)
       var itemsPorPagina = 13;
       var bloquesDePagina = [];
 
@@ -963,23 +970,23 @@
         }
 
         if (itemData.categoria !== ultimaCatPintada) {
-          paginaHtmlActual += '<div style="margin-top: 8px; margin-bottom: 4px; padding: 4px 10px; background: #032b5f; color: #ffffff; font-family: \'Oswald\', sans-serif; font-size: 13px; font-weight: 700; text-transform: uppercase; border-radius: 4px;">' + itemData.categoria + '</div>';
+          paginaHtmlActual += '<div style="margin-top: 6px; margin-bottom: 3px; padding: 3px 8px; background: #032b5f; color: #ffffff; font-family: \'Oswald\', sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; border-radius: 4px;">' + itemData.categoria + '</div>';
           ultimaCatPintada = itemData.categoria;
-          contadorEnPagina += 0.4; 
+          contadorEnPagina += 0.35; 
         }
 
         var prod = itemData.producto;
-        // FOTO GRANDE (62px)
-        var imgT = prod.url_foto ? '<img src="' + prod.url_foto + '" style="width: 62px; height: 62px; border-radius: 8px; object-fit: cover; border: 1px solid #cbd5e1;">' : '<div style="width: 62px; height: 62px; background: #f1f5f9; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; border: 1px solid #e2e8f0;">📦</div>';
-        var notaT = prod.notas ? '<div style="font-size: 11px; color: #64748b; margin-top: 1px;">📌 ' + prod.notas + '</div>' : '';
+        // FOTO GRANDE (55px)
+        var imgT = prod.url_foto ? '<img src="' + prod.url_foto + '" style="width: 55px; height: 55px; border-radius: 6px; object-fit: cover; border: 1px solid #cbd5e1;">' : '<div style="width: 55px; height: 55px; background: #f1f5f9; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 1px solid #e2e8f0;">📦</div>';
+        var notaT = prod.notas ? '<div style="font-size: 10px; color: #64748b; margin-top: 1px;">📌 ' + prod.notas + '</div>' : '';
 
-        paginaHtmlActual += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 4px 6px; border-bottom: 1px solid #e2e8f0; height: 72px;">' +
-          '<div style="width: 62px; flex-shrink: 0;">' + imgT + '</div>' +
+        paginaHtmlActual += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 3px 6px; border-bottom: 1px solid #e2e8f0; height: 64px;">' +
+          '<div style="width: 55px; flex-shrink: 0;">' + imgT + '</div>' +
           '<div style="flex: 1; padding: 0 10px; overflow: hidden;">' +
-            '<div style="font-size: 14px; font-weight: 700; color: #0f172a; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + prod.nombre + '</div>' +
+            '<div style="font-size: 13px; font-weight: 700; color: #0f172a; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + prod.nombre + '</div>' +
             notaT +
           '</div>' +
-          '<div style="font-family: \'Oswald\', sans-serif; font-size: 18px; font-weight: 700; color: #2563eb; width: 85px; text-align: right; flex-shrink: 0;">' + parseFloat(prod.precio || 0).toFixed(2) + ' €</div>' +
+          '<div style="font-family: \'Oswald\', sans-serif; font-size: 17px; font-weight: 700; color: #2563eb; width: 80px; text-align: right; flex-shrink: 0;">' + parseFloat(prod.precio || 0).toFixed(2) + ' €</div>' +
         '</div>';
 
         contadorEnPagina++;
@@ -1001,8 +1008,8 @@
 
         var cabeceraPagina = '';
         if (numPaginaActual === 1) {
-          cabeceraPagina = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 3px solid #032b5f;">' +
-            '<div style="display: flex; align-items: center; gap: 10px;">' + logoHeader + '<div><h1 style="margin: 0; font-family: \'Oswald\', sans-serif; font-size: 30px; line-height: 1.0; color: #032b5f; text-transform: uppercase;">' + (cfg.empresa || 'EL ANCLA') + '</h1></div></div>' +
+          cabeceraPagina = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 3px solid #032b5f;">' +
+            '<div style="display: flex; align-items: center; gap: 10px;">' + logoHeader + '<div><h1 style="margin: 0; font-family: \'Oswald\', sans-serif; font-size: 28px; line-height: 1.0; color: #032b5f; text-transform: uppercase;">' + (cfg.empresa || 'EL ANCLA') + '</h1></div></div>' +
             '<div style="text-align: right; font-size: 12px; color: #475569;">' +
               '<div style="font-family: \'Oswald\', sans-serif; font-size: 16px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin-bottom: 2px;">' + lista.cliente_nombre + '</div>' +
               '<div><strong>Fecha:</strong> ' + new Date(lista.fecha).toLocaleDateString('es-ES') + '</div>' +
