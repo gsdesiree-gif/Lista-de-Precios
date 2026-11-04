@@ -647,6 +647,33 @@
     .btn-wa { background: #25d366; color: #fff; }
     .search-box { margin-bottom: 14px; }
 
+    /* --- organización: listas compactas, categorías plegables, barras de búsqueda --- */
+    .cat-title { grid-column: 1 / -1; font-family: 'Oswald', sans-serif; font-size: 15px; color: var(--primary); text-transform: uppercase; border-bottom: 2px solid var(--accent); padding-bottom: 3px; margin-top: 10px; }
+    .cat-title span { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; color: var(--muted); font-weight: 400; }
+    .product-item.compact { flex-direction: row !important; align-items: center !important; padding: 8px 10px !important; gap: 8px !important; box-shadow: none !important; }
+    .compact .product-img { width: 46px !important; height: 46px !important; border-radius: 8px !important; }
+    .compact .product-name { font-size: 14px !important; line-height: 1.25; }
+    .compact .product-left { min-width: 0; align-items: center !important; }
+    .compact .btn-sm { padding: 8px 10px; }
+    .compact .prod-mobile-controls { width: auto !important; border-top: none !important; padding-top: 0 !important; }
+    .compact .prod-mobile-controls > span { display: none; }
+    .cat-block { border: 1px solid var(--border); border-radius: 12px; margin-bottom: 10px; background: #fff; overflow: hidden; }
+    .cat-block > summary { cursor: pointer; padding: 12px 14px; font-weight: 700; color: var(--primary); list-style: none; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+    .cat-block > summary::-webkit-details-marker { display: none; }
+    .cat-block > summary::before { content: '▸'; color: var(--accent); transition: transform .15s; }
+    .cat-block[open] > summary::before { transform: rotate(90deg); }
+    .cat-block .muted { color: var(--muted); font-weight: 500; font-size: 12px; }
+    .selcnt { color: var(--success); font-weight: 700; font-size: 12px; }
+    .cat-block .inner { padding: 0 10px 10px; }
+    .cat-actions { display: flex; gap: 8px; padding: 0 10px 8px; }
+    .sticky-action { position: sticky; bottom: 76px; z-index: 20; margin-top: 16px; }
+    .sticky-action .btn { box-shadow: 0 6px 18px rgba(37, 99, 235, .35); }
+    .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+    .toolbar input { flex: 1; }
+    .count-txt { font-size: 12px; color: var(--muted); margin: 0 0 10px; }
+    .btn-toggle.active { background: var(--primary); color: #fff; }
+    @media (min-width: 768px) { .sticky-action { bottom: 14px; } }
+
     body.modo-public .no-client-view { display: none !important; }
     body.modo-public .tab-content:not(#tabClienteView) { display: none !important; }
 
@@ -730,9 +757,19 @@
 
         <div class="card">
           <div class="card-header">📦 Productos Registrados</div>
-          <div class="search-box">
+          <div class="cat-filter-bar">
+            <button class="cat-filter-btn active" onclick="filtrarPestanaProductos('TODAS', this)">Todas</button>
+            <button class="cat-filter-btn" onclick="filtrarPestanaProductos('Marisco', this)">🦐 Marisco</button>
+            <button class="cat-filter-btn" onclick="filtrarPestanaProductos('Pescados', this)">🐟 Pescados</button>
+            <button class="cat-filter-btn" onclick="filtrarPestanaProductos('Carnes', this)">🥩 Carnes</button>
+            <button class="cat-filter-btn" onclick="filtrarPestanaProductos('Verduras', this)">🥬 Verduras</button>
+            <button class="cat-filter-btn" onclick="filtrarPestanaProductos('Precocinados', this)">🧆 Precocinados</button>
+            <button class="cat-filter-btn" onclick="filtrarPestanaProductos('Varios', this)">📦 Varios</button>
+          </div>
+          <div class="toolbar">
             <input type="search" id="buscarProd" placeholder="🔎 Buscar producto..." oninput="renderizarListaProductos()">
           </div>
+          <div id="contadorProd" class="count-txt"></div>
           <div id="listaProductosCard" class="product-grid">Cargando datos...</div>
         </div>
       </div>
@@ -775,7 +812,8 @@
         <div class="card-header">🚀 Nueva Lista de Precios</div>
         <div class="field">
           <label>Nombre del Cliente</label>
-          <input type="text" id="clienteNombre" placeholder="Ej: Restaurante El Faro">
+          <input type="text" id="clienteNombre" placeholder="Ej: Restaurante El Faro" list="clientesLista" autocomplete="off">
+          <datalist id="clientesLista"></datalist>
         </div>
 
         <div style="font-size: 12px; font-weight: 700; color: var(--muted); margin: 18px 0 8px 0; text-transform: uppercase;">
@@ -791,8 +829,14 @@
           <button class="cat-filter-btn" onclick="filtrarPestanaCrear('Varios', this)">📦 Varios</button>
         </div>
 
+        <div class="toolbar">
+          <input type="search" id="buscarCrear" placeholder="🔎 Buscar producto..." oninput="renderizarSeleccionCrear()">
+          <button id="btnSoloSel" class="btn btn-sm btn-logout btn-toggle" onclick="toggleSoloSel()" style="white-space:nowrap;">✔ Solo marcados</button>
+        </div>
         <div id="listaSeleccionProductos">Buscando productos...</div>
-        <button id="btnGenerarLista" onclick="generarLista()" class="btn btn-accent" style="margin-top: 24px;">💾 Generar Lista de Precios</button>
+        <div class="sticky-action">
+          <button id="btnGenerarLista" onclick="generarLista()" class="btn btn-accent">💾 Generar lista de precios</button>
+        </div>
       </div>
     </div>
 
@@ -800,7 +844,12 @@
     <div id="tabHistorial" class="tab-content">
       <div class="card">
         <div class="card-header">📜 Listas Guardadas</div>
-        <div id="listaHistoricoCard" class="product-grid">Cargando historial...</div>
+        <div class="toolbar">
+          <input type="search" id="buscarHist" placeholder="🔎 Buscar cliente..." oninput="_histLimite = 15; renderizarHistorico()">
+        </div>
+        <div id="contHist" class="count-txt"></div>
+        <div id="listaHistoricoCard">Cargando historial...</div>
+        <button id="btnMasHist" class="btn btn-logout" style="display:none; margin-top:8px;" onclick="_histLimite += 15; renderizarHistorico()">Ver más clientes</button>
       </div>
     </div>
 
@@ -1077,7 +1126,7 @@
 
     async function cerrarSesion() {
       try { await _sb.auth.signOut(); } catch (e) {}
-      _productosCache = []; _catalogo = []; _sel = {}; _precios = {};
+      _productosCache = []; _catalogo = []; _sel = {}; _precios = {}; _historico = [];
       setMode('login');
     }
 
@@ -1239,30 +1288,61 @@
                  : '<div class="' + cls + '" style="display:flex;align-items:center;justify-content:center;font-size:20px;">📦</div>';
     }
 
+    var _filtroProd = 'TODAS';
+
+    // Lista de categorías: las de siempre en su orden + cualquier otra que exista
+    function categoriasDe(lista) {
+      var cats = _categoriasOrden.slice();
+      for (var i = 0; i < lista.length; i++) {
+        var c = lista[i].categoria || 'Varios';
+        if (cats.indexOf(c) === -1) cats.push(c);
+      }
+      return cats;
+    }
+    function porNombre(a, b) { return String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es', { sensitivity: 'base' }); }
+    function coincideTexto(p, q) {
+      return !q || ((p.nombre || '') + ' ' + (p.notas || '')).toLowerCase().indexOf(q) !== -1;
+    }
+
+    function filtrarPestanaProductos(categoria, btnEl) {
+      var btns = document.querySelectorAll('#tabCatalogo .cat-filter-btn');
+      for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+      if (btnEl) btnEl.classList.add('active');
+      _filtroProd = categoria;
+      renderizarListaProductos();
+    }
+
+    function htmlProductoAdmin(p) {
+      var id = Number(p.id);
+      var nota = p.notas ? '<div class="product-notes">📌 ' + esc(p.notas) + '</div>' : '';
+      return '<div class="product-item compact">' +
+        '<div class="product-left">' + htmlImgProducto(p, 'product-img') +
+          '<div style="overflow:hidden; min-width:0;"><div class="product-name">' + esc(p.nombre) + '</div>' + nota +
+          '<div class="product-price">' + num(p.precio).toFixed(2) + ' €</div></div></div>' +
+        '<div style="display:flex; gap:6px; flex-shrink:0;">' +
+          '<button class="btn btn-accent btn-sm" onclick="abrirModalEditar(' + id + ')">✏️</button>' +
+          '<button class="btn btn-danger btn-sm" onclick="borrarProducto(' + id + ')">🗑️</button>' +
+        '</div></div>';
+    }
+
     function renderizarListaProductos() {
       var c = $('listaProductosCard');
       var q = ($('buscarProd').value || '').trim().toLowerCase();
       var lista = _productosCache.filter(function (p) {
-        if (!q) return true;
-        return ((p.nombre || '') + ' ' + (p.categoria || '') + ' ' + (p.notas || '')).toLowerCase().indexOf(q) !== -1;
+        if (_filtroProd !== 'TODAS' && (p.categoria || 'Varios') !== _filtroProd) return false;
+        return coincideTexto(p, q);
       });
+      $('contadorProd').textContent = lista.length + ' de ' + _productosCache.length + ' productos';
       if (lista.length === 0) {
-        c.innerHTML = '<div style="color:var(--muted); text-align:center; padding:16px;">' + (q ? 'Sin resultados.' : 'Sin productos registrados.') + '</div>';
+        c.innerHTML = '<div style="color:var(--muted); text-align:center; padding:16px; grid-column:1/-1;">' + ((q || _filtroProd !== 'TODAS') ? 'Sin resultados.' : 'Sin productos registrados.') + '</div>';
         return;
       }
-      var html = '';
-      for (var i = 0; i < lista.length; i++) {
-        var p = lista[i], id = Number(p.id);
-        var nota = p.notas ? '<div class="product-notes">📌 ' + esc(p.notas) + '</div>' : '';
-        html += '<div class="product-item">' +
-          '<div class="product-left">' + htmlImgProducto(p, 'product-img') +
-            '<div style="overflow:hidden;"><div class="product-name">' + esc(p.nombre) + '</div>' +
-            '<div class="product-badge">' + esc(p.categoria || 'Varios') + '</div>' + nota +
-            '<div class="product-price">' + num(p.precio).toFixed(2) + ' €</div></div></div>' +
-          '<div style="display:flex; gap:6px; flex-shrink:0;">' +
-            '<button class="btn btn-accent btn-sm" onclick="abrirModalEditar(' + id + ')">✏️</button>' +
-            '<button class="btn btn-danger btn-sm" onclick="borrarProducto(' + id + ')">🗑️</button>' +
-          '</div></div>';
+      var cats = categoriasDe(lista), html = '';
+      for (var k = 0; k < cats.length; k++) {
+        var items = lista.filter(function (p) { return (p.categoria || 'Varios') === cats[k]; }).sort(porNombre);
+        if (items.length === 0) continue;
+        if (_filtroProd === 'TODAS') html += '<div class="cat-title">📂 ' + esc(cats[k]) + ' <span>(' + items.length + ')</span></div>';
+        for (var i = 0; i < items.length; i++) html += htmlProductoAdmin(items[i]);
       }
       c.innerHTML = html;
     }
@@ -1402,33 +1482,76 @@
     }
 
     /* ---------- crear lista ---------- */
-    function selProd(id, marcado) { if (marcado) _sel[id] = true; else delete _sel[id]; }
+    var _abiertas = {};     // categorías que has abierto en "Crear lista"
+    var _forzar = false;    // true = se muestran todas abiertas (búsqueda o filtro)
+    var _soloSel = false;
+    var _catsCrear = [];
+
+    function actualizarContadorSel() {
+      var n = Object.keys(_sel).length;
+      $('btnGenerarLista').textContent = '💾 Generar lista' + (n ? ' (' + n + ' producto' + (n === 1 ? '' : 's') + ')' : ' de precios');
+    }
+    function actualizarSoloSelUI() { $('btnSoloSel').classList.toggle('active', _soloSel); }
+    function toggleSoloSel() { _soloSel = !_soloSel; actualizarSoloSelUI(); renderizarSeleccionCrear(); }
+
+    function selProd(id, marcado, el) {
+      if (marcado) _sel[id] = true; else delete _sel[id];
+      actualizarContadorSel();
+      var d = (el && el.closest) ? el.closest('details') : null;
+      if (d) {
+        var n = d.querySelectorAll('.prod-checkbox:checked').length;
+        var s = d.querySelector('.selcnt');
+        if (s) s.textContent = n ? ' · ' + n + ' ✔' : '';
+      }
+    }
     function precioTmp(id, v) { _precios[id] = v; }
+    function togCat(idx, el) { if (!_forzar) _abiertas[_catsCrear[idx]] = el.open; }
+
+    function productosVisiblesCrear(cat) {
+      var q = ($('buscarCrear').value || '').trim().toLowerCase();
+      return _productosCache.filter(function (p) {
+        return (p.categoria || 'Varios') === cat && (!_soloSel || _sel[p.id]) && coincideTexto(p, q);
+      }).sort(porNombre);
+    }
+
+    function marcarCategoria(idx, marcar) {
+      var prods = productosVisiblesCrear(_catsCrear[idx]);
+      for (var i = 0; i < prods.length; i++) { if (marcar) _sel[prods[i].id] = true; else delete _sel[prods[i].id]; }
+      actualizarContadorSel();
+      renderizarSeleccionCrear();
+    }
 
     function renderizarSeleccionCrear() {
       var container = $('listaSeleccionProductos');
+      var q = ($('buscarCrear').value || '').trim().toLowerCase();
+      _forzar = !!q || _soloSel || _filtroCrear !== 'TODAS' || _productosCache.length <= 20;
+      _catsCrear = categoriasDe(_productosCache);
       var html = '';
-      for (var k = 0; k < _categoriasOrden.length; k++) {
-        var cat = _categoriasOrden[k];
+      for (var k = 0; k < _catsCrear.length; k++) {
+        var cat = _catsCrear[k];
         if (_filtroCrear !== 'TODAS' && _filtroCrear !== cat) continue;
-        var prods = _productosCache.filter(function (p) { return (p.categoria || 'Varios') === cat; });
+        var prods = productosVisiblesCrear(cat);
         if (prods.length === 0) continue;
-        html += '<div style="margin-top:20px; margin-bottom:10px; font-family:\'Oswald\', sans-serif; font-size:16px; color:var(--primary); text-transform:uppercase; border-bottom:2px solid var(--accent); padding-bottom:4px; display:flex; justify-content:space-between; align-items:center;"><span>📂 ' + esc(cat) + '</span><span style="font-size:12px; font-family:sans-serif; color:var(--muted); font-weight:normal;">(' + prods.length + ')</span></div><div class="product-grid">';
+        var nSel = prods.filter(function (p) { return _sel[p.id]; }).length;
+        html += '<details class="cat-block"' + ((_forzar || _abiertas[cat]) ? ' open' : '') + ' ontoggle="togCat(' + k + ', this)">' +
+          '<summary>📂 ' + esc(cat) + ' <span class="muted">(' + prods.length + ')</span><span class="selcnt">' + (nSel ? ' · ' + nSel + ' ✔' : '') + '</span></summary>' +
+          '<div class="cat-actions"><button class="btn btn-sm btn-logout" onclick="marcarCategoria(' + k + ', true)">Marcar todos</button>' +
+          '<button class="btn btn-sm btn-logout" onclick="marcarCategoria(' + k + ', false)">Quitar</button></div><div class="inner product-grid">';
         for (var i = 0; i < prods.length; i++) {
           var p = prods[i], id = Number(p.id);
           var nota = p.notas ? '<div class="product-notes">📌 ' + esc(p.notas) + '</div>' : '';
           var precio = (_precios[id] !== undefined) ? _precios[id] : num(p.precio).toFixed(2);
-          html += '<div class="product-item"><div class="product-left">' +
-            '<input type="checkbox" class="prod-checkbox" ' + (_sel[id] ? 'checked ' : '') + 'onchange="selProd(' + id + ', this.checked)">' +
+          html += '<div class="product-item compact"><div class="product-left">' +
+            '<input type="checkbox" class="prod-checkbox" ' + (_sel[id] ? 'checked ' : '') + 'onchange="selProd(' + id + ', this.checked, this)">' +
             htmlImgProducto(p, 'product-img') +
-            '<div style="flex:1; overflow:hidden;"><div class="product-name">' + esc(p.nombre) + '</div>' + nota + '</div></div>' +
-            '<div class="prod-mobile-controls"><span style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase;">Precio:</span>' +
-            '<div style="display:flex; align-items:center; gap:4px;"><input type="number" step="0.01" inputmode="decimal" value="' + esc(precio) + '" oninput="precioTmp(' + id + ', this.value)" style="width:95px; padding:8px; text-align:right; font-weight:700;">' +
-            '<span style="font-weight:700; font-size:14px; color:var(--muted);">€</span></div></div></div>';
+            '<div style="flex:1; overflow:hidden; min-width:0;"><div class="product-name">' + esc(p.nombre) + '</div>' + nota + '</div></div>' +
+            '<div class="prod-mobile-controls"><span>Precio:</span>' +
+            '<div style="display:flex; align-items:center; gap:4px;"><input type="number" step="0.01" inputmode="decimal" value="' + esc(precio) + '" oninput="precioTmp(' + id + ', this.value)" style="width:88px; padding:8px; text-align:right; font-weight:700;">' +
+            '<span style="display:inline; font-weight:700; font-size:14px; color:var(--muted);">€</span></div></div></div>';
         }
-        html += '</div>';
+        html += '</div></details>';
       }
-      container.innerHTML = html || '<div style="color:var(--muted); text-align:center; padding:20px;">No hay productos en esta categoría.</div>';
+      container.innerHTML = html || '<div style="color:var(--muted); text-align:center; padding:20px;">No hay productos que coincidan.</div>';
     }
 
     function filtrarPestanaCrear(categoria, btnEl) {
@@ -1437,6 +1560,29 @@
       if (btnEl) btnEl.classList.add('active');
       _filtroCrear = categoria;
       renderizarSeleccionCrear();
+    }
+
+    // Repetir una lista anterior: carga sus productos y precios en "Crear lista"
+    function duplicarLista(id) {
+      var l = null;
+      for (var i = 0; i < _historico.length; i++) if (_historico[i].id === id) { l = _historico[i]; break; }
+      if (!l) return;
+      _sel = {}; _precios = {};
+      var raw = l.productos_ids || [], omitidos = 0;
+      for (var j = 0; j < raw.length; j++) {
+        var it = (typeof raw[j] === 'object' && raw[j] !== null) ? raw[j] : { id: raw[j] };
+        var p = buscarEnCache(it.id);
+        if (!p) { omitidos++; continue; }
+        _sel[p.id] = true;
+        if (it.precio !== undefined && it.precio !== null) _precios[p.id] = num(it.precio).toFixed(2);
+      }
+      $('clienteNombre').value = l.cliente_nombre || '';
+      $('buscarCrear').value = '';
+      _soloSel = true; actualizarSoloSelUI();
+      switchTab('tabCrear');
+      renderizarSeleccionCrear();
+      actualizarContadorSel();
+      toast('Lista cargada con sus precios. Ajusta lo que necesites y genera la nueva.' + (omitidos ? ' (' + omitidos + ' producto(s) ya no existen)' : ''));
     }
 
     async function generarLista() {
@@ -1456,7 +1602,8 @@
       try {
         var data = chk(await _sb.from('listas_generadas').insert([{ cliente_nombre: cliente, productos_ids: items }]).select());
         $('clienteNombre').value = '';
-        _sel = {}; _precios = {};
+        _sel = {}; _precios = {}; _soloSel = false; $('buscarCrear').value = '';
+        actualizarSoloSelUI(); actualizarContadorSel();
         renderizarSeleccionCrear();
         cargarHistorico();
         toast('Lista guardada.');
@@ -1466,24 +1613,79 @@
     }
 
     /* ---------- historial ---------- */
+    var _historico = [];
+    var _histLimite = 15;
+    var _histAbiertos = {};
+
+    function claveCliente(n) { return String(n || '').trim().toLowerCase(); }
+    function togHist(el) { _histAbiertos[el.getAttribute('data-k')] = el.open; }
+
     async function cargarHistorico() {
       var container = $('listaHistoricoCard');
       try {
-        var data = chk(await _sb.from('listas_generadas').select('id,cliente_nombre,fecha').order('id', { ascending: false }));
-        if (!data || data.length === 0) { container.innerHTML = '<div style="color:var(--muted); text-align:center; padding:12px;">Sin listas guardadas.</div>'; return; }
-        var html = '';
-        for (var i = 0; i < data.length; i++) {
-          var l = data[i], id = Number(l.id);
-          html += '<div class="product-item"><div><div class="product-name">' + esc(l.cliente_nombre) + '</div>' +
-            '<div style="font-size:12px; color:var(--muted);">' + esc(new Date(l.fecha).toLocaleDateString('es-ES')) + '</div></div>' +
-            '<div style="display:flex; gap:6px;"><button class="btn btn-accent btn-sm" onclick="verListaDocumento(' + id + ')">👁️ Ver</button>' +
-            '<button class="btn btn-danger btn-sm" onclick="borrarLista(' + id + ')">🗑️</button></div></div>';
-        }
-        container.innerHTML = html;
+        var data = chk(await _sb.from('listas_generadas').select('id,cliente_nombre,fecha,productos_ids').order('id', { ascending: false }));
+        _historico = data || [];
+        poblarClientes();
+        renderizarHistorico();
       } catch (e) {
         container.innerHTML = '<div style="color:var(--danger); text-align:center; padding:12px;">No se pudo cargar el historial.</div>';
         toast('Error al cargar el historial: ' + errMsg(e), 'err');
       }
+    }
+
+    // Sugerencias de clientes al escribir el nombre en "Crear lista"
+    function poblarClientes() {
+      var vistos = {}, nombres = [];
+      for (var i = 0; i < _historico.length; i++) {
+        var n = String(_historico[i].cliente_nombre || '').trim(), k = claveCliente(n);
+        if (n && !vistos[k]) { vistos[k] = true; nombres.push(n); }
+      }
+      nombres.sort(function (a, b) { return a.localeCompare(b, 'es', { sensitivity: 'base' }); });
+      $('clientesLista').innerHTML = nombres.map(function (n) { return '<option value="' + esc(n) + '"></option>'; }).join('');
+    }
+
+    function renderizarHistorico() {
+      var container = $('listaHistoricoCard');
+      var q = ($('buscarHist').value || '').trim().toLowerCase();
+      var grupos = [], mapa = {};
+      for (var i = 0; i < _historico.length; i++) {
+        var l = _historico[i], k = claveCliente(l.cliente_nombre);
+        if (q && k.indexOf(q) === -1) continue;
+        if (!mapa[k]) { mapa[k] = { key: k, nombre: String(l.cliente_nombre || 'Sin nombre').trim(), listas: [] }; grupos.push(mapa[k]); }
+        mapa[k].listas.push(l);   // _historico viene de la más nueva a la más antigua
+      }
+      $('contHist').textContent = grupos.length + ' cliente' + (grupos.length === 1 ? '' : 's') + ' · ' + _historico.length + ' listas en total';
+      if (grupos.length === 0) {
+        container.innerHTML = '<div style="color:var(--muted); text-align:center; padding:12px;">' + (q ? 'Ningún cliente coincide.' : 'Sin listas guardadas.') + '</div>';
+        $('btnMasHist').style.display = 'none';
+        return;
+      }
+      var visibles = grupos.slice(0, _histLimite), html = '';
+      var abrirTodo = !!q && grupos.length <= 3;
+      for (var g = 0; g < visibles.length; g++) {
+        var gr = visibles[g];
+        var ultima = new Date(gr.listas[0].fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+        html += '<details class="cat-block" data-k="' + esc(gr.key) + '"' + ((abrirTodo || _histAbiertos[gr.key]) ? ' open' : '') + ' ontoggle="togHist(this)">' +
+          '<summary>👤 ' + esc(gr.nombre) + ' <span class="muted">(' + gr.listas.length + ' lista' + (gr.listas.length === 1 ? '' : 's') + ' · última ' + esc(ultima) + ')</span></summary><div class="inner">';
+        for (var j = 0; j < gr.listas.length; j++) {
+          var li = gr.listas[j], id = Number(li.id);
+          var fd = new Date(li.fecha);
+          var optF = { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' };
+          if (fd.getFullYear() !== new Date().getFullYear()) optF.year = '2-digit';
+          var f = fd.toLocaleString('es-ES', optF);
+          var n = (li.productos_ids || []).length;
+          html += '<div class="product-item compact" style="margin-bottom:6px;">' +
+            '<div style="flex:1; min-width:0;"><div class="product-name" style="white-space:nowrap;">' + esc(f) + '</div><div class="product-notes">' + n + ' producto' + (n === 1 ? '' : 's') + '</div></div>' +
+            '<div style="display:flex; gap:6px; flex-shrink:0;">' +
+              '<button class="btn btn-accent btn-sm" onclick="verListaDocumento(' + id + ')">Ver</button>' +
+              '<button class="btn btn-sm btn-logout" onclick="duplicarLista(' + id + ')">Repetir</button>' +
+              '<button class="btn btn-danger btn-sm" onclick="borrarLista(' + id + ')">🗑️</button>' +
+            '</div></div>';
+        }
+        html += '</div></details>';
+      }
+      container.innerHTML = html;
+      $('btnMasHist').style.display = grupos.length > visibles.length ? '' : 'none';
     }
 
     async function borrarLista(id) {
