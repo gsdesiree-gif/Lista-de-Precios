@@ -751,6 +751,7 @@
             <label>Seleccionar Foto (Imagen)</label>
             <input type="file" id="prodArchivoFoto" accept="image/*" onchange="procesarImagen(this, 'prodFotoBase64')">
             <input type="hidden" id="prodFotoBase64">
+            <div id="previewNuevaFoto" style="margin-top:8px;"></div>
           </div>
           <button id="btnGuardarProd" onclick="guardarProducto()" class="btn">Guardar Producto</button>
         </div>
@@ -914,6 +915,13 @@
         </div>
         <button id="btnGuardarCfg" onclick="guardarConfiguracion()" class="btn btn-accent" style="margin-top:16px;">💾 Guardar Ajustes</button>
       </div>
+
+      <div class="card">
+        <div class="card-header">🖼️ Fotos</div>
+        <p style="font-size:13px; color:var(--muted); margin:0 0 12px;">Las fotos nuevas se guardan en un almacenamiento rápido. Las antiguas se pueden mover aquí para que la app cargue más deprisa.</p>
+        <div id="migEstado" class="count-txt"></div>
+        <button id="btnMigrar" onclick="migrarFotos()" class="btn btn-logout">Mover fotos antiguas</button>
+      </div>
     </div>
   </div>
 
@@ -1002,6 +1010,7 @@
     var _categoriasOrden = ['Marisco', 'Pescados', 'Carnes', 'Verduras', 'Precocinados', 'Varios'];
     var _nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     var _toastTimer = null;
+    var _subiendo = 0;             // fotos que se están subiendo ahora mismo
 
     /* ---------- utilidades ---------- */
     function $(id) { return document.getElementById(id); }
@@ -1017,6 +1026,7 @@
       u = String(u || '');
       return /^(data:image\/(png|jpe?g|webp|gif);base64,|https:\/\/)/i.test(u) ? esc(u) : '';
     }
+    function corsAttr(s) { return /^https:/i.test(s) ? ' crossorigin="anonymous"' : ''; }
     function num(v) { var n = parseFloat(v); return isNaN(n) ? 0 : n; }
     function pick(a, b) { return (a !== undefined && a !== null) ? a : b; }
     function pad2(n) { return String(n).padStart(2, '0'); }
@@ -1188,7 +1198,7 @@
         var img = new Image();
         img.onerror = function () { toast('El archivo no es una imagen válida.', 'err'); };
         img.onload = function () {
-          var maxDimension = 500;
+          var maxDimension = (targetHiddenId === 'cfgLogoBase64') ? 500 : 900;   // fotos de producto más nítidas; el logo, ligero
           var width = img.width, height = img.height;
           if (width > height) {
             if (width > maxDimension) { height = Math.round((height * maxDimension) / width); width = maxDimension; }
@@ -1201,15 +1211,72 @@
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(0, 0, width, height);
           ctx.drawImage(img, 0, 0, width, height);
-          var base64 = canvas.toDataURL('image/jpeg', 0.8);
-          $(targetHiddenId).value = base64;
-          var prev = '<img src="' + base64 + '" alt="" style="max-height:60px; border-radius:8px;">';
-          if (targetHiddenId === 'cfgLogoBase64') $('previewLogoContainer').innerHTML = prev;
-          else if (targetHiddenId === 'editProdFotoBase64') $('previewEditFotoContainer').innerHTML = prev;
+          var esProducto = (targetHiddenId === 'prodFotoBase64' || targetHiddenId === 'editProdFotoBase64');
+          function mostrar(valor) {
+            $(targetHiddenId).value = valor;
+            var prev = '<img src="' + imgSrc(valor) + '" alt="" style="max-height:60px; border-radius:8px;">';
+            if (targetHiddenId === 'cfgLogoBase64') $('previewLogoContainer').innerHTML = prev;
+            else if (targetHiddenId === 'editProdFotoBase64') $('previewEditFotoContainer').innerHTML = prev;
+            else if (targetHiddenId === 'prodFotoBase64') $('previewNuevaFoto').innerHTML = prev;
+          }
+          // El logo se queda dentro de los ajustes; las fotos de producto van al almacenamiento rápido
+          if (!esProducto) { mostrar(canvas.toDataURL('image/jpeg', 0.8)); return; }
+          _subiendo++;
+          toast('Subiendo foto...');
+          canvas.toBlob(function (blob) {
+            subirFoto(blob).then(function (url) { mostrar(url); toast('Foto subida.'); })
+              .catch(function (e) {
+                // Si el almacenamiento aún no está preparado, se guarda como antes para no perder la foto
+                mostrar(canvas.toDataURL('image/jpeg', 0.8));
+                toast('Foto guardada en modo antiguo (' + errMsg(e) + ').', 'err');
+              })
+              .then(function () { _subiendo--; });
+          }, 'image/jpeg', 0.85);
         };
         img.src = e.target.result;
       };
       reader.readAsDataURL(input.files[0]);
+    }
+
+    /* ---------- fotos en Supabase Storage ---------- */
+    async function subirFoto(blob) {
+      var nombre = 'p' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.jpg';
+      var r = await _sb.storage.from('fotos').upload(nombre, blob, { contentType: 'image/jpeg', cacheControl: '31536000', upsert: false });
+      if (r.error) throw r.error;
+      return _sb.storage.from('fotos').getPublicUrl(nombre).data.publicUrl;
+    }
+    function rutaFoto(url) {
+      var m = String(url || '').match(/\/storage\/v1\/object\/public\/fotos\/([^?]+)$/);
+      return m ? decodeURIComponent(m[1]) : null;
+    }
+    async function borrarFotoStorage(url) {
+      var ruta = rutaFoto(url);
+      if (!ruta) return;
+      try { await _sb.storage.from('fotos').remove([ruta]); } catch (e) {}
+    }
+    function actualizarEstadoFotos() {
+      var n = _productosCache.filter(function (p) { return String(p.url_foto || '').indexOf('data:image') === 0; }).length;
+      $('migEstado').textContent = n ? n + ' foto(s) antiguas pendientes de mover.' : 'Todas las fotos ya están en el almacenamiento rápido.';
+    }
+    async function migrarFotos() {
+      var pend = _productosCache.filter(function (p) { return String(p.url_foto || '').indexOf('data:image') === 0; });
+      if (pend.length === 0) { toast('No hay fotos pendientes de mover.'); return; }
+      if (!confirm('Se van a mover ' + pend.length + ' foto(s). Puede tardar un poco; no cierres la app hasta que termine.')) return;
+      var btn = $('btnMigrar'), ok = 0, fallos = 0, ultimo = '';
+      btn.disabled = true;
+      for (var i = 0; i < pend.length; i++) {
+        $('migEstado').textContent = 'Moviendo fotos... ' + ok + ' de ' + pend.length;
+        try {
+          var blob = await (await fetch(pend[i].url_foto)).blob();
+          var url = await subirFoto(blob);
+          chk(await _sb.from('productos').update({ url_foto: url }).eq('id', pend[i].id));
+          ok++;
+        } catch (e) { fallos++; ultimo = errMsg(e); }
+      }
+      btn.disabled = false;
+      await cargarProductos();
+      if (fallos) toast(ok + ' movidas, ' + fallos + ' con error: ' + ultimo, 'err');
+      else toast('¡Listo! ' + ok + ' foto(s) movidas.');
     }
 
     /* ---------- configuración ---------- */
@@ -1276,6 +1343,7 @@
         renderizarListaProductos();
         renderizarSeleccionCrear();
         renderizarGridCliente();
+        actualizarEstadoFotos();
       } catch (e) {
         $('listaProductosCard').innerHTML = '<div style="color:var(--danger); text-align:center; padding:16px;">No se pudieron cargar los productos.</div>';
         toast('Error al cargar productos: ' + errMsg(e), 'err');
@@ -1284,7 +1352,7 @@
 
     function htmlImgProducto(p, cls) {
       var src = imgSrc(p.url_foto);
-      return src ? '<img src="' + src + '" alt="" class="' + cls + '">'
+      return src ? '<img src="' + src + '" alt="" class="' + cls + '" loading="lazy" decoding="async">'
                  : '<div class="' + cls + '" style="display:flex;align-items:center;justify-content:center;font-size:20px;">📦</div>';
     }
 
@@ -1348,6 +1416,7 @@
     }
 
     async function guardarProducto() {
+      if (_subiendo > 0) { toast('Espera a que termine de subir la foto.', 'err'); return; }
       var categoria = $('prodCategoria').value;
       var nombre = $('prodNombre').value.trim();
       var precio = parseFloat($('prodPrecio').value);
@@ -1359,7 +1428,7 @@
       try {
         chk(await _sb.from('productos').insert([{ categoria: categoria, nombre: nombre, precio: precio, notas: notas, url_foto: url_foto }]));
         $('prodNombre').value = ''; $('prodPrecio').value = ''; $('prodNotas').value = '';
-        $('prodArchivoFoto').value = ''; $('prodFotoBase64').value = '';
+        $('prodArchivoFoto').value = ''; $('prodFotoBase64').value = ''; $('previewNuevaFoto').innerHTML = '';
         await cargarProductos();
         toast('Producto guardado.');
       } catch (e) { toast('No se guardó el producto: ' + errMsg(e), 'err'); }
@@ -1369,7 +1438,9 @@
     async function borrarProducto(id) {
       if (!confirm('¿Eliminar producto? Las listas ya generadas no cambiarán.')) return;
       try {
+        var prodBorrado = buscarEnCache(id);
         chk(await _sb.from('productos').delete().eq('id', id));
+        borrarFotoStorage(prodBorrado && prodBorrado.url_foto);
         delete _sel[id]; delete _precios[id];
         await cargarProductos();
         toast('Producto eliminado.');
@@ -1399,6 +1470,7 @@
     function cerrarModalEditar() { $('modalEditarProducto').style.display = 'none'; }
 
     async function actualizarProducto() {
+      if (_subiendo > 0) { toast('Espera a que termine de subir la foto.', 'err'); return; }
       var id = parseInt($('editProdId').value, 10);
       var campos = {
         categoria: $('editProdCategoria').value,
@@ -1411,7 +1483,9 @@
       var btn = $('btnActualizarProd');
       btn.disabled = true;
       try {
+        var antes = buscarEnCache(id), fotoAntes = antes ? antes.url_foto : '';
         chk(await _sb.from('productos').update(campos).eq('id', id));
+        if (fotoAntes && fotoAntes !== campos.url_foto) borrarFotoStorage(fotoAntes);
         delete _precios[id];
         cerrarModalEditar();
         await cargarProductos();
@@ -1753,7 +1827,7 @@
         }
         var prod = d.producto;
         var s = imgSrc(prod.url_foto);
-        var imgT = s ? '<img src="' + s + '" alt="" style="width: 55px; height: 55px; border-radius: 6px; object-fit: cover; border: 1px solid #cbd5e1;">'
+        var imgT = s ? '<img src="' + s + '"' + corsAttr(s) + ' alt="" style="width: 55px; height: 55px; border-radius: 6px; object-fit: cover; border: 1px solid #cbd5e1;">'
           : '<div style="width: 55px; height: 55px; background: #f1f5f9; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 1px solid #e2e8f0;">📦</div>';
         var notaT = prod.notas ? '<div style="font-size: 10px; color: #64748b; margin-top: 1px;">📌 ' + esc(prod.notas) + '</div>' : '';
         paginaHtml += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 3px 6px; border-bottom: 1px solid #e2e8f0; height: 64px;">' +
