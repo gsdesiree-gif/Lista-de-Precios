@@ -674,6 +674,12 @@
     .btn-toggle.active { background: var(--primary); color: #fff; }
     @media (min-width: 768px) { .sticky-action { bottom: 14px; } }
 
+    .chip-dia { padding: 8px 10px; border-radius: 20px; border: 1px solid var(--border); background: #fff; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; font-family: inherit; }
+    .chip-dia.on { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .dias-fila { display: flex; gap: 6px; flex-wrap: wrap; }
+    .cli-row { flex-direction: column !important; align-items: stretch !important; }
+    .cli-acciones { display: flex; gap: 6px; flex-wrap: wrap; }
+
     body.modo-public .no-client-view { display: none !important; }
     body.modo-public .tab-content:not(#tabClienteView) { display: none !important; }
 
@@ -710,6 +716,7 @@
       <button class="web-nav-btn active" data-tab="tabCatalogo" onclick="switchTab('tabCatalogo')">📦 Productos</button>
       <button class="web-nav-btn" data-tab="tabCrear" onclick="switchTab('tabCrear')">📝 Crear Lista</button>
       <button class="web-nav-btn" data-tab="tabHistorial" onclick="switchTab('tabHistorial')">📜 Histórico</button>
+      <button class="web-nav-btn" data-tab="tabClientes" onclick="switchTab('tabClientes')">👥 Clientes</button>
       <button class="web-nav-btn" data-tab="tabCaja" onclick="switchTab('tabCaja')">💰 Caja &amp; Comisión</button>
       <button class="web-nav-btn" data-tab="tabClienteView" onclick="switchTab('tabClienteView')">🌐 Vista Cliente</button>
       <button class="web-nav-btn" data-tab="tabAjustes" onclick="switchTab('tabAjustes')">⚙️ Empresa</button>
@@ -758,6 +765,7 @@
 
         <div class="card">
           <div class="card-header">📦 Productos Registrados</div>
+          <button class="btn btn-sm btn-logout" onclick="switchTab('tabClienteView')" style="margin-bottom:12px;">🌐 Ver catálogo de clientes</button>
           <div class="cat-filter-bar">
             <button class="cat-filter-btn active" onclick="filtrarPestanaProductos('TODAS', this)">Todas</button>
             <button class="cat-filter-btn" onclick="filtrarPestanaProductos('Marisco', this)">🦐 Marisco</button>
@@ -807,14 +815,37 @@
       <div id="editorialGrid" class="editorial-grid">Cargando catálogo...</div>
     </div>
 
+    <!-- CLIENTES -->
+    <div id="tabClientes" class="tab-content">
+      <div class="card">
+        <div class="card-header">👥 Clientes</div>
+        <div class="toolbar">
+          <input type="search" id="buscarCli" placeholder="🔎 Buscar cliente..." oninput="renderizarClientes()">
+          <button class="btn btn-sm btn-accent" onclick="abrirModalCliente(0)" style="white-space:nowrap;">➕ Nuevo</button>
+        </div>
+        <div class="cat-filter-bar" id="barraCli">
+          <button class="cat-filter-btn active" onclick="filtrarClientes('TODOS', this)">Todos</button>
+          <button class="cat-filter-btn" onclick="filtrarClientes('LLAMAR', this)">📞 Llamar</button>
+          <button class="cat-filter-btn" onclick="filtrarClientes('REPARTIR', this)">🚚 Repartir</button>
+        </div>
+        <div id="selDiaWrap" class="toolbar" style="display:none;">
+          <label for="selDiaCli" style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase;">Día:</label>
+          <select id="selDiaCli" onchange="_diaVer = this.value; renderizarClientes()"></select>
+        </div>
+        <div id="contCli" class="count-txt"></div>
+        <div id="listaClientesCard">Cargando clientes...</div>
+      </div>
+    </div>
+
     <!-- CREAR LISTA -->
     <div id="tabCrear" class="tab-content">
       <div class="card">
         <div class="card-header">🚀 Nueva Lista de Precios</div>
         <div class="field">
           <label>Nombre del Cliente</label>
-          <input type="text" id="clienteNombre" placeholder="Ej: Restaurante El Faro" list="clientesLista" autocomplete="off">
+          <input type="text" id="clienteNombre" placeholder="Ej: Restaurante El Faro" list="clientesLista" autocomplete="off" oninput="clienteCambiado()">
           <datalist id="clientesLista"></datalist>
+          <div id="clienteEstado" style="font-size:12px; font-weight:600; margin-top:6px; min-height:16px;"></div>
         </div>
 
         <div style="font-size: 12px; font-weight: 700; color: var(--muted); margin: 18px 0 8px 0; text-transform: uppercase;">
@@ -972,12 +1003,58 @@
     </div>
   </div>
 
+  <!-- MODAL CLIENTE -->
+  <div id="modalCliente" class="modal-overlay no-print">
+    <div class="modal-card">
+      <div class="card-header" id="cliTitulo" style="margin-bottom: 14px;">➕ Nuevo cliente</div>
+      <input type="hidden" id="cliId">
+      <div class="field"><label>Nombre</label><input type="text" id="cliNombre" placeholder="Ej: Restaurante El Faro"></div>
+      <div class="field"><label>Teléfono / WhatsApp</label><input type="text" id="cliTelefono" inputmode="tel" placeholder="Ej: 600 000 000"></div>
+      <div class="field"><label>Dirección</label><input type="text" id="cliDireccion" placeholder="Opcional"></div>
+      <div id="bloqueFicha">
+        <details class="cat-block" id="detFicha" style="margin-bottom:12px;">
+          <summary>🧾 Datos de contacto y fiscales</summary>
+          <div class="inner">
+            <div class="field"><label>Persona de contacto</label><input type="text" id="cliContacto" placeholder="Ej: Juan (encargado)"></div>
+            <div class="field"><label>Email</label><input type="email" id="cliEmail" inputmode="email" placeholder="Opcional"></div>
+            <div class="field"><label>Razón social</label><input type="text" id="cliRazon" placeholder="Ej: Hostelería El Faro S.L."></div>
+            <div class="field"><label>CIF / NIF</label><input type="text" id="cliCif" autocapitalize="characters" placeholder="Ej: B12345678"></div>
+            <div class="field"><label>Población</label><input type="text" id="cliPoblacion"></div>
+            <div class="field"><label>Código postal</label><input type="text" id="cliCp" inputmode="numeric"></div>
+          </div>
+        </details>
+      </div>
+      <div id="bloqueDias">
+        <div class="field"><label>💳 Forma de pago</label>
+          <select id="cliPago">
+            <option value="">— Sin definir —</option>
+            <option value="Contado">Contado</option>
+            <option value="A reposición">A reposición (paga en la siguiente entrega)</option>
+            <option value="Semanal">Semanal</option>
+            <option value="Quincenal">Quincenal</option>
+            <option value="Fin de mes">A fin de mes</option>
+            <option value="Otro">Otro (ver notas)</option>
+          </select>
+        </div>
+        <div class="field"><label>🚚 Días de reparto</label><div class="dias-fila" id="diasReparto"></div></div>
+        <div class="field"><label>📞 Días de llamada (tomar pedido)</label><div class="dias-fila" id="diasLlamada"></div></div>
+      </div>
+      <div id="avisoDias" style="display:none; font-size:12px; color:var(--muted); margin-bottom:10px;">Para guardar días de reparto, llamada, forma de pago y más datos de la ficha, pega el script <strong>clientes-extra.sql</strong> en el SQL Editor de Supabase.</div>
+      <div class="field"><label>Notas</label><input type="text" id="cliNotas" placeholder="Ej: Paga los viernes"></div>
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button onclick="cerrarModalCliente()" class="btn btn-logout" style="flex: 1;">Cancelar</button>
+        <button id="btnGuardarCliente" onclick="guardarCliente()" class="btn btn-success" style="flex: 1;">💾 Guardar</button>
+      </div>
+      <button id="btnBorrarCliente" onclick="borrarCliente()" class="btn btn-danger" style="margin-top: 10px; display:none;">🗑️ Borrar cliente</button>
+    </div>
+  </div>
+
   <div class="nav-bar no-print" id="adminBottomNav" style="display:none;">
     <button class="nav-item active" data-tab="tabCatalogo" onclick="switchTab('tabCatalogo')"><span class="ni">📦</span><span>Productos</span></button>
     <button class="nav-item" data-tab="tabCrear" onclick="switchTab('tabCrear')"><span class="ni">📝</span><span>Crear</span></button>
     <button class="nav-item" data-tab="tabHistorial" onclick="switchTab('tabHistorial')"><span class="ni">📜</span><span>Historial</span></button>
     <button class="nav-item" data-tab="tabCaja" onclick="switchTab('tabCaja')"><span class="ni">💰</span><span>Caja</span></button>
-    <button class="nav-item" data-tab="tabClienteView" onclick="switchTab('tabClienteView')"><span class="ni">🌐</span><span>Cliente</span></button>
+    <button class="nav-item" data-tab="tabClientes" onclick="switchTab('tabClientes')"><span class="ni">👥</span><span>Clientes</span></button>
     <button class="nav-item" data-tab="tabAjustes" onclick="switchTab('tabAjustes')"><span class="ni">⚙️</span><span>Empresa</span></button>
   </div>
 
@@ -1011,6 +1088,12 @@
     var _nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     var _toastTimer = null;
     var _subiendo = 0;             // fotos que se están subiendo ahora mismo
+    var _clientes = [];            // agenda de clientes
+    var _clientesOk = false;       // false = aún no se ha ejecutado clientes.sql
+    var _avisoClientes = false;
+    var _clienteSel = null;        // cliente elegido en "Crear lista"
+    var _preciosCli = {};          // precios especiales de ese cliente (producto_id -> precio)
+    var _autoIds = {};             // precios rellenados automáticamente (no escritos a mano)
 
     /* ---------- utilidades ---------- */
     function $(id) { return document.getElementById(id); }
@@ -1066,6 +1149,7 @@
     window.addEventListener('load', async function () {
       $('cajaFecha').value = hoyLocal();
       poblarDesplegableMeses();
+      poblarDiasSelect();
 
       if (!window.supabase) {
         document.body.innerHTML = '<div style="padding:40px;text-align:center;font-family:sans-serif;">No se pudo cargar la aplicación. Revisa tu conexión a internet y recarga la página.</div>';
@@ -1136,7 +1220,7 @@
 
     async function cerrarSesion() {
       try { await _sb.auth.signOut(); } catch (e) {}
-      _productosCache = []; _catalogo = []; _sel = {}; _precios = {}; _historico = [];
+      _productosCache = []; _catalogo = []; _sel = {}; _precios = {}; _historico = []; _clientes = []; _clientesOk = false; _clienteSel = null; _preciosCli = {}; _autoIds = {};
       setMode('login');
     }
 
@@ -1144,7 +1228,7 @@
       setMode('admin');
       switchTab('tabCatalogo');
       await cargarConfiguracion();   // primero: la caja necesita tu % de comisión
-      await Promise.all([cargarProductos(), cargarHistorico(), cargarCaja()]);
+      await Promise.all([cargarProductos(), cargarHistorico(), cargarCaja(), cargarClientes()]);
     }
 
     // Modo cliente: solo lee las vistas públicas (sin precios)
@@ -1440,6 +1524,7 @@
       try {
         var prodBorrado = buscarEnCache(id);
         chk(await _sb.from('productos').delete().eq('id', id));
+        if (_clientesOk) { try { await _sb.from('precios_cliente').delete().eq('producto_id', id); } catch (e) {} }
         borrarFotoStorage(prodBorrado && prodBorrado.url_foto);
         delete _sel[id]; delete _precios[id];
         await cargarProductos();
@@ -1578,7 +1663,7 @@
         if (s) s.textContent = n ? ' · ' + n + ' ✔' : '';
       }
     }
-    function precioTmp(id, v) { _precios[id] = v; }
+    function precioTmp(id, v) { _precios[id] = v; delete _autoIds[id]; }
     function togCat(idx, el) { if (!_forzar) _abiertas[_catsCrear[idx]] = el.open; }
 
     function productosVisiblesCrear(cat) {
@@ -1615,10 +1700,11 @@
           var p = prods[i], id = Number(p.id);
           var nota = p.notas ? '<div class="product-notes">📌 ' + esc(p.notas) + '</div>' : '';
           var precio = (_precios[id] !== undefined) ? _precios[id] : num(p.precio).toFixed(2);
+          var baseTxt = (Math.abs(num(precio) - num(p.precio)) > 0.004) ? '<div class="product-notes">Precio base: ' + num(p.precio).toFixed(2) + ' €</div>' : '';
           html += '<div class="product-item compact"><div class="product-left">' +
             '<input type="checkbox" class="prod-checkbox" ' + (_sel[id] ? 'checked ' : '') + 'onchange="selProd(' + id + ', this.checked, this)">' +
             htmlImgProducto(p, 'product-img') +
-            '<div style="flex:1; overflow:hidden; min-width:0;"><div class="product-name">' + esc(p.nombre) + '</div>' + nota + '</div></div>' +
+            '<div style="flex:1; overflow:hidden; min-width:0;"><div class="product-name">' + esc(p.nombre) + '</div>' + nota + baseTxt + '</div></div>' +
             '<div class="prod-mobile-controls"><span>Precio:</span>' +
             '<div style="display:flex; align-items:center; gap:4px;"><input type="number" step="0.01" inputmode="decimal" value="' + esc(precio) + '" oninput="precioTmp(' + id + ', this.value)" style="width:88px; padding:8px; text-align:right; font-weight:700;">' +
             '<span style="display:inline; font-weight:700; font-size:14px; color:var(--muted);">€</span></div></div></div>';
@@ -1641,7 +1727,7 @@
       var l = null;
       for (var i = 0; i < _historico.length; i++) if (_historico[i].id === id) { l = _historico[i]; break; }
       if (!l) return;
-      _sel = {}; _precios = {};
+      _sel = {}; _precios = {}; _autoIds = {}; _clienteSel = null; _preciosCli = {};
       var raw = l.productos_ids || [], omitidos = 0;
       for (var j = 0; j < raw.length; j++) {
         var it = (typeof raw[j] === 'object' && raw[j] !== null) ? raw[j] : { id: raw[j] };
@@ -1656,7 +1742,70 @@
       switchTab('tabCrear');
       renderizarSeleccionCrear();
       actualizarContadorSel();
+      clienteCambiado();
       toast('Lista cargada con sus precios. Ajusta lo que necesites y genera la nueva.' + (omitidos ? ' (' + omitidos + ' producto(s) ya no existen)' : ''));
+    }
+
+    function buscarClientePorNombre(nombre) {
+      var k = claveCliente(nombre);
+      if (!k) return null;
+      for (var i = 0; i < _clientes.length; i++) if (claveCliente(_clientes[i].nombre) === k) return _clientes[i];
+      return null;
+    }
+
+    // Al escribir el nombre: si ya es un cliente guardado, se cargan sus precios especiales
+    async function clienteCambiado() {
+      var c = buscarClientePorNombre($('clienteNombre').value);
+      var idNuevo = c ? c.id : null, idActual = _clienteSel ? _clienteSel.id : null;
+      if (idNuevo === idActual) { actualizarEstadoCliente(); return; }
+      _clienteSel = c;
+      _preciosCli = {};
+      if (c && _clientesOk) {
+        try {
+          var filas = chk(await _sb.from('precios_cliente').select('producto_id,precio').eq('cliente_id', c.id)) || [];
+          if (_clienteSel !== c) return;   // mientras tanto cambió de cliente
+          for (var i = 0; i < filas.length; i++) _preciosCli[filas[i].producto_id] = num(filas[i].precio);
+        } catch (e) { toast('No se pudieron cargar los precios del cliente: ' + errMsg(e), 'err'); }
+      }
+      aplicarPreciosCliente();
+      actualizarEstadoCliente();
+      renderizarSeleccionCrear();
+    }
+
+    // Rellena los precios del cliente, sin pisar los que hayas escrito tú a mano
+    function aplicarPreciosCliente() {
+      for (var id in _autoIds) delete _precios[id];
+      _autoIds = {};
+      for (var pid in _preciosCli) {
+        if (_precios[pid] === undefined) { _precios[pid] = _preciosCli[pid].toFixed(2); _autoIds[pid] = true; }
+      }
+    }
+
+    function actualizarEstadoCliente() {
+      var e = $('clienteEstado'), nombre = $('clienteNombre').value.trim();
+      if (!nombre || !_clientesOk) { e.textContent = ''; return; }
+      if (_clienteSel) {
+        var n = Object.keys(_preciosCli).length;
+        var incompleta = (!_clienteSel.telefono && !_clienteSel.direccion && !_clienteSel.cif);
+        e.innerHTML = esc('✔ Cliente guardado' + (n ? ' · ' + n + ' precio(s) especial(es) cargados' : ' · sin precios especiales todavía') + (_clienteSel.forma_pago ? ' · 💳 ' + _clienteSel.forma_pago : '')) +
+          ' · <a href="#" onclick="abrirModalCliente(' + Number(_clienteSel.id) + '); return false;" style="color:var(--accent);">' + (incompleta ? 'Completar ficha' : 'Ver ficha') + '</a>';
+        e.style.color = 'var(--success)';
+      } else {
+        e.textContent = 'Cliente nuevo: se guardará con solo el nombre. Después podrás completar su ficha en Clientes.';
+        e.style.color = 'var(--muted)';
+      }
+    }
+
+    // Guarda solo los precios que se diferencian del precio base; si vuelven al base, se quitan
+    async function guardarPreciosCliente(cid, items) {
+      var subir = [], quitar = [];
+      for (var i = 0; i < items.length; i++) {
+        var base = num((buscarEnCache(items[i].id) || {}).precio);
+        if (Math.abs(items[i].precio - base) > 0.004) subir.push({ cliente_id: cid, producto_id: items[i].id, precio: items[i].precio });
+        else quitar.push(items[i].id);
+      }
+      if (subir.length) chk(await _sb.from('precios_cliente').upsert(subir, { onConflict: 'cliente_id,producto_id' }));
+      if (quitar.length) chk(await _sb.from('precios_cliente').delete().eq('cliente_id', cid).in('producto_id', quitar));
     }
 
     async function generarLista() {
@@ -1674,8 +1823,24 @@
       var btn = $('btnGenerarLista');
       btn.disabled = true;
       try {
-        var data = chk(await _sb.from('listas_generadas').insert([{ cliente_nombre: cliente, productos_ids: items }]).select());
+        var cli = null;
+        if (_clientesOk) {
+          cli = buscarClientePorNombre(cliente);
+          if (!cli) {
+            var nuevo = chk(await _sb.from('clientes').insert([{ nombre: cliente }]).select());
+            cli = nuevo && nuevo[0];
+            if (cli) { _clientes.push(cli); poblarClientes(); }
+          }
+        }
+        var fila = { cliente_nombre: cliente, productos_ids: items };
+        if (cli) fila.cliente_id = cli.id;
+        var data = chk(await _sb.from('listas_generadas').insert([fila]).select());
+        if (cli) {
+          try { await guardarPreciosCliente(cli.id, items); }
+          catch (e) { toast('La lista se guardó, pero no los precios del cliente: ' + errMsg(e), 'err'); }
+        }
         $('clienteNombre').value = '';
+        _clienteSel = null; _preciosCli = {}; _autoIds = {}; actualizarEstadoCliente();
         _sel = {}; _precios = {}; _soloSel = false; $('buscarCrear').value = '';
         actualizarSoloSelUI(); actualizarContadorSel();
         renderizarSeleccionCrear();
@@ -1684,6 +1849,238 @@
         if (data && data[0]) verListaDocumento(data[0].id);
       } catch (e) { toast('No se guardó la lista: ' + errMsg(e), 'err'); }
       finally { btn.disabled = false; }
+    }
+
+    /* ---------- clientes ---------- */
+    async function cargarClientes() {
+      try {
+        _clientes = chk(await _sb.from('clientes').select('*').order('nombre')) || [];
+        _clientesOk = true;
+        try { chk(await _sb.from('clientes').select('dias_reparto,dias_llamada,forma_pago,razon_social,cif,email,contacto,poblacion,cp').limit(1)); _diasOk = true; }
+        catch (e2) { _diasOk = false; }
+      } catch (e) {
+        _clientes = []; _clientesOk = false;
+        if (!_avisoClientes) { _avisoClientes = true; toast('Falta preparar la base de datos para clientes (script clientes.sql en Supabase).', 'err'); }
+      }
+      poblarClientes();
+      renderizarClientes();
+      if (_historico.length) renderizarHistorico();
+    }
+
+    function telWa(t) {
+      var d = String(t || '').replace(/\D/g, '');
+      if (d.indexOf('00') === 0) d = d.slice(2);
+      if (d.length === 9) d = '34' + d;   // número español sin prefijo
+      return d;
+    }
+    function buscarCliente(id) {
+      for (var i = 0; i < _clientes.length; i++) if (_clientes[i].id === id) return _clientes[i];
+      return null;
+    }
+    function nombreCliente(l) {
+      if (l.cliente_id !== undefined && l.cliente_id !== null) { var c = buscarCliente(l.cliente_id); if (c) return c.nombre; }
+      return String(l.cliente_nombre || 'Sin nombre').trim();
+    }
+
+    var DIAS_COD = ['lun', 'mar', 'mie', 'jue', 'vie', 'sab', 'dom'];
+    var DIAS_CORTO = { lun: 'Lun', mar: 'Mar', mie: 'Mié', jue: 'Jue', vie: 'Vie', sab: 'Sáb', dom: 'Dom' };
+    var DIAS_LARGO = { lun: 'Lunes', mar: 'Martes', mie: 'Miércoles', jue: 'Jueves', vie: 'Viernes', sab: 'Sábado', dom: 'Domingo' };
+    var _diasOk = false;           // false = aún no se ha ejecutado clientes-extra.sql
+    var _filtroCli = 'TODOS';      // TODOS | LLAMAR | REPARTIR
+    var _modalDias = { rep: [], lla: [] };
+
+    function codigoHoy() { return ['dom', 'lun', 'mar', 'mie', 'jue', 'vie', 'sab'][new Date().getDay()]; }
+    var _diaVer = codigoHoy();
+
+    function poblarDiasSelect() {
+      var html = '', hoy = codigoHoy();
+      for (var i = 0; i < DIAS_COD.length; i++) {
+        var c = DIAS_COD[i];
+        html += '<option value="' + c + '"' + (c === hoy ? ' selected' : '') + '>' + DIAS_LARGO[c] + (c === hoy ? ' (hoy)' : '') + '</option>';
+      }
+      $('selDiaCli').innerHTML = html;
+    }
+    function diasTxt(arr) {
+      if (!arr || !arr.length) return '';
+      return DIAS_COD.filter(function (c) { return arr.indexOf(c) !== -1; }).map(function (c) { return DIAS_CORTO[c]; }).join(', ');
+    }
+    function tieneDia(arr, cod) { return !!arr && arr.indexOf(cod) !== -1; }
+
+    function filtrarClientes(tipo, btn) {
+      var btns = document.querySelectorAll('#barraCli .cat-filter-btn');
+      for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+      if (btn) btn.classList.add('active');
+      _filtroCli = tipo;
+      renderizarClientes();
+    }
+
+    function renderizarClientes() {
+      var cont = $('listaClientesCard');
+      if (!cont) return;
+      if (!_clientesOk) {
+        cont.innerHTML = '<div style="color:var(--muted); text-align:center; padding:16px;">Aún no está preparada la base de datos para clientes. Pega el script <strong>clientes.sql</strong> en el SQL Editor de Supabase.</div>';
+        $('contCli').textContent = '';
+        return;
+      }
+      var q = ($('buscarCli').value || '').trim().toLowerCase();
+      var base = _clientes.filter(function (c) {
+        return !q || [c.nombre, c.telefono, c.cif, c.razon_social, c.poblacion, c.contacto, c.email].join(' ').toLowerCase().indexOf(q) !== -1;
+      }).sort(function (a, b) { return String(a.nombre).localeCompare(String(b.nombre), 'es', { sensitivity: 'base' }); });
+
+      // Contadores de los botones para el día elegido
+      var nLla = base.filter(function (c) { return tieneDia(c.dias_llamada, _diaVer); }).length;
+      var nRep = base.filter(function (c) { return tieneDia(c.dias_reparto, _diaVer); }).length;
+      var bs = document.querySelectorAll('#barraCli .cat-filter-btn');
+      if (bs.length === 3) {
+        bs[1].textContent = '📞 Llamar' + (_diasOk ? ' (' + nLla + ')' : '');
+        bs[2].textContent = '🚚 Repartir' + (_diasOk ? ' (' + nRep + ')' : '');
+      }
+      $('selDiaWrap').style.display = (_filtroCli === 'TODOS' || !_diasOk) ? 'none' : 'flex';
+
+      var lista = base;
+      if (_filtroCli === 'LLAMAR') lista = base.filter(function (c) { return tieneDia(c.dias_llamada, _diaVer); });
+      if (_filtroCli === 'REPARTIR') lista = base.filter(function (c) { return tieneDia(c.dias_reparto, _diaVer); });
+      var etiqueta = (_filtroCli === 'LLAMAR') ? ' para llamar el ' + DIAS_LARGO[_diaVer].toLowerCase()
+                   : (_filtroCli === 'REPARTIR') ? ' para repartir el ' + DIAS_LARGO[_diaVer].toLowerCase() : '';
+      $('contCli').textContent = lista.length + (_filtroCli === 'TODOS' ? ' de ' + _clientes.length + ' clientes' : ' cliente' + (lista.length === 1 ? '' : 's') + etiqueta);
+      if (_filtroCli !== 'TODOS' && !_diasOk) {
+        cont.innerHTML = '<div style="color:var(--muted); text-align:center; padding:16px;">Para usar los días de reparto y llamada, pega el script <strong>clientes-extra.sql</strong> en el SQL Editor de Supabase.</div>';
+        return;
+      }
+      if (lista.length === 0) {
+        cont.innerHTML = '<div style="color:var(--muted); text-align:center; padding:16px;">' + (_filtroCli !== 'TODOS' ? 'Ningún cliente tiene ese día asignado.' : (q ? 'Ningún cliente coincide.' : 'Aún no tienes clientes. Se guardan solos al generar una lista, o pulsa “Nuevo”.')) + '</div>';
+        return;
+      }
+      var cuenta = {};
+      for (var i = 0; i < _historico.length; i++) {
+        var cid = _historico[i].cliente_id;
+        if (cid !== undefined && cid !== null) cuenta[cid] = (cuenta[cid] || 0) + 1;
+      }
+      var html = '';
+      for (var j = 0; j < lista.length; j++) {
+        var c = lista[j], id = Number(c.id), n = cuenta[c.id] || 0;
+        var tel = c.telefono ? '📞 ' + esc(c.telefono) + ' · ' : '';
+        var lugar = [c.direccion, c.poblacion].filter(function (x) { return x; }).join(', ');
+        var dir = lugar ? '<div class="product-notes">📍 ' + esc(lugar) + '</div>' : '';
+        var fisc = (c.cif || c.razon_social) ? '<div class="product-notes">🧾 ' + esc([c.razon_social, c.cif].filter(function (x) { return x; }).join(' · ')) + '</div>' : '';
+        var falta = (!c.telefono && !c.direccion && !c.cif) ? '<div class="product-notes" style="color:var(--danger); font-weight:600;">⚠ Ficha incompleta</div>' : '';
+        var dr = diasTxt(c.dias_reparto), dl = diasTxt(c.dias_llamada);
+        var pago = c.forma_pago ? '<div class="product-notes">💳 ' + esc(c.forma_pago) + '</div>' : '';
+        var dias = ((dr || dl) ? '<div class="product-notes">' + (dr ? '🚚 ' + esc(dr) : '') + (dr && dl ? ' · ' : '') + (dl ? '📞 llamar ' + esc(dl) : '') + '</div>' : '') + pago;
+        var hayTel = !!telWa(c.telefono);
+        var llamar = hayTel ? '<button class="btn btn-sm btn-logout" onclick="llamarCliente(' + id + ')">📞 Llamar</button>' : '';
+        var wa = hayTel ? '<button class="btn btn-wa btn-sm" onclick="abrirWhatsApp(' + id + ')">💬 WhatsApp</button>' : '';
+        html += '<div class="product-item compact cli-row" style="margin-bottom:8px;">' +
+          '<div style="min-width:0;"><div class="product-name">👤 ' + esc(c.nombre) + '</div>' +
+          '<div class="product-notes">' + tel + n + ' lista' + (n === 1 ? '' : 's') + '</div>' + dir + fisc + dias + falta + '</div>' +
+          '<div class="cli-acciones">' +
+            '<button class="btn btn-accent btn-sm" onclick="nuevaListaCliente(' + id + ')">Nueva lista</button>' + llamar + wa +
+            '<button class="btn btn-sm btn-logout" onclick="abrirModalCliente(' + id + ')">✏️ Editar</button>' +
+          '</div></div>';
+      }
+      cont.innerHTML = html;
+    }
+
+    function llamarCliente(id) {
+      var c = buscarCliente(id);
+      if (!c || !telWa(c.telefono)) return;
+      window.location.href = 'tel:+' + telWa(c.telefono);
+    }
+
+    function abrirWhatsApp(id) {
+      var c = buscarCliente(id);
+      if (!c || !telWa(c.telefono)) return;
+      window.open('https://wa.me/' + telWa(c.telefono), '_blank');
+    }
+
+    function nuevaListaCliente(id) {
+      var c = buscarCliente(id);
+      if (!c) return;
+      _sel = {}; _precios = {}; _autoIds = {}; _clienteSel = null; _preciosCli = {};
+      _soloSel = false; actualizarSoloSelUI();
+      $('buscarCrear').value = '';
+      $('clienteNombre').value = c.nombre;
+      switchTab('tabCrear');
+      actualizarContadorSel();
+      clienteCambiado();
+    }
+
+    function pintarDias(cont, sel, tipo) {
+      var html = '';
+      for (var i = 0; i < DIAS_COD.length; i++) {
+        var c = DIAS_COD[i];
+        html += '<button type="button" class="chip-dia' + (sel.indexOf(c) !== -1 ? ' on' : '') + '" onclick="toggleDia(\'' + tipo + '\', \'' + c + '\')">' + DIAS_CORTO[c] + '</button>';
+      }
+      $(cont).innerHTML = html;
+    }
+    function toggleDia(tipo, cod) {
+      var arr = _modalDias[tipo], i = arr.indexOf(cod);
+      if (i === -1) arr.push(cod); else arr.splice(i, 1);
+      pintarDias(tipo === 'rep' ? 'diasReparto' : 'diasLlamada', arr, tipo);
+    }
+
+    function abrirModalCliente(id) {
+      var c = id ? buscarCliente(id) : null;
+      $('cliId').value = c ? c.id : '';
+      $('cliNombre').value = c ? c.nombre : '';
+      $('cliTelefono').value = c ? (c.telefono || '') : '';
+      $('cliDireccion').value = c ? (c.direccion || '') : '';
+      $('cliNotas').value = c ? (c.notas || '') : '';
+      $('cliTitulo').textContent = c ? '✏️ Editar cliente' : '➕ Nuevo cliente';
+      $('btnBorrarCliente').style.display = c ? '' : 'none';
+      _modalDias = { rep: (c && c.dias_reparto) ? c.dias_reparto.slice() : [], lla: (c && c.dias_llamada) ? c.dias_llamada.slice() : [] };
+      $('cliPago').value = c ? (c.forma_pago || '') : '';
+      var campos = { cliContacto: 'contacto', cliEmail: 'email', cliRazon: 'razon_social', cliCif: 'cif', cliPoblacion: 'poblacion', cliCp: 'cp' }, hayDatos = false;
+      for (var idc in campos) { var v = c ? (c[campos[idc]] || '') : ''; $(idc).value = v; if (v) hayDatos = true; }
+      $('detFicha').open = hayDatos;
+      $('bloqueFicha').style.display = _diasOk ? '' : 'none';
+      $('bloqueDias').style.display = _diasOk ? '' : 'none';
+      $('avisoDias').style.display = _diasOk ? 'none' : '';
+      pintarDias('diasReparto', _modalDias.rep, 'rep');
+      pintarDias('diasLlamada', _modalDias.lla, 'lla');
+      $('modalCliente').style.display = 'flex';
+    }
+    function cerrarModalCliente() { $('modalCliente').style.display = 'none'; }
+
+    async function guardarCliente() {
+      var id = parseInt($('cliId').value, 10) || 0;
+      var datos = {
+        nombre: $('cliNombre').value.trim(),
+        telefono: $('cliTelefono').value.trim(),
+        direccion: $('cliDireccion').value.trim(),
+        notas: $('cliNotas').value.trim()
+      };
+      if (_diasOk) { datos.dias_reparto = _modalDias.rep; datos.dias_llamada = _modalDias.lla; datos.forma_pago = $('cliPago').value;
+        datos.contacto = $('cliContacto').value.trim(); datos.email = $('cliEmail').value.trim();
+        datos.razon_social = $('cliRazon').value.trim(); datos.cif = $('cliCif').value.trim().toUpperCase();
+        datos.poblacion = $('cliPoblacion').value.trim(); datos.cp = $('cliCp').value.trim();
+      }
+      if (!datos.nombre) { toast('Escribe el nombre del cliente.', 'err'); return; }
+      var dup = buscarClientePorNombre(datos.nombre);
+      if (dup && dup.id !== id) { toast('Ya existe un cliente con ese nombre.', 'err'); return; }
+      var btn = $('btnGuardarCliente');
+      btn.disabled = true;
+      try {
+        if (id) chk(await _sb.from('clientes').update(datos).eq('id', id));
+        else chk(await _sb.from('clientes').insert([datos]));
+        cerrarModalCliente();
+        await cargarClientes();
+        toast('Cliente guardado.');
+      } catch (e) { toast('No se guardó el cliente: ' + errMsg(e), 'err'); }
+      finally { btn.disabled = false; }
+    }
+
+    async function borrarCliente() {
+      var id = parseInt($('cliId').value, 10) || 0;
+      if (!id) return;
+      if (!confirm('¿Borrar este cliente y sus precios especiales? Sus listas ya generadas se conservan.')) return;
+      try {
+        chk(await _sb.from('clientes').delete().eq('id', id));
+        cerrarModalCliente();
+        await cargarClientes();
+        await cargarHistorico();
+        toast('Cliente borrado.');
+      } catch (e) { toast('No se pudo borrar: ' + errMsg(e), 'err'); }
     }
 
     /* ---------- historial ---------- */
@@ -1697,9 +2094,10 @@
     async function cargarHistorico() {
       var container = $('listaHistoricoCard');
       try {
-        var data = chk(await _sb.from('listas_generadas').select('id,cliente_nombre,fecha,productos_ids').order('id', { ascending: false }));
+        var data = chk(await _sb.from('listas_generadas').select('*').order('id', { ascending: false }));
         _historico = data || [];
         poblarClientes();
+        renderizarClientes();
         renderizarHistorico();
       } catch (e) {
         container.innerHTML = '<div style="color:var(--danger); text-align:center; padding:12px;">No se pudo cargar el historial.</div>';
@@ -1710,8 +2108,9 @@
     // Sugerencias de clientes al escribir el nombre en "Crear lista"
     function poblarClientes() {
       var vistos = {}, nombres = [];
-      for (var i = 0; i < _historico.length; i++) {
-        var n = String(_historico[i].cliente_nombre || '').trim(), k = claveCliente(n);
+      var fuentes = _clientes.map(function (c) { return c.nombre; }).concat(_historico.map(function (l) { return nombreCliente(l); }));
+      for (var i = 0; i < fuentes.length; i++) {
+        var n = String(fuentes[i] || '').trim(), k = claveCliente(n);
         if (n && !vistos[k]) { vistos[k] = true; nombres.push(n); }
       }
       nombres.sort(function (a, b) { return a.localeCompare(b, 'es', { sensitivity: 'base' }); });
@@ -1723,9 +2122,10 @@
       var q = ($('buscarHist').value || '').trim().toLowerCase();
       var grupos = [], mapa = {};
       for (var i = 0; i < _historico.length; i++) {
-        var l = _historico[i], k = claveCliente(l.cliente_nombre);
-        if (q && k.indexOf(q) === -1) continue;
-        if (!mapa[k]) { mapa[k] = { key: k, nombre: String(l.cliente_nombre || 'Sin nombre').trim(), listas: [] }; grupos.push(mapa[k]); }
+        var l = _historico[i], nom = nombreCliente(l);
+        var k = (l.cliente_id !== undefined && l.cliente_id !== null) ? 'c' + l.cliente_id : 'n' + claveCliente(nom);
+        if (q && claveCliente(nom).indexOf(q) === -1) continue;
+        if (!mapa[k]) { mapa[k] = { key: k, nombre: nom, listas: [] }; grupos.push(mapa[k]); }
         mapa[k].listas.push(l);   // _historico viene de la más nueva a la más antigua
       }
       $('contHist').textContent = grupos.length + ' cliente' + (grupos.length === 1 ? '' : 's') + ' · ' + _historico.length + ' listas en total';
