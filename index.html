@@ -2,17 +2,18 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>El Ancla | Catálogo Pro</title>
-  
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
   <style>
+
     :root {
       --bg: #f8fafc;
       --card: #ffffff;
@@ -606,23 +607,84 @@
       .page-a4:last-child { page-break-after: avoid !important; break-after: avoid !important; }
       .page-a4-wrapper { overflow: visible; }
     }
+  
+
+    /* ===== AÑADIDOS V2 ===== */
+    input[type="email"], input[type="password"], input[type="search"] {
+      width: 100%; padding: 12px 16px; border-radius: 10px;
+      border: 1px solid var(--border); background: #f8fafc;
+      color: var(--primary); font-family: inherit;
+    }
+    /* 16px evita que el iPhone haga zoom automático al escribir */
+    input, select { font-size: 16px !important; }
+    input[type="checkbox"] { width: auto; }
+
+    .login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .login-card { width: 100%; max-width: 380px; background: #fff; border: 1px solid var(--border); border-radius: 16px; padding: 28px; }
+    .login-error { color: var(--danger); font-size: 13px; min-height: 18px; margin-bottom: 10px; }
+
+    .toast {
+      position: fixed; left: 50%; bottom: 90px; transform: translateX(-50%) translateY(20px);
+      max-width: 90%; padding: 12px 18px; border-radius: 10px; color: #fff;
+      font-size: 14px; font-weight: 600; opacity: 0; pointer-events: none;
+      transition: all .25s; z-index: 5000; background: var(--primary); text-align: center;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .toast.ok { background: var(--success); }
+    .toast.err { background: var(--danger); }
+
+    .nav-item { flex: 1; width: auto; padding: 0 2px; font-family: inherit; cursor: pointer; }
+    .nav-item .ni { font-size: 19px; }
+    .btn-logout { background: #f1f5f9; color: var(--muted); }
+    .btn-wa { background: #25d366; color: #fff; }
+    .search-box { margin-bottom: 14px; }
+
+    body.modo-public .no-client-view { display: none !important; }
+    body.modo-public .tab-content:not(#tabClienteView) { display: none !important; }
+
+    @media (max-width: 767px) {
+      .top-bar { justify-content: space-between; padding: 10px 14px; }
+    }
   </style>
 </head>
 <body>
 
-  <div class="top-bar no-print">
-    <div class="brand-title">EL ANCLA</div>
-    <div class="web-nav" id="adminWebNav">
-      <button class="web-nav-btn active" onclick="switchTab('tabCatalogo')">📦 Productos</button>
-      <button class="web-nav-btn" onclick="switchTab('tabCrear')">📝 Crear Lista</button>
-      <button class="web-nav-btn" onclick="switchTab('tabHistorial')">📜 Histórico</button>
-      <button class="web-nav-btn" onclick="switchTab('tabCaja')">💰 Caja & 3%</button>
-      <button class="web-nav-btn" onclick="switchTab('tabClienteView')">🌐 Vista Cliente</button>
-      <button class="web-nav-btn" onclick="switchTab('tabAjustes')">⚙️ Empresa</button>
-    </div>
+  <div id="toast" class="toast no-print"></div>
+
+  <!-- PANTALLA DE ACCESO -->
+  <div id="loginScreen" class="login-screen no-print" style="display:none;">
+    <form class="login-card" onsubmit="return iniciarSesion(event)">
+      <div class="client-hero-title">EL ANCLA</div>
+      <div class="client-hero-subtitle">Acceso privado</div>
+      <div class="field">
+        <label for="loginEmail">Email</label>
+        <input type="email" id="loginEmail" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="loginPass">Contraseña</label>
+        <input type="password" id="loginPass" autocomplete="current-password" required>
+      </div>
+      <div id="loginError" class="login-error"></div>
+      <button type="submit" id="btnLogin" class="btn btn-accent">Entrar</button>
+    </form>
   </div>
 
-  <div class="container no-print">
+  <div class="top-bar no-print" id="topBar" style="display:none;">
+    <div class="brand-title" id="brandTitle">EL ANCLA</div>
+    <div class="web-nav" id="adminWebNav">
+      <button class="web-nav-btn active" data-tab="tabCatalogo" onclick="switchTab('tabCatalogo')">📦 Productos</button>
+      <button class="web-nav-btn" data-tab="tabCrear" onclick="switchTab('tabCrear')">📝 Crear Lista</button>
+      <button class="web-nav-btn" data-tab="tabHistorial" onclick="switchTab('tabHistorial')">📜 Histórico</button>
+      <button class="web-nav-btn" data-tab="tabCaja" onclick="switchTab('tabCaja')">💰 Caja &amp; Comisión</button>
+      <button class="web-nav-btn" data-tab="tabClienteView" onclick="switchTab('tabClienteView')">🌐 Vista Cliente</button>
+      <button class="web-nav-btn" data-tab="tabAjustes" onclick="switchTab('tabAjustes')">⚙️ Empresa</button>
+    </div>
+    <button class="btn btn-sm btn-logout" onclick="cerrarSesion()">Salir</button>
+  </div>
+
+  <div class="container no-print" id="mainContainer" style="display:none;">
+
+    <!-- PRODUCTOS -->
     <div id="tabCatalogo" class="tab-content active">
       <div class="grid-layout">
         <div class="card">
@@ -644,7 +706,7 @@
           </div>
           <div class="field">
             <label>Precio Base (€)</label>
-            <input type="number" step="0.01" id="prodPrecio" placeholder="12.50">
+            <input type="number" step="0.01" inputmode="decimal" id="prodPrecio" placeholder="12.50">
           </div>
           <div class="field">
             <label>Observaciones / Descripción (Opcional)</label>
@@ -660,23 +722,31 @@
 
         <div class="card">
           <div class="card-header">📦 Productos Registrados</div>
+          <div class="search-box">
+            <input type="search" id="buscarProd" placeholder="🔎 Buscar producto..." oninput="renderizarListaProductos()">
+          </div>
           <div id="listaProductosCard" class="product-grid">Cargando datos...</div>
         </div>
       </div>
     </div>
 
-    <!-- PESTAÑA VISTA CLIENTE (EDITORIAL / PÚBLICA / SIN PRECIO) -->
+    <!-- VISTA CLIENTE (pública, sin precios) -->
     <div id="tabClienteView" class="tab-content">
       <div style="background:#ffffff; border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;" class="no-client-view">
         <div>
           <strong style="color:var(--primary); font-size:14px;">🌐 Vista Previa del Catálogo Público:</strong>
           <div style="font-size:12px; color:var(--muted);">Así verán tus clientes los productos. Sin precios y con imágenes ampliables.</div>
         </div>
-        <button onclick="copiarEnlaceCliente()" class="btn btn-accent btn-sm">📋 Copiar Enlace para WhatsApp</button>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button onclick="enviarEnlaceWhatsApp()" class="btn btn-wa btn-sm">💬 Enviar por WhatsApp</button>
+          <button onclick="copiarEnlaceCliente()" class="btn btn-accent btn-sm">📋 Copiar enlace</button>
+        </div>
       </div>
 
-      <div class="client-hero-title">EL ANCLA</div>
-      <div class="client-hero-subtitle">Selección de Género & Productos Frescos</div>
+      <div id="clientLogo" style="text-align:center;"></div>
+      <div class="client-hero-title" id="clientTitle">EL ANCLA</div>
+      <div class="client-hero-subtitle">Selección de Género &amp; Productos Frescos</div>
+      <div id="clientContacto" style="text-align:center; font-size:13px; color:var(--muted); margin-bottom:16px;"></div>
 
       <div class="client-cat-bar">
         <button class="client-cat-btn active" onclick="filtrarCliente('TODAS', this)">Todas las categorías</button>
@@ -691,6 +761,7 @@
       <div id="editorialGrid" class="editorial-grid">Cargando catálogo...</div>
     </div>
 
+    <!-- CREAR LISTA -->
     <div id="tabCrear" class="tab-content">
       <div class="card">
         <div class="card-header">🚀 Nueva Lista de Precios</div>
@@ -703,20 +774,21 @@
           Filtrar categoría:
         </div>
         <div class="cat-filter-bar">
-          <button class="cat-filter-btn active" onclick="filtrarPestañaCrear('TODAS', this)">Todas</button>
-          <button class="cat-filter-btn" onclick="filtrarPestañaCrear('Marisco', this)">🦐 Marisco</button>
-          <button class="cat-filter-btn" onclick="filtrarPestañaCrear('Pescados', this)">🐟 Pescados</button>
-          <button class="cat-filter-btn" onclick="filtrarPestañaCrear('Carnes', this)">🥩 Carnes</button>
-          <button class="cat-filter-btn" onclick="filtrarPestañaCrear('Verduras', this)">🥬 Verduras</button>
-          <button class="cat-filter-btn" onclick="filtrarPestañaCrear('Precocinados', this)">🧆 Precocinados</button>
-          <button class="cat-filter-btn" onclick="filtrarPestañaCrear('Varios', this)">📦 Varios</button>
+          <button class="cat-filter-btn active" onclick="filtrarPestanaCrear('TODAS', this)">Todas</button>
+          <button class="cat-filter-btn" onclick="filtrarPestanaCrear('Marisco', this)">🦐 Marisco</button>
+          <button class="cat-filter-btn" onclick="filtrarPestanaCrear('Pescados', this)">🐟 Pescados</button>
+          <button class="cat-filter-btn" onclick="filtrarPestanaCrear('Carnes', this)">🥩 Carnes</button>
+          <button class="cat-filter-btn" onclick="filtrarPestanaCrear('Verduras', this)">🥬 Verduras</button>
+          <button class="cat-filter-btn" onclick="filtrarPestanaCrear('Precocinados', this)">🧆 Precocinados</button>
+          <button class="cat-filter-btn" onclick="filtrarPestanaCrear('Varios', this)">📦 Varios</button>
         </div>
 
         <div id="listaSeleccionProductos">Buscando productos...</div>
-        <button onclick="generarLista()" class="btn btn-accent" style="margin-top: 24px;">💾 Generar Lista de Precios</button>
+        <button id="btnGenerarLista" onclick="generarLista()" class="btn btn-accent" style="margin-top: 24px;">💾 Generar Lista de Precios</button>
       </div>
     </div>
 
+    <!-- HISTORIAL -->
     <div id="tabHistorial" class="tab-content">
       <div class="card">
         <div class="card-header">📜 Listas Guardadas</div>
@@ -724,23 +796,24 @@
       </div>
     </div>
 
+    <!-- CAJA -->
     <div id="tabCaja" class="tab-content">
       <div class="card">
-        <div class="card-header">💰 Control Diario de Cobros & Comisión (3%)</div>
+        <div class="card-header">💰 Control Diario de Cobros &amp; Comisión (<span class="pctTxt">3</span>%)</div>
         <div style="background: #e2e8f0; padding: 14px 16px; border-radius: 12px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
           <div style="flex: 1; min-width: 220px;">
             <label for="selectMesCaja" style="font-size: 11px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 6px; display: block;">📅 Seleccionar Mes:</label>
-            <select id="selectMesCaja" onchange="cargarRegistrosCaja()" style="background: #ffffff; font-weight: 700; color: var(--primary);"></select>
+            <select id="selectMesCaja" onchange="cargarCaja()" style="background: #ffffff; font-weight: 700; color: var(--primary);"></select>
           </div>
         </div>
 
         <div class="caja-stats-grid">
           <div class="stat-box">
-            <div class="label" id="labelTotalCobrado">Total Cobrado</div>
+            <div class="label">Total Cobrado</div>
             <div class="value" id="statTotalCobrado">0.00 €</div>
           </div>
           <div class="stat-box highlight">
-            <div class="label" id="labelTotalComision">Tu Comisión 3%</div>
+            <div class="label">Tu Comisión <span class="pctTxt">3</span>%</div>
             <div class="value" id="statTotalComision">0.00 €</div>
           </div>
         </div>
@@ -751,12 +824,12 @@
           </div>
           <div class="grid-layout" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
             <div class="field" style="margin:0;"><label>Fecha del Cobro</label><input type="date" id="cajaFecha"></div>
-            <div class="field" style="margin:0;"><label>Efectivo (€)</label><input type="number" step="0.01" id="cajaEfectivo" placeholder="0.00" value="0.00"></div>
-            <div class="field" style="margin:0;"><label>Bizum (€)</label><input type="number" step="0.01" id="cajaBizum" placeholder="0.00" value="0.00"></div>
-            <div class="field" style="margin:0;"><label>Transferencia (€)</label><input type="number" step="0.01" id="cajaTransferencia" placeholder="0.00" value="0.00"></div>
+            <div class="field" style="margin:0;"><label>Efectivo (€)</label><input type="number" step="0.01" inputmode="decimal" id="cajaEfectivo" placeholder="0.00" value="0.00"></div>
+            <div class="field" style="margin:0;"><label>Bizum (€)</label><input type="number" step="0.01" inputmode="decimal" id="cajaBizum" placeholder="0.00" value="0.00"></div>
+            <div class="field" style="margin:0;"><label>Transferencia (€)</label><input type="number" step="0.01" inputmode="decimal" id="cajaTransferencia" placeholder="0.00" value="0.00"></div>
           </div>
           <div class="field" style="margin-top: 12px; margin-bottom: 12px;"><label>Nota / Comentario (Opcional)</label><input type="text" id="cajaNota" placeholder="Ej: Cobro clientes zona norte"></div>
-          <button onclick="guardarRegistroCaja()" class="btn btn-success">💾 Guardar Cobro del Día</button>
+          <button id="btnGuardarCaja" onclick="guardarRegistroCaja()" class="btn btn-success">💾 Guardar Cobro del Día</button>
         </div>
 
         <div style="font-family: 'Oswald', sans-serif; font-size: 16px; color: var(--primary); margin-bottom: 12px; text-transform: uppercase;">📅 Cobros del Mes Seleccionado</div>
@@ -764,12 +837,14 @@
       </div>
     </div>
 
+    <!-- EMPRESA -->
     <div id="tabAjustes" class="tab-content">
       <div class="card">
         <div class="card-header">⚙️ Configuración de Empresa</div>
         <div class="field"><label>Nombre de la Empresa</label><input type="text" id="cfgEmpresa" placeholder="Ej: EL ANCLA"></div>
         <div class="field"><label>Nombre del Comercial / Agente</label><input type="text" id="cfgComercial" placeholder="Ej: Désirée Guerrero"></div>
         <div class="field"><label>Teléfono / WhatsApp</label><input type="text" id="cfgTelefono" placeholder="Ej: 600 000 000"></div>
+        <div class="field"><label>Tu comisión (%)</label><input type="number" step="0.1" inputmode="decimal" id="cfgComision" placeholder="3"></div>
         <div class="field">
           <label>Logo de la Empresa (Imagen)</label>
           <input type="file" id="cfgLogoFile" accept="image/*" onchange="procesarImagen(this, 'cfgLogoBase64')">
@@ -780,16 +855,16 @@
           <input type="checkbox" id="cfgMarcaAgua" style="width:20px; height:20px;">
           <label for="cfgMarcaAgua" style="margin:0; text-transform:none; font-size:14px; cursor:pointer;">Usar logo como <strong>Marca de Agua centrada</strong>.</label>
         </div>
-        <button id="btnGuardarCfg" onclick="guardarConfiguracionSupabase()" class="btn btn-accent" style="margin-top:16px;">💾 Guardar Ajustes en Supabase</button>
+        <button id="btnGuardarCfg" onclick="guardarConfiguracion()" class="btn btn-accent" style="margin-top:16px;">💾 Guardar Ajustes</button>
       </div>
     </div>
   </div>
 
-  <!-- LIGHTBOX EDITORIAL FOTO GRANDE CLIENTE -->
+  <!-- LIGHTBOX FOTO GRANDE -->
   <div id="editorialLightbox" class="editorial-lightbox" onclick="cerrarFotoGrande()">
     <div class="editorial-lightbox-content" onclick="event.stopPropagation()">
       <button class="editorial-lightbox-close" onclick="cerrarFotoGrande()">&times;</button>
-      <img id="lightboxImg" class="editorial-lightbox-img" src="">
+      <img id="lightboxImg" class="editorial-lightbox-img" src="" alt="">
       <div class="editorial-lightbox-info">
         <div id="lightboxCat" class="editorial-cat"></div>
         <div id="lightboxTitle" class="editorial-title" style="font-size:18px;"></div>
@@ -798,12 +873,12 @@
     </div>
   </div>
 
-  <!-- VENTANA MODAL PARA EDITAR PRODUCTOS -->
-  <div id="modalEditarProducto" class="modal-overlay">
+  <!-- MODAL EDITAR PRODUCTO -->
+  <div id="modalEditarProducto" class="modal-overlay no-print">
     <div class="modal-card">
       <div class="card-header" style="margin-bottom: 14px;">✏️ Editar Producto</div>
       <input type="hidden" id="editProdId">
-      
+
       <div class="field">
         <label>Familia / Categoría</label>
         <select id="editProdCategoria">
@@ -815,22 +890,9 @@
           <option value="Varios">📦 Varios</option>
         </select>
       </div>
-
-      <div class="field">
-        <label>Nombre del Producto</label>
-        <input type="text" id="editProdNombre">
-      </div>
-
-      <div class="field">
-        <label>Precio Base (€)</label>
-        <input type="number" step="0.01" id="editProdPrecio">
-      </div>
-
-      <div class="field">
-        <label>Observaciones / Descripción</label>
-        <input type="text" id="editProdNotas">
-      </div>
-
+      <div class="field"><label>Nombre del Producto</label><input type="text" id="editProdNombre"></div>
+      <div class="field"><label>Precio Base (€)</label><input type="number" step="0.01" inputmode="decimal" id="editProdPrecio"></div>
+      <div class="field"><label>Observaciones / Descripción</label><input type="text" id="editProdNotas"></div>
       <div class="field">
         <label>Cambiar Foto (Opcional)</label>
         <input type="file" id="editProdArchivoFoto" accept="image/*" onchange="procesarImagen(this, 'editProdFotoBase64')">
@@ -840,17 +902,18 @@
 
       <div style="display: flex; gap: 10px; margin-top: 20px;">
         <button onclick="cerrarModalEditar()" class="btn btn-danger" style="flex: 1;">Cancelar</button>
-        <button onclick="actualizarProductoSupabase()" class="btn btn-success" style="flex: 1;">💾 Guardar Cambios</button>
+        <button id="btnActualizarProd" onclick="actualizarProducto()" class="btn btn-success" style="flex: 1;">💾 Guardar Cambios</button>
       </div>
     </div>
   </div>
 
-  <div class="nav-bar no-print" id="adminBottomNav">
-    <button class="nav-item active" onclick="switchTab('tabCatalogo')"><span>📦 Productos</span></button>
-    <button class="nav-item" onclick="switchTab('tabCrear')"><span>📝 Crear</span></button>
-    <button class="nav-item" onclick="switchTab('tabHistorial')"><span>📜 Historial</span></button>
-    <button class="nav-item" onclick="switchTab('tabCaja')"><span>💰 Caja 3%</span></button>
-    <button class="nav-item" onclick="switchTab('tabClienteView')"><span>🌐 Cliente</span></button>
+  <div class="nav-bar no-print" id="adminBottomNav" style="display:none;">
+    <button class="nav-item active" data-tab="tabCatalogo" onclick="switchTab('tabCatalogo')"><span class="ni">📦</span><span>Productos</span></button>
+    <button class="nav-item" data-tab="tabCrear" onclick="switchTab('tabCrear')"><span class="ni">📝</span><span>Crear</span></button>
+    <button class="nav-item" data-tab="tabHistorial" onclick="switchTab('tabHistorial')"><span class="ni">📜</span><span>Historial</span></button>
+    <button class="nav-item" data-tab="tabCaja" onclick="switchTab('tabCaja')"><span class="ni">💰</span><span>Caja</span></button>
+    <button class="nav-item" data-tab="tabClienteView" onclick="switchTab('tabClienteView')"><span class="ni">🌐</span><span>Cliente</span></button>
+    <button class="nav-item" data-tab="tabAjustes" onclick="switchTab('tabAjustes')"><span class="ni">⚙️</span><span>Empresa</span></button>
   </div>
 
   <div id="vistaDocumento" style="display:none; padding: 10px;">
@@ -858,7 +921,8 @@
       <button onclick="cerrarVistaDocumento()" class="btn btn-sm" style="background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1;">⬅️ Volver Atrás</button>
       <div>
         <button onclick="window.print()" class="btn btn-sm" style="background:#0f172a; color:#ffffff;">🖨️ Imprimir</button>
-        <button onclick="descargarPDF()" class="btn btn-accent btn-sm">📄 Descargar PDF</button>
+        <button id="btnCompartirPDF" onclick="compartirPDF()" class="btn btn-wa btn-sm">📤 Compartir</button>
+        <button id="btnDescargarPDF" onclick="descargarPDF()" class="btn btn-accent btn-sm">📄 Descargar PDF</button>
       </div>
     </div>
     <div class="page-a4-wrapper" id="contenedorPaginasA4"></div>
@@ -866,233 +930,423 @@
 
   <script>
     var SUPABASE_URL = 'https://fllcmidfhpgczjvnvuho.supabase.co';
-    var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsbGNtaWRmaHBnY3pqdm52dWhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMDM0MDIsImV4cCI6MjEwNjc3OTQwMn0.pHENTLosOxgknz7tCMRtjBm9SYDJaLCbtwyrO1kkbkY'; 
-    
-    var _supabase = null;
-    var _productosCache = [];
-    var _configCache = { empresa: 'EL ANCLA', comercial: '', telefono: '', logo: '', es_marca_agua: false };
+    var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZsbGNtaWRmaHBnY3pqdm52dWhvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMDM0MDIsImV4cCI6MjEwNjc3OTQwMn0.pHENTLosOxgknz7tCMRtjBm9SYDJaLCbtwyrO1kkbkY';
+
+    var _sb = null;
+    var _mode = 'login';           // 'login' | 'admin' | 'public'
+    var _productosCache = [];      // admin: con precios
+    var _catalogo = [];            // vista cliente: SIN precios
+    var _cfg = { empresa: 'EL ANCLA', comercial: '', telefono: '', logo: '', es_marca_agua: false, comision: 3 };
     var _clienteActual = '';
+    var _filtroCliente = 'TODAS';
+    var _filtroCrear = 'TODAS';
+    var _sel = {};                 // productos marcados en "Crear lista"
+    var _precios = {};             // precios editados en "Crear lista"
     var _categoriasOrden = ['Marisco', 'Pescados', 'Carnes', 'Verduras', 'Precocinados', 'Varios'];
     var _nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+    var _toastTimer = null;
 
-    window.addEventListener('load', function() {
-      var hoy = new Date().toISOString().split('T')[0];
-      var inputFecha = document.getElementById('cajaFecha');
-      if (inputFecha) inputFecha.value = hoy;
+    /* ---------- utilidades ---------- */
+    function $(id) { return document.getElementById(id); }
+
+    // Convierte texto en texto seguro para meter en HTML (evita inyección de código)
+    function esc(s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+    // Solo permite imágenes en base64 o https
+    function imgSrc(u) {
+      u = String(u || '');
+      return /^(data:image\/(png|jpe?g|webp|gif);base64,|https:\/\/)/i.test(u) ? esc(u) : '';
+    }
+    function num(v) { var n = parseFloat(v); return isNaN(n) ? 0 : n; }
+    function pick(a, b) { return (a !== undefined && a !== null) ? a : b; }
+    function pad2(n) { return String(n).padStart(2, '0'); }
+    // Fecha de HOY en hora local (no UTC)
+    function hoyLocal() {
+      var d = new Date();
+      return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+    }
+    function fmtFechaISO(s) {
+      var p = String(s || '').substring(0, 10).split('-');
+      if (p.length !== 3) return esc(s);
+      return parseInt(p[2], 10) + '/' + parseInt(p[1], 10) + '/' + p[0].slice(2);
+    }
+    function toast(msg, tipo) {
+      var t = $('toast');
+      t.textContent = msg;
+      t.className = 'toast no-print show ' + (tipo || 'ok');
+      clearTimeout(_toastTimer);
+      _toastTimer = setTimeout(function () { t.className = 'toast no-print'; }, tipo === 'err' ? 6000 : 2500);
+    }
+    // Si Supabase devuelve error, lo lanzamos para que se muestre al usuario
+    function chk(res) {
+      if (res && res.error) throw res.error;
+      return res ? res.data : null;
+    }
+    function errMsg(e) { return (e && e.message) ? e.message : 'Error de conexión'; }
+    function pctComision() { var p = parseFloat(_cfg.comision); return isNaN(p) ? 3 : p; }
+
+    /* ---------- arranque ---------- */
+    window.addEventListener('load', async function () {
+      $('cajaFecha').value = hoyLocal();
       poblarDesplegableMeses();
 
-      var urlParams = new URLSearchParams(window.location.search);
-      var esModoCliente = urlParams.get('modo') === 'cliente';
+      if (!window.supabase) {
+        document.body.innerHTML = '<div style="padding:40px;text-align:center;font-family:sans-serif;">No se pudo cargar la aplicación. Revisa tu conexión a internet y recarga la página.</div>';
+        return;
+      }
+      _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-      iniciarAplicacion(esModoCliente);
+      _sb.auth.onAuthStateChange(function (event) {
+        if (event === 'SIGNED_OUT' && _mode === 'admin') setMode('login');
+      });
+
+      var modo = new URLSearchParams(window.location.search).get('modo');
+      if (modo === 'cliente') { iniciarPublico(); return; }
+
+      try {
+        var s = await _sb.auth.getSession();
+        if (s.data && s.data.session) iniciarAdmin(); else setMode('login');
+      } catch (e) { setMode('login'); }
     });
 
     function poblarDesplegableMeses() {
-      var select = document.getElementById('selectMesCaja');
-      if (!select) return;
+      var select = $('selectMesCaja');
       select.innerHTML = '';
-      var fechaRef = new Date();
+      var hoy = new Date();
+      var anio = hoy.getFullYear(), mes = hoy.getMonth();
       for (var i = 0; i < 12; i++) {
-        var anio = fechaRef.getFullYear();
-        var mesNum = fechaRef.getMonth();
-        var mesVal = anio + '-' + String(mesNum + 1).padStart(2, '0');
-        var mesTexto = _nombresMeses[mesNum] + ' ' + anio;
         var opt = document.createElement('option');
-        opt.value = mesVal;
-        opt.textContent = mesTexto + (i === 0 ? ' (Mes en curso)' : '');
+        opt.value = anio + '-' + pad2(mes + 1);
+        opt.textContent = _nombresMeses[mes] + ' ' + anio + (i === 0 ? ' (Mes en curso)' : '');
         select.appendChild(opt);
-        fechaRef.setMonth(fechaRef.getMonth() - 1);
+        mes--;
+        if (mes < 0) { mes = 11; anio--; }
       }
     }
 
-    function iniciarAplicacion(esModoCliente) {
-      try {
-        if (window.supabase) {
-          _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        } else {
-          return;
-        }
-        cargarConfiguracionSupabase();
-        cargarProductos();
-        cargarHistoricoListas();
-        cargarRegistrosCaja();
+    function setMode(m) {
+      _mode = m;
+      $('loginScreen').style.display = (m === 'login') ? 'flex' : 'none';
+      $('topBar').style.display = (m === 'admin') ? 'flex' : 'none';
+      $('adminBottomNav').style.display = (m === 'admin') ? '' : 'none';
+      $('mainContainer').style.display = (m === 'login') ? 'none' : '';
+      $('vistaDocumento').style.display = 'none';
+      document.body.classList.toggle('modo-public', m === 'public');
+    }
 
-        if (esModoCliente) {
-          activarModoClienteEstricto();
-        }
+    /* ---------- acceso ---------- */
+    async function iniciarSesion(ev) {
+      if (ev) ev.preventDefault();
+      var btn = $('btnLogin');
+      $('loginError').textContent = '';
+      btn.disabled = true; btn.textContent = 'Entrando...';
+      try {
+        var r = await _sb.auth.signInWithPassword({
+          email: $('loginEmail').value.trim(),
+          password: $('loginPass').value
+        });
+        if (r.error) throw r.error;
+        $('loginPass').value = '';
+        iniciarAdmin();
+      } catch (e) {
+        var m = errMsg(e);
+        $('loginError').textContent = /invalid/i.test(m) ? 'Email o contraseña incorrectos.' : 'No se pudo entrar: ' + m;
+      } finally {
+        btn.disabled = false; btn.textContent = 'Entrar';
+      }
+      return false;
+    }
+
+    async function cerrarSesion() {
+      try { await _sb.auth.signOut(); } catch (e) {}
+      _productosCache = []; _catalogo = []; _sel = {}; _precios = {};
+      setMode('login');
+    }
+
+    async function iniciarAdmin() {
+      setMode('admin');
+      switchTab('tabCatalogo');
+      await cargarConfiguracion();   // primero: la caja necesita tu % de comisión
+      await Promise.all([cargarProductos(), cargarHistorico(), cargarCaja()]);
+    }
+
+    // Modo cliente: solo lee las vistas públicas (sin precios)
+    async function iniciarPublico() {
+      setMode('public');
+      switchTab('tabClienteView');
+      try {
+        var cat = await _sb.from('catalogo_publico').select('*').order('nombre');
+        _catalogo = chk(cat) || [];
+      } catch (e) {
+        $('editorialGrid').innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--muted);padding:40px;">No se pudo cargar el catálogo. Inténtalo de nuevo en unos minutos.</div>';
+        return;
+      }
+      renderizarGridCliente();
+      try {
+        var c = await _sb.from('configuracion_publica').select('*').maybeSingle();
+        if (c.data) aplicarConfigPublica(c.data);
       } catch (e) {}
     }
 
-    function activarModoClienteEstricto() {
-      document.getElementById('adminWebNav').style.display = 'none';
-      document.getElementById('adminBottomNav').style.display = 'none';
-      var elementsNoClient = document.querySelectorAll('.no-client-view');
-      for (var i = 0; i < elementsNoClient.length; i++) elementsNoClient[i].style.display = 'none';
-      switchTab('tabClienteView');
+    function aplicarConfigPublica(c) {
+      var nombre = c.empresa || 'EL ANCLA';
+      $('clientTitle').textContent = nombre;
+      document.title = nombre + ' | Catálogo';
+      var logo = imgSrc(c.logo);
+      $('clientLogo').innerHTML = logo ? '<img src="' + logo + '" alt="" style="max-height:70px;max-width:180px;object-fit:contain;margin-bottom:8px;">' : '';
+      var tel = String(c.telefono || '').trim();
+      var telLimpio = tel.replace(/[^\d+]/g, '');
+      $('clientContacto').innerHTML = tel ? '📞 <a href="tel:' + esc(telLimpio) + '" style="color:var(--accent);font-weight:600;text-decoration:none;">' + esc(tel) + '</a>' : '';
     }
 
+    /* ---------- navegación ---------- */
     function switchTab(tabId) {
+      if (_mode === 'public') tabId = 'tabClienteView';
       cerrarVistaDocumento();
       var tabs = document.querySelectorAll('.tab-content');
       for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
-      var target = document.getElementById(tabId);
+      var target = $(tabId);
       if (target) target.classList.add('active');
-
-      var tabNames = ['tabCatalogo', 'tabCrear', 'tabHistorial', 'tabCaja', 'tabClienteView', 'tabAjustes'];
-      var idx = tabNames.indexOf(tabId);
-      var navItems = document.querySelectorAll('.nav-item');
-      var webNavBtns = document.querySelectorAll('.web-nav-btn');
-      for (var j = 0; j < navItems.length; j++) if(navItems[j]) navItems[j].classList.toggle('active', j === idx);
-      for (var k = 0; k < webNavBtns.length; k++) if(webNavBtns[k]) webNavBtns[k].classList.toggle('active', k === idx);
-
-      if (tabId === 'tabClienteView') {
-        renderizarGridCliente('TODAS');
-      }
+      var navs = document.querySelectorAll('[data-tab]');
+      for (var j = 0; j < navs.length; j++) navs[j].classList.toggle('active', navs[j].getAttribute('data-tab') === tabId);
+      if (tabId === 'tabClienteView') renderizarGridCliente();
     }
 
+    /* ---------- imágenes ---------- */
     function procesarImagen(input, targetHiddenId) {
-      if (input.files && input.files[0]) {
-        var file = input.files[0];
-        var reader = new FileReader();
-        reader.onload = function(e) {
-          var img = new Image();
-          img.src = e.target.result;
-          img.onload = function() {
-            var canvas = document.createElement('canvas');
-            var maxDimension = 500;
-            var width = img.width;
-            var height = img.height;
-            if (width > height) {
-              if (width > maxDimension) { height = Math.round((height * maxDimension) / width); width = maxDimension; }
-            } else {
-              if (height > maxDimension) { width = Math.round((width * maxDimension) / height); height = maxDimension; }
-            }
-            canvas.width = width;
-            canvas.height = height;
-            var ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-            var base64 = canvas.toDataURL('image/jpeg', 0.85);
-            document.getElementById(targetHiddenId).value = base64;
-            
-            if (targetHiddenId === 'cfgLogoBase64') {
-              document.getElementById('previewLogoContainer').innerHTML = '<img src="' + base64 + '" style="max-height:60px; border-radius:8px;">';
-            } else if (targetHiddenId === 'editProdFotoBase64') {
-              document.getElementById('previewEditFotoContainer').innerHTML = '<img src="' + base64 + '" style="max-height:60px; border-radius:8px;">';
-            }
-          };
-        };
-        reader.readAsDataURL(file);
-      }
-    }
-
-    async function cargarConfiguracionSupabase() {
-      if (!_supabase) return;
-      try {
-        var res = await _supabase.from('configuracion').select('*').eq('id', 1).maybeSingle();
-        if (res.data) {
-          _configCache = res.data;
-          document.getElementById('cfgEmpresa').value = _configCache.empresa || 'EL ANCLA';
-          document.getElementById('cfgComercial').value = _configCache.comercial || '';
-          document.getElementById('cfgTelefono').value = _configCache.telefono || '';
-          document.getElementById('cfgLogoBase64').value = _configCache.logo || '';
-          document.getElementById('cfgMarcaAgua').checked = !!_configCache.es_marca_agua;
-          if (_configCache.logo) {
-            document.getElementById('previewLogoContainer').innerHTML = '<img src="' + _configCache.logo + '" style="max-height:60px; border-radius:8px;">';
+      if (!(input.files && input.files[0])) return;
+      var reader = new FileReader();
+      reader.onerror = function () { toast('No se pudo leer la imagen.', 'err'); };
+      reader.onload = function (e) {
+        var img = new Image();
+        img.onerror = function () { toast('El archivo no es una imagen válida.', 'err'); };
+        img.onload = function () {
+          var maxDimension = 500;
+          var width = img.width, height = img.height;
+          if (width > height) {
+            if (width > maxDimension) { height = Math.round((height * maxDimension) / width); width = maxDimension; }
+          } else {
+            if (height > maxDimension) { width = Math.round((width * maxDimension) / height); height = maxDimension; }
           }
-        }
-      } catch(e) {}
+          var canvas = document.createElement('canvas');
+          canvas.width = width; canvas.height = height;
+          var ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+          var base64 = canvas.toDataURL('image/jpeg', 0.8);
+          $(targetHiddenId).value = base64;
+          var prev = '<img src="' + base64 + '" alt="" style="max-height:60px; border-radius:8px;">';
+          if (targetHiddenId === 'cfgLogoBase64') $('previewLogoContainer').innerHTML = prev;
+          else if (targetHiddenId === 'editProdFotoBase64') $('previewEditFotoContainer').innerHTML = prev;
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(input.files[0]);
     }
 
-    async function guardarConfiguracionSupabase() {
-      var btn = document.getElementById('btnGuardarCfg');
-      btn.disabled = true;
-      btn.innerText = 'Guardando...';
+    /* ---------- configuración ---------- */
+    function aplicarComisionUI() {
+      var els = document.querySelectorAll('.pctTxt');
+      for (var i = 0; i < els.length; i++) els[i].textContent = String(pctComision());
+    }
+
+    async function cargarConfiguracion() {
+      try {
+        var data = chk(await _sb.from('configuracion').select('*').eq('id', 1).maybeSingle());
+        if (data) {
+          _cfg = Object.assign({}, _cfg, data);
+          if (_cfg.comision === null || _cfg.comision === undefined) _cfg.comision = 3;
+        }
+        $('cfgEmpresa').value = _cfg.empresa || 'EL ANCLA';
+        $('cfgComercial').value = _cfg.comercial || '';
+        $('cfgTelefono').value = _cfg.telefono || '';
+        $('cfgComision').value = pctComision();
+        $('cfgLogoBase64').value = _cfg.logo || '';
+        $('cfgMarcaAgua').checked = !!_cfg.es_marca_agua;
+        var logo = imgSrc(_cfg.logo);
+        $('previewLogoContainer').innerHTML = logo ? '<img src="' + logo + '" alt="" style="max-height:60px; border-radius:8px;">' : '';
+        $('brandTitle').textContent = _cfg.empresa || 'EL ANCLA';
+        $('clientTitle').textContent = _cfg.empresa || 'EL ANCLA';
+        aplicarComisionUI();
+      } catch (e) { toast('No se pudo cargar la configuración: ' + errMsg(e), 'err'); }
+    }
+
+    async function guardarConfiguracion() {
+      var btn = $('btnGuardarCfg');
+      var com = parseFloat($('cfgComision').value);
+      if (isNaN(com) || com < 0 || com > 100) { toast('La comisión debe estar entre 0 y 100.', 'err'); return; }
+      btn.disabled = true; btn.textContent = 'Guardando...';
       var payload = {
         id: 1,
-        empresa: document.getElementById('cfgEmpresa').value.trim() || 'EL ANCLA',
-        comercial: document.getElementById('cfgComercial').value.trim(),
-        telefono: document.getElementById('cfgTelefono').value.trim(),
-        logo: document.getElementById('cfgLogoBase64').value,
-        es_marca_agua: document.getElementById('cfgMarcaAgua').checked
+        empresa: $('cfgEmpresa').value.trim() || 'EL ANCLA',
+        comercial: $('cfgComercial').value.trim(),
+        telefono: $('cfgTelefono').value.trim(),
+        comision: com,
+        logo: $('cfgLogoBase64').value,
+        es_marca_agua: $('cfgMarcaAgua').checked
       };
       try {
-        var res = await _supabase.from('configuracion').upsert([payload]);
-        if (res.error) alert('Error: ' + res.error.message);
-        else { _configCache = payload; alert('¡Ajustes guardados correctamente!'); }
-      } catch(e) {} finally { btn.disabled = false; btn.innerText = '💾 Guardar Ajustes en Supabase'; }
+        chk(await _sb.from('configuracion').upsert([payload]));
+        _cfg = Object.assign({}, _cfg, payload);
+        $('brandTitle').textContent = _cfg.empresa;
+        $('clientTitle').textContent = _cfg.empresa;
+        aplicarComisionUI();
+        cargarCaja();
+        toast('¡Ajustes guardados!');
+      } catch (e) { toast('No se guardó: ' + errMsg(e), 'err'); }
+      finally { btn.disabled = false; btn.textContent = '💾 Guardar Ajustes'; }
     }
 
+    /* ---------- productos ---------- */
     async function cargarProductos() {
-      var c1 = document.getElementById('listaProductosCard');
-      if (!_supabase) return;
       try {
-        var res = await _supabase.from('productos').select('*').order('id', { ascending: false });
-        var data = res.data;
-        if (!data || data.length === 0) {
-          _productosCache = [];
-          c1.innerHTML = '<div style="color:var(--muted); text-align:center; padding:16px;">Sin productos registrados.</div>';
-          document.getElementById('listaSeleccionProductos').innerHTML = '<div style="color:var(--muted); text-align:center; padding:16px;">No hay productos disponibles.</div>';
-          return;
-        }
-        _productosCache = data;
-        var htmlCard1 = '';
-        for (var i = 0; i < _productosCache.length; i++) {
-          var p = _productosCache[i];
-          var cat = p.categoria || 'Varios';
-          var imgTag = p.url_foto ? '<img src="' + p.url_foto + '" class="product-img">' : '<div class="product-img" style="display:flex;align-items:center;justify-content:center;font-size:20px;">📦</div>';
-          var notaTag = p.notas ? '<div class="product-notes">📌 ' + p.notas + '</div>' : '';
-          var precioFormatted = parseFloat(p.precio || 0).toFixed(2);
-          
-          htmlCard1 += '<div class="product-item">' +
-            '<div class="product-left">' + imgTag + '<div style="overflow:hidden;"><div class="product-name">' + p.nombre + '</div><div class="product-badge">' + cat + '</div>' + notaTag + '<div class="product-price">' + precioFormatted + ' €</div></div></div>' +
-            '<div style="display:flex; gap:6px; flex-shrink:0;">' +
-              '<button class="btn btn-accent btn-sm" onclick="abrirModalEditar(' + p.id + ')">✏️</button>' +
-              '<button class="btn btn-danger btn-sm" onclick="borrarProducto(' + p.id + ')">🗑️</button>' +
-            '</div>' +
-          '</div>';
-        }
-        c1.innerHTML = htmlCard1;
-        renderizarSeleccionCrear('TODAS');
-        renderizarGridCliente('TODAS');
-      } catch(e) {}
+        var data = chk(await _sb.from('productos').select('id,categoria,nombre,precio,notas,url_foto').order('id', { ascending: false }));
+        _productosCache = data || [];
+        _catalogo = _productosCache.map(function (p) {
+          return { id: p.id, categoria: p.categoria, nombre: p.nombre, notas: p.notas, url_foto: p.url_foto };
+        });
+        renderizarListaProductos();
+        renderizarSeleccionCrear();
+        renderizarGridCliente();
+      } catch (e) {
+        $('listaProductosCard').innerHTML = '<div style="color:var(--danger); text-align:center; padding:16px;">No se pudieron cargar los productos.</div>';
+        toast('Error al cargar productos: ' + errMsg(e), 'err');
+      }
     }
 
-    /* RENDERIZAR VISTA EDITORIAL / CLIENTE */
-    function renderizarGridCliente(filtroCat) {
-      var grid = document.getElementById('editorialGrid');
-      if (!grid) return;
-      var html = '';
+    function htmlImgProducto(p, cls) {
+      var src = imgSrc(p.url_foto);
+      return src ? '<img src="' + src + '" alt="" class="' + cls + '">'
+                 : '<div class="' + cls + '" style="display:flex;align-items:center;justify-content:center;font-size:20px;">📦</div>';
+    }
 
-      var filtrados = _productosCache.filter(function(p) {
-        return filtroCat === 'TODAS' || (p.categoria || 'Varios') === filtroCat;
+    function renderizarListaProductos() {
+      var c = $('listaProductosCard');
+      var q = ($('buscarProd').value || '').trim().toLowerCase();
+      var lista = _productosCache.filter(function (p) {
+        if (!q) return true;
+        return ((p.nombre || '') + ' ' + (p.categoria || '') + ' ' + (p.notas || '')).toLowerCase().indexOf(q) !== -1;
       });
+      if (lista.length === 0) {
+        c.innerHTML = '<div style="color:var(--muted); text-align:center; padding:16px;">' + (q ? 'Sin resultados.' : 'Sin productos registrados.') + '</div>';
+        return;
+      }
+      var html = '';
+      for (var i = 0; i < lista.length; i++) {
+        var p = lista[i], id = Number(p.id);
+        var nota = p.notas ? '<div class="product-notes">📌 ' + esc(p.notas) + '</div>' : '';
+        html += '<div class="product-item">' +
+          '<div class="product-left">' + htmlImgProducto(p, 'product-img') +
+            '<div style="overflow:hidden;"><div class="product-name">' + esc(p.nombre) + '</div>' +
+            '<div class="product-badge">' + esc(p.categoria || 'Varios') + '</div>' + nota +
+            '<div class="product-price">' + num(p.precio).toFixed(2) + ' €</div></div></div>' +
+          '<div style="display:flex; gap:6px; flex-shrink:0;">' +
+            '<button class="btn btn-accent btn-sm" onclick="abrirModalEditar(' + id + ')">✏️</button>' +
+            '<button class="btn btn-danger btn-sm" onclick="borrarProducto(' + id + ')">🗑️</button>' +
+          '</div></div>';
+      }
+      c.innerHTML = html;
+    }
 
+    async function guardarProducto() {
+      var categoria = $('prodCategoria').value;
+      var nombre = $('prodNombre').value.trim();
+      var precio = parseFloat($('prodPrecio').value);
+      var notas = $('prodNotas').value.trim();
+      var url_foto = $('prodFotoBase64').value;
+      var btn = $('btnGuardarProd');
+      if (!nombre || isNaN(precio) || precio < 0) { toast('Escribe un nombre y un precio válido.', 'err'); return; }
+      btn.disabled = true; btn.textContent = 'Guardando...';
+      try {
+        chk(await _sb.from('productos').insert([{ categoria: categoria, nombre: nombre, precio: precio, notas: notas, url_foto: url_foto }]));
+        $('prodNombre').value = ''; $('prodPrecio').value = ''; $('prodNotas').value = '';
+        $('prodArchivoFoto').value = ''; $('prodFotoBase64').value = '';
+        await cargarProductos();
+        toast('Producto guardado.');
+      } catch (e) { toast('No se guardó el producto: ' + errMsg(e), 'err'); }
+      finally { btn.disabled = false; btn.textContent = 'Guardar Producto'; }
+    }
+
+    async function borrarProducto(id) {
+      if (!confirm('¿Eliminar producto? Las listas ya generadas no cambiarán.')) return;
+      try {
+        chk(await _sb.from('productos').delete().eq('id', id));
+        delete _sel[id]; delete _precios[id];
+        await cargarProductos();
+        toast('Producto eliminado.');
+      } catch (e) { toast('No se pudo eliminar: ' + errMsg(e), 'err'); }
+    }
+
+    function buscarEnCache(id) {
+      for (var i = 0; i < _productosCache.length; i++) if (_productosCache[i].id === id) return _productosCache[i];
+      return null;
+    }
+
+    function abrirModalEditar(id) {
+      var prod = buscarEnCache(id);
+      if (!prod) return;
+      $('editProdId').value = prod.id;
+      $('editProdCategoria').value = prod.categoria || 'Varios';
+      $('editProdNombre').value = prod.nombre || '';
+      $('editProdPrecio').value = pick(prod.precio, 0);
+      $('editProdNotas').value = prod.notas || '';
+      $('editProdFotoBase64').value = prod.url_foto || '';
+      $('editProdArchivoFoto').value = '';
+      var src = imgSrc(prod.url_foto);
+      $('previewEditFotoContainer').innerHTML = src ? '<img src="' + src + '" alt="" style="max-height:60px; border-radius:8px;">' : '';
+      $('modalEditarProducto').style.display = 'flex';
+    }
+
+    function cerrarModalEditar() { $('modalEditarProducto').style.display = 'none'; }
+
+    async function actualizarProducto() {
+      var id = parseInt($('editProdId').value, 10);
+      var campos = {
+        categoria: $('editProdCategoria').value,
+        nombre: $('editProdNombre').value.trim(),
+        precio: parseFloat($('editProdPrecio').value),
+        notas: $('editProdNotas').value.trim(),
+        url_foto: $('editProdFotoBase64').value
+      };
+      if (!campos.nombre || isNaN(campos.precio) || campos.precio < 0) { toast('Escribe un nombre y un precio válido.', 'err'); return; }
+      var btn = $('btnActualizarProd');
+      btn.disabled = true;
+      try {
+        chk(await _sb.from('productos').update(campos).eq('id', id));
+        delete _precios[id];
+        cerrarModalEditar();
+        await cargarProductos();
+        toast('Producto actualizado.');
+      } catch (e) { toast('No se actualizó: ' + errMsg(e), 'err'); }
+      finally { btn.disabled = false; }
+    }
+
+    /* ---------- vista cliente (sin precios) ---------- */
+    function renderizarGridCliente() {
+      var grid = $('editorialGrid');
+      var filtrados = _catalogo.filter(function (p) {
+        return _filtroCliente === 'TODAS' || (p.categoria || 'Varios') === _filtroCliente;
+      });
       if (filtrados.length === 0) {
         grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; color:var(--muted); padding: 40px;">No hay productos en esta categoría.</div>';
         return;
       }
-
+      var html = '';
       for (var i = 0; i < filtrados.length; i++) {
         var p = filtrados[i];
-        var imgHtml = p.url_foto 
-          ? '<img src="' + p.url_foto + '" alt="' + p.nombre + '">'
+        var src = imgSrc(p.url_foto);
+        var imgHtml = src ? '<img src="' + src + '" alt="' + esc(p.nombre) + '" loading="lazy">'
           : '<div style="position:absolute; top:0; left:0; width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:32px;">📦</div>';
-
-        var descTxt = p.notas ? '<div class="editorial-desc">' + p.notas + '</div>' : '';
-
-        html += '<div class="editorial-card" onclick="abrirFotoGrande(' + p.id + ')">' +
-          '<div class="editorial-img-container">' +
-            imgHtml +
-            '<div class="editorial-zoom-badge">🔍 Ampliar</div>' +
-          '</div>' +
-          '<div class="editorial-body">' +
-            '<div class="editorial-cat">' + (p.categoria || 'Varios') + '</div>' +
-            '<div class="editorial-title">' + p.nombre + '</div>' +
-            descTxt +
-          '</div>' +
-        '</div>';
+        var desc = p.notas ? '<div class="editorial-desc">' + esc(p.notas) + '</div>' : '';
+        html += '<div class="editorial-card" onclick="abrirFotoGrande(' + Number(p.id) + ')">' +
+          '<div class="editorial-img-container">' + imgHtml + '<div class="editorial-zoom-badge">🔍 Ampliar</div></div>' +
+          '<div class="editorial-body"><div class="editorial-cat">' + esc(p.categoria || 'Varios') + '</div>' +
+          '<div class="editorial-title">' + esc(p.nombre) + '</div>' + desc + '</div></div>';
       }
-
       grid.innerHTML = html;
     }
 
@@ -1100,416 +1354,358 @@
       var btns = document.querySelectorAll('#tabClienteView .client-cat-btn');
       for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
       if (btn) btn.classList.add('active');
-      renderizarGridCliente(categoria);
+      _filtroCliente = categoria;
+      renderizarGridCliente();
     }
 
     function abrirFotoGrande(id) {
       var prod = null;
-      for (var i = 0; i < _productosCache.length; i++) {
-        if (_productosCache[i].id === id) { prod = _productosCache[i]; break; }
-      }
+      for (var i = 0; i < _catalogo.length; i++) if (_catalogo[i].id === id) { prod = _catalogo[i]; break; }
       if (!prod) return;
-
-      document.getElementById('lightboxImg').src = prod.url_foto || '';
-      document.getElementById('lightboxCat').innerText = prod.categoria || 'Varios';
-      document.getElementById('lightboxTitle').innerText = prod.nombre || '';
-      document.getElementById('lightboxDesc').innerText = prod.notas || '';
-      document.getElementById('editorialLightbox').style.display = 'flex';
+      var src = imgSrc(prod.url_foto);
+      $('lightboxImg').style.display = src ? '' : 'none';
+      $('lightboxImg').src = src ? prod.url_foto : '';
+      $('lightboxCat').textContent = prod.categoria || 'Varios';
+      $('lightboxTitle').textContent = prod.nombre || '';
+      $('lightboxDesc').textContent = prod.notas || '';
+      $('editorialLightbox').style.display = 'flex';
     }
+    function cerrarFotoGrande() { $('editorialLightbox').style.display = 'none'; }
 
-    function cerrarFotoGrande() {
-      document.getElementById('editorialLightbox').style.display = 'none';
+    function enlaceCliente() { return window.location.href.split('?')[0].split('#')[0] + '?modo=cliente'; }
+
+    function enviarEnlaceWhatsApp() {
+      var msg = 'Hola, aquí puedes ver nuestro catálogo de productos: ' + enlaceCliente();
+      window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
     }
-
     function copiarEnlaceCliente() {
-      var baseUrl = window.location.href.split('?')[0];
-      var enlaceCliente = baseUrl + '?modo=cliente';
-      navigator.clipboard.writeText(enlaceCliente).then(function() {
-        alert('¡Enlace de catálogo copiado!\n\nPégalo en WhatsApp para que tus clientes lo vean con el diseño elegante y sin precios.');
-      }).catch(function() {
-        prompt('Copia este enlace para enviarlo por WhatsApp:', enlaceCliente);
-      });
+      var url = enlaceCliente();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(function () { toast('¡Enlace copiado!'); })
+          .catch(function () { prompt('Copia este enlace:', url); });
+      } else { prompt('Copia este enlace:', url); }
     }
 
-    function abrirModalEditar(id) {
-      var prod = null;
-      for (var i = 0; i < _productosCache.length; i++) {
-        if (_productosCache[i].id === id) { prod = _productosCache[i]; break; }
-      }
-      if (!prod) return;
+    /* ---------- crear lista ---------- */
+    function selProd(id, marcado) { if (marcado) _sel[id] = true; else delete _sel[id]; }
+    function precioTmp(id, v) { _precios[id] = v; }
 
-      document.getElementById('editProdId').value = prod.id;
-      document.getElementById('editProdCategoria').value = prod.categoria || 'Varios';
-      document.getElementById('editProdNombre').value = prod.nombre || '';
-      document.getElementById('editProdPrecio').value = prod.precio || 0;
-      document.getElementById('editProdNotas').value = prod.notas || '';
-      document.getElementById('editProdFotoBase64').value = prod.url_foto || '';
-      document.getElementById('editProdArchivoFoto').value = '';
-      
-      if (prod.url_foto) {
-        document.getElementById('previewEditFotoContainer').innerHTML = '<img src="' + prod.url_foto + '" style="max-height:60px; border-radius:8px;">';
-      } else {
-        document.getElementById('previewEditFotoContainer').innerHTML = '';
-      }
-
-      document.getElementById('modalEditarProducto').style.display = 'flex';
-    }
-
-    function cerrarModalEditar() {
-      document.getElementById('modalEditarProducto').style.display = 'none';
-    }
-
-    async function actualizarProductoSupabase() {
-      var id = parseInt(document.getElementById('editProdId').value);
-      var categoria = document.getElementById('editProdCategoria').value;
-      var nombre = document.getElementById('editProdNombre').value.trim();
-      var precio = parseFloat(document.getElementById('editProdPrecio').value);
-      var notas = document.getElementById('editProdNotas').value.trim();
-      var url_foto = document.getElementById('editProdFotoBase64').value;
-
-      if (!nombre || isNaN(precio)) {
-        alert('Escribe un nombre y un precio válido.');
-        return;
-      }
-
-      try {
-        var res = await _supabase.from('productos').update({ categoria, nombre, precio, notas, url_foto }).eq('id', id);
-        if (res.error) {
-          alert('Error al actualizar: ' + res.error.message);
-        } else {
-          cerrarModalEditar();
-          await cargarProductos();
-          alert('¡Producto actualizado correctamente!');
-        }
-      } catch (e) {
-        alert('Hubo un error de conexión.');
-      }
-    }
-
-    function renderizarSeleccionCrear(filtroCat) {
-      var container = document.getElementById('listaSeleccionProductos');
+    function renderizarSeleccionCrear() {
+      var container = $('listaSeleccionProductos');
       var html = '';
       for (var k = 0; k < _categoriasOrden.length; k++) {
         var cat = _categoriasOrden[k];
-        if (filtroCat !== 'TODAS' && filtroCat !== cat) continue;
-        var prodsDeCat = [];
-        for (var m = 0; m < _productosCache.length; m++) {
-          if ((_productosCache[m].categoria || 'Varios') === cat) prodsDeCat.push(_productosCache[m]);
+        if (_filtroCrear !== 'TODAS' && _filtroCrear !== cat) continue;
+        var prods = _productosCache.filter(function (p) { return (p.categoria || 'Varios') === cat; });
+        if (prods.length === 0) continue;
+        html += '<div style="margin-top:20px; margin-bottom:10px; font-family:\'Oswald\', sans-serif; font-size:16px; color:var(--primary); text-transform:uppercase; border-bottom:2px solid var(--accent); padding-bottom:4px; display:flex; justify-content:space-between; align-items:center;"><span>📂 ' + esc(cat) + '</span><span style="font-size:12px; font-family:sans-serif; color:var(--muted); font-weight:normal;">(' + prods.length + ')</span></div><div class="product-grid">';
+        for (var i = 0; i < prods.length; i++) {
+          var p = prods[i], id = Number(p.id);
+          var nota = p.notas ? '<div class="product-notes">📌 ' + esc(p.notas) + '</div>' : '';
+          var precio = (_precios[id] !== undefined) ? _precios[id] : num(p.precio).toFixed(2);
+          html += '<div class="product-item"><div class="product-left">' +
+            '<input type="checkbox" class="prod-checkbox" ' + (_sel[id] ? 'checked ' : '') + 'onchange="selProd(' + id + ', this.checked)">' +
+            htmlImgProducto(p, 'product-img') +
+            '<div style="flex:1; overflow:hidden;"><div class="product-name">' + esc(p.nombre) + '</div>' + nota + '</div></div>' +
+            '<div class="prod-mobile-controls"><span style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase;">Precio:</span>' +
+            '<div style="display:flex; align-items:center; gap:4px;"><input type="number" step="0.01" inputmode="decimal" value="' + esc(precio) + '" oninput="precioTmp(' + id + ', this.value)" style="width:95px; padding:8px; text-align:right; font-weight:700;">' +
+            '<span style="font-weight:700; font-size:14px; color:var(--muted);">€</span></div></div></div>';
         }
-        if (prodsDeCat.length > 0) {
-          html += '<div style="margin-top:20px; margin-bottom:10px; font-family:\'Oswald\', sans-serif; font-size:16px; color:var(--primary); text-transform:uppercase; border-bottom:2px solid var(--accent); padding-bottom:4px; display:flex; justify-content:space-between; align-items:center;"><span>📂 ' + cat + '</span><span style="font-size:12px; font-family:sans-serif; color:var(--muted); font-weight:normal;">(' + prodsDeCat.length + ')</span></div><div class="product-grid">';
-          for (var i = 0; i < prodsDeCat.length; i++) {
-            var p = prodsDeCat[i];
-            var imgTag = p.url_foto ? '<img src="' + p.url_foto + '" class="product-img">' : '<div class="product-img" style="display:flex;align-items:center;justify-content:center;font-size:20px;">📦</div>';
-            var notaTag = p.notas ? '<div class="product-notes">📌 ' + p.notas + '</div>' : '';
-            var precioFormatted = parseFloat(p.precio || 0).toFixed(2);
-            html += '<div class="product-item"><div class="product-left"><input type="checkbox" class="prod-checkbox" value="' + p.id + '">' + imgTag + '<div style="flex:1; overflow:hidden;"><div class="product-name">' + p.nombre + '</div>' + notaTag + '</div></div><div class="prod-mobile-controls"><span style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase;">Precio:</span><div style="display:flex; align-items:center; gap:4px;"><input type="number" step="0.01" id="precio_edit_' + p.id + '" value="' + precioFormatted + '" style="width:85px; padding:8px; text-align:right; font-weight:700;"><span style="font-weight:700; font-size:14px; color:var(--muted);">€</span></div></div></div>';
-          }
-          html += '</div>';
-        }
+        html += '</div>';
       }
       container.innerHTML = html || '<div style="color:var(--muted); text-align:center; padding:20px;">No hay productos en esta categoría.</div>';
     }
 
-    function filtrarPestañaCrear(categoria, btnEl) {
+    function filtrarPestanaCrear(categoria, btnEl) {
       var btns = document.querySelectorAll('#tabCrear .cat-filter-btn');
       for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
       if (btnEl) btnEl.classList.add('active');
-      renderizarSeleccionCrear(categoria);
-    }
-
-    async function guardarProducto() {
-      var categoria = document.getElementById('prodCategoria').value;
-      var nombre = document.getElementById('prodNombre').value.trim();
-      var precio = parseFloat(document.getElementById('prodPrecio').value);
-      var notas = document.getElementById('prodNotas').value.trim();
-      var url_foto = document.getElementById('prodFotoBase64').value;
-      var btn = document.getElementById('btnGuardarProd');
-      if (!nombre || isNaN(precio)) { alert('Escribe nombre y precio.'); return; }
-      btn.disabled = true; btn.innerText = 'Guardando...';
-      try {
-        await _supabase.from('productos').insert([{ categoria, nombre, precio, notas, url_foto }]);
-        document.getElementById('prodNombre').value = '';
-        document.getElementById('prodPrecio').value = '';
-        document.getElementById('prodNotas').value = '';
-        document.getElementById('prodArchivoFoto').value = '';
-        document.getElementById('prodFotoBase64').value = '';
-        await cargarProductos();
-      } catch(e) {} finally { btn.disabled = false; btn.innerText = 'Guardar Producto'; }
-    }
-
-    async function borrarProducto(id) {
-      if (!confirm('¿Eliminar producto?')) return;
-      await _supabase.from('productos').delete().eq('id', id);
-      cargarProductos();
-    }
-
-    async function guardarRegistroCaja() {
-      var fecha = document.getElementById('cajaFecha').value;
-      var efectivo = parseFloat(document.getElementById('cajaEfectivo').value) || 0;
-      var bizum = parseFloat(document.getElementById('cajaBizum').value) || 0;
-      var transferencia = parseFloat(document.getElementById('cajaTransferencia').value) || 0;
-      var nota = document.getElementById('cajaNota').value.trim();
-      if (!fecha) { alert('Selecciona una fecha.'); return; }
-      var totalDia = efectivo + bizum + transferencia;
-      if (totalDia <= 0) { alert('Introduce una cantidad válida.'); return; }
-      try {
-        await _supabase.from('caja_registros').insert([{ fecha, efectivo, bizum, transferencia, total: totalDia, nota }]);
-        document.getElementById('cajaEfectivo').value = '0.00';
-        document.getElementById('cajaBizum').value = '0.00';
-        document.getElementById('cajaTransferencia').value = '0.00';
-        document.getElementById('cajaNota').value = '';
-        document.getElementById('selectMesCaja').value = fecha.substring(0, 7);
-        await cargarRegistrosCaja();
-        alert('¡Cobro guardado!');
-      } catch(e) {}
-    }
-
-    async function cargarRegistrosCaja() {
-      var container = document.getElementById('listaCajaCard');
-      var selectMes = document.getElementById('selectMesCaja');
-      var mesSeleccionado = selectMes ? selectMes.value : '';
-      if (!_supabase || !mesSeleccionado) return;
-      try {
-        var res = await _supabase.from('caja_registros').select('*').order('fecha', { ascending: false });
-        var data = res.data;
-        if (!data || data.length === 0) {
-          container.innerHTML = '<div style="color:var(--muted); text-align:center; padding:16px;">Sin cobros.</div>';
-          document.getElementById('statTotalCobrado').innerText = '0.00 €';
-          document.getElementById('statTotalComision').innerText = '0.00 €';
-          return;
-        }
-        var filtrados = [];
-        for (var i = 0; i < data.length; i++) {
-          if (data[i].fecha && data[i].fecha.substring(0, 7) === mesSeleccionado) filtrados.push(data[i]);
-        }
-        var acumulado = 0;
-        if (filtrados.length === 0) {
-          container.innerHTML = '<div style="color:var(--muted); text-align:center; padding:20px;">No hay cobros para este mes.</div>';
-        } else {
-          var html = '<div class="caja-table-container"><table class="caja-table"><thead><tr><th>Fecha / Nota</th><th>Cobros</th><th style="text-align:right;">Total</th><th style="text-align:right;">3% Com.</th><th style="text-align:center; width:40px;"></th></tr></thead><tbody>';
-          for (var j = 0; j < filtrados.length; j++) {
-            var r = filtrados[j];
-            var tot = parseFloat(r.total || 0);
-            var com = tot * 0.03;
-            acumulado += tot;
-            var notaTxt = r.nota || r.notas ? '<div style="font-size:11px; color:var(--muted);">💬 ' + (r.nota || r.notas) + '</div>' : '';
-            var fFmt = new Date(r.fecha).toLocaleDateString('es-ES', { month: 'numeric', day: 'numeric', year: '2-digit' });
-            var tags = '';
-            if (r.efectivo > 0) tags += '<span class="pay-tag">💵 ' + parseFloat(r.efectivo).toFixed(2) + '€</span> ';
-            if (r.bizum > 0) tags += '<span class="pay-tag">📱 ' + parseFloat(r.bizum).toFixed(2) + '€</span> ';
-            if (r.transferencia > 0) tags += '<span class="pay-tag">🏦 ' + parseFloat(r.transferencia).toFixed(2) + '€</span>';
-            html += '<tr><td><strong style="color:var(--primary);">' + fFmt + '</strong>' + notaTxt + '</td><td>' + tags + '</td><td style="text-align:right; font-weight:700; color:var(--primary); font-family:\'Oswald\',sans-serif; font-size:15px;">' + tot.toFixed(2) + ' €</td><td style="text-align:right; font-weight:700; color:var(--success); font-family:\'Oswald\',sans-serif; font-size:15px;">+' + com.toFixed(2) + ' €</td><td style="text-align:center;"><button class="btn btn-danger btn-sm" style="padding:2px 6px; font-size:11px;" onclick="borrarRegistroCaja(' + r.id + ')">🗑️</button></td></tr>';
-          }
-          html += '</tbody></table></div>';
-          container.innerHTML = html;
-        }
-        document.getElementById('statTotalCobrado').innerText = acumulado.toFixed(2) + ' €';
-        document.getElementById('statTotalComision').innerText = (acumulado * 0.03).toFixed(2) + ' €';
-      } catch(e) {}
-    }
-
-    async function borrarRegistroCaja(id) {
-      if (!confirm('¿Eliminar registro?')) return;
-      await _supabase.from('caja_registros').delete().eq('id', id);
-      cargarRegistrosCaja();
+      _filtroCrear = categoria;
+      renderizarSeleccionCrear();
     }
 
     async function generarLista() {
-      var cliente = document.getElementById('clienteNombre').value.trim();
-      if (!cliente) { alert('Escribe el nombre del cliente.'); return; }
-      var cbs = document.querySelectorAll('.prod-checkbox:checked');
-      if (cbs.length === 0) { alert('Selecciona al menos un producto.'); return; }
+      var cliente = $('clienteNombre').value.trim();
+      if (!cliente) { toast('Escribe el nombre del cliente.', 'err'); return; }
       var items = [];
-      for (var i = 0; i < cbs.length; i++) {
-        var id = parseInt(cbs[i].value);
-        var pEdit = document.getElementById('precio_edit_' + id);
-        items.push({ id, precio: pEdit ? parseFloat(pEdit.value) || 0 : 0 });
+      for (var i = 0; i < _productosCache.length; i++) {
+        var p = _productosCache[i];
+        if (!_sel[p.id]) continue;
+        var precio = (_precios[p.id] !== undefined) ? num(_precios[p.id]) : num(p.precio);
+        // Guardamos una COPIA de los datos: si luego cambias o borras el producto, esta lista no cambia
+        items.push({ id: p.id, nombre: p.nombre, categoria: p.categoria || 'Varios', notas: p.notas || '', precio: precio });
       }
-      var res = await _supabase.from('listas_generadas').insert([{ cliente_nombre: cliente, productos_ids: items }]).select();
-      if (res.error) { alert('Error: ' + res.error.message); return; }
-      document.getElementById('clienteNombre').value = '';
-      await cargarHistoricoListas();
-      if (res.data && res.data[0]) verListaDocumento(res.data[0].id);
+      if (items.length === 0) { toast('Selecciona al menos un producto.', 'err'); return; }
+      var btn = $('btnGenerarLista');
+      btn.disabled = true;
+      try {
+        var data = chk(await _sb.from('listas_generadas').insert([{ cliente_nombre: cliente, productos_ids: items }]).select());
+        $('clienteNombre').value = '';
+        _sel = {}; _precios = {};
+        renderizarSeleccionCrear();
+        cargarHistorico();
+        toast('Lista guardada.');
+        if (data && data[0]) verListaDocumento(data[0].id);
+      } catch (e) { toast('No se guardó la lista: ' + errMsg(e), 'err'); }
+      finally { btn.disabled = false; }
     }
 
-    async function cargarHistoricoListas() {
-      var container = document.getElementById('listaHistoricoCard');
-      if (!_supabase) return;
+    /* ---------- historial ---------- */
+    async function cargarHistorico() {
+      var container = $('listaHistoricoCard');
       try {
-        var res = await _supabase.from('listas_generadas').select('*').order('id', { ascending: false });
-        var data = res.data;
+        var data = chk(await _sb.from('listas_generadas').select('id,cliente_nombre,fecha').order('id', { ascending: false }));
         if (!data || data.length === 0) { container.innerHTML = '<div style="color:var(--muted); text-align:center; padding:12px;">Sin listas guardadas.</div>'; return; }
         var html = '';
         for (var i = 0; i < data.length; i++) {
-          var l = data[i];
-          html += '<div class="product-item"><div><div class="product-name">' + l.cliente_nombre + '</div><div style="font-size:12px; color:var(--muted);">' + new Date(l.fecha).toLocaleDateString('es-ES') + '</div></div><div style="display:flex; gap:6px;"><button class="btn btn-accent btn-sm" onclick="verListaDocumento(' + l.id + ')">👁️ Ver</button><button class="btn btn-danger btn-sm" onclick="borrarLista(' + l.id + ')">🗑️</button></div></div>';
+          var l = data[i], id = Number(l.id);
+          html += '<div class="product-item"><div><div class="product-name">' + esc(l.cliente_nombre) + '</div>' +
+            '<div style="font-size:12px; color:var(--muted);">' + esc(new Date(l.fecha).toLocaleDateString('es-ES')) + '</div></div>' +
+            '<div style="display:flex; gap:6px;"><button class="btn btn-accent btn-sm" onclick="verListaDocumento(' + id + ')">👁️ Ver</button>' +
+            '<button class="btn btn-danger btn-sm" onclick="borrarLista(' + id + ')">🗑️</button></div></div>';
         }
         container.innerHTML = html;
-      } catch(e) {}
-    }
-
-    async function verListaDocumento(id) {
-      var res = await _supabase.from('listas_generadas').select('*').eq('id', id).single();
-      var lista = res.data;
-      if (!lista) return;
-      _clienteActual = lista.cliente_nombre;
-      var cfg = _configCache;
-
-      var logoHeader = cfg.logo && !cfg.es_marca_agua ? '<img src="' + cfg.logo + '" style="max-height: 65px; max-width: 130px; object-fit: contain;">' : '';
-
-      var rawItems = lista.productos_ids || [];
-      var productosSeleccionados = [];
-      for (var i = 0; i < rawItems.length; i++) {
-        var item = rawItems[i];
-        var itemObj = (typeof item === 'object') ? item : { id: item, precio: null };
-        for (var pIdx = 0; pIdx < _productosCache.length; pIdx++) {
-          if (_productosCache[pIdx].id === itemObj.id) {
-            var pClone = JSON.parse(JSON.stringify(_productosCache[pIdx]));
-            if (itemObj.precio !== null && itemObj.precio !== undefined) pClone.precio = itemObj.precio;
-            productosSeleccionados.push(pClone);
-            break;
-          }
-        }
+      } catch (e) {
+        container.innerHTML = '<div style="color:var(--danger); text-align:center; padding:12px;">No se pudo cargar el historial.</div>';
+        toast('Error al cargar el historial: ' + errMsg(e), 'err');
       }
-
-      var itemsPorPagina = 13;
-      var bloquesDePagina = [];
-
-      var categoriasMap = {};
-      for (var c = 0; c < _categoriasOrden.length; c++) categoriasMap[_categoriasOrden[c]] = [];
-      for (var p = 0; p < productosSeleccionados.length; p++) {
-        var cat = productosSeleccionados[p].categoria || 'Varios';
-        if (!categoriasMap[cat]) categoriasMap[cat] = [];
-        categoriasMap[cat].push(productosSeleccionados[p]);
-      }
-
-      var listaPlanaProductosConCat = [];
-      for (var k = 0; k < _categoriasOrden.length; k++) {
-        var catNombre = _categoriasOrden[k];
-        var prodsCat = categoriasMap[catNombre];
-        if (prodsCat && prodsCat.length > 0) {
-          for (var pr = 0; pr < prodsCat.length; pr++) {
-            listaPlanaProductosConCat.push({ categoria: catNombre, producto: prodsCat[pr] });
-          }
-        }
-      }
-
-      var paginaHtmlActual = '';
-      var contadorEnPagina = 0;
-      var ultimaCatPintada = '';
-
-      for (var idx = 0; idx < listaPlanaProductosConCat.length; idx++) {
-        var itemData = listaPlanaProductosConCat[idx];
-        
-        if (contadorEnPagina >= itemsPorPagina) {
-          bloquesDePagina.push(paginaHtmlActual);
-          paginaHtmlActual = '';
-          contadorEnPagina = 0;
-          ultimaCatPintada = ''; 
-        }
-
-        if (itemData.categoria !== ultimaCatPintada) {
-          paginaHtmlActual += '<div style="margin-top: 6px; margin-bottom: 3px; padding: 3px 8px; background: #032b5f; color: #ffffff; font-family: \'Oswald\', sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; border-radius: 4px;">' + itemData.categoria + '</div>';
-          ultimaCatPintada = itemData.categoria;
-          contadorEnPagina += 0.35; 
-        }
-
-        var prod = itemData.producto;
-        var imgT = prod.url_foto ? '<img src="' + prod.url_foto + '" style="width: 55px; height: 55px; border-radius: 6px; object-fit: cover; border: 1px solid #cbd5e1;">' : '<div style="width: 55px; height: 55px; background: #f1f5f9; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 1px solid #e2e8f0;">📦</div>';
-        var notaT = prod.notas ? '<div style="font-size: 10px; color: #64748b; margin-top: 1px;">📌 ' + prod.notas + '</div>' : '';
-
-        paginaHtmlActual += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 3px 6px; border-bottom: 1px solid #e2e8f0; height: 64px;">' +
-          '<div style="width: 55px; flex-shrink: 0;">' + imgT + '</div>' +
-          '<div style="flex: 1; padding: 0 10px; overflow: hidden;">' +
-            '<div style="font-size: 13px; font-weight: 700; color: #0f172a; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + prod.nombre + '</div>' +
-            notaT +
-          '</div>' +
-          '<div style="font-family: \'Oswald\', sans-serif; font-size: 17px; font-weight: 700; color: #2563eb; width: 80px; text-align: right; flex-shrink: 0;">' + parseFloat(prod.precio || 0).toFixed(2) + ' €</div>' +
-        '</div>';
-
-        contadorEnPagina++;
-      }
-
-      if (paginaHtmlActual) {
-        bloquesDePagina.push(paginaHtmlActual);
-      }
-
-      var totalPaginas = bloquesDePagina.length;
-      var marcaAgua = cfg.logo && cfg.es_marca_agua ? '<div class="watermark-bg"><img src="' + cfg.logo + '" style="width:100%;"></div>' : '';
-      var footerComercialTxt = cfg.comercial ? cfg.comercial + (cfg.telefono ? ' | 📞 ' + cfg.telefono : '') : (cfg.empresa || 'EL ANCLA');
-
-      var htmlPaginasTotal = '';
-
-      for (var pIdx = 0; pIdx < totalPaginas; pIdx++) {
-        var contenidoBloque = bloquesDePagina[pIdx];
-        var numPaginaActual = pIdx + 1;
-
-        var cabeceraPagina = '';
-        if (numPaginaActual === 1) {
-          cabeceraPagina = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 3px solid #032b5f;">' +
-            '<div style="display: flex; align-items: center; gap: 10px;">' + logoHeader + '<div><h1 style="margin: 0; font-family: \'Oswald\', sans-serif; font-size: 28px; line-height: 1.0; color: #032b5f; text-transform: uppercase;">' + (cfg.empresa || 'EL ANCLA') + '</h1></div></div>' +
-            '<div style="text-align: right; font-size: 12px; color: #475569;">' +
-              '<div style="font-family: \'Oswald\', sans-serif; font-size: 16px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin-bottom: 2px;">' + lista.cliente_nombre + '</div>' +
-              '<div><strong>Fecha:</strong> ' + new Date(lista.fecha).toLocaleDateString('es-ES') + '</div>' +
-            '</div>' +
-          '</div>';
-        } else {
-          cabeceraPagina = '<div style="margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid #cbd5e1; display:flex; justify-content: space-between; font-size:11px; color:#64748b;">' +
-            '<span><strong>' + (cfg.empresa || 'EL ANCLA') + '</strong> - Continuación</span>' +
-            '<span>Cliente: <strong>' + lista.cliente_nombre + '</strong></span>' +
-          '</div>';
-        }
-
-        htmlPaginasTotal += '<div class="page-a4">' +
-          marcaAgua +
-          '<div class="doc-content">' +
-            cabeceraPagina +
-            '<div>' + contenidoBloque + '</div>' +
-          '</div>' +
-          '<div class="doc-footer-bar">' +
-            '<div style="flex:1; font-size: 10px; color:#64748b;">Ref: ' + lista.cliente_nombre + '</div>' +
-            '<div class="doc-footer-center">' + footerComercialTxt + '</div>' +
-            '<div class="doc-footer-right" style="flex:1; text-align:right;">Página ' + numPaginaActual + ' de ' + totalPaginas + '</div>' +
-          '</div>' +
-        '</div>';
-      }
-
-      document.getElementById('contenedorPaginasA4').innerHTML = htmlPaginasTotal;
-      document.querySelector('.container').style.display = 'none';
-      document.querySelector('.top-bar').style.display = 'none';
-      document.querySelector('.nav-bar').style.display = 'none';
-      document.getElementById('vistaDocumento').style.display = 'block';
-      window.scrollTo(0, 0);
-    }
-
-    async function descargarPDF() {
-      var paginas = document.querySelectorAll('.page-a4');
-      if (!paginas || paginas.length === 0) return;
-
-      var pdf = new jspdf.jsPDF('p', 'mm', 'a4');
-
-      for (var i = 0; i < paginas.length; i++) {
-        if (i > 0) pdf.addPage();
-        var canvas = await html2canvas(paginas[i], { scale: 2, useCORS: true, scrollY: 0 });
-        var imgData = canvas.toDataURL('image/jpeg', 0.98);
-        pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
-      }
-
-      pdf.save('Lista_Precios_El_Ancla_' + (_clienteActual || 'Cliente') + '.pdf');
-    }
-
-    function cerrarVistaDocumento() {
-      document.getElementById('vistaDocumento').style.display = 'none';
-      document.querySelector('.container').style.display = '';
-      document.querySelector('.top-bar').style.display = '';
-      document.querySelector('.nav-bar').style.display = '';
     }
 
     async function borrarLista(id) {
       if (!confirm('¿Borrar lista?')) return;
-      await _supabase.from('listas_generadas').delete().eq('id', id);
-      cargarHistoricoListas();
+      try {
+        chk(await _sb.from('listas_generadas').delete().eq('id', id));
+        await cargarHistorico();
+        toast('Lista borrada.');
+      } catch (e) { toast('No se pudo borrar: ' + errMsg(e), 'err'); }
+    }
+
+    /* ---------- documento A4 ---------- */
+    async function verListaDocumento(id) {
+      var lista;
+      try { lista = chk(await _sb.from('listas_generadas').select('*').eq('id', id).single()); }
+      catch (e) { toast('No se pudo abrir la lista: ' + errMsg(e), 'err'); return; }
+      if (!lista) return;
+      _clienteActual = lista.cliente_nombre || '';
+      var cfg = _cfg;
+      var logoSrc = imgSrc(cfg.logo);
+      var logoHeader = (logoSrc && !cfg.es_marca_agua) ? '<img src="' + logoSrc + '" alt="" style="max-height: 65px; max-width: 130px; object-fit: contain;">' : '';
+
+      // Reconstruir productos: primero la copia guardada, y si es una lista antigua, el producto actual
+      var rawItems = lista.productos_ids || [];
+      var productos = [], perdidos = 0;
+      for (var i = 0; i < rawItems.length; i++) {
+        var it = (typeof rawItems[i] === 'object' && rawItems[i] !== null) ? rawItems[i] : { id: rawItems[i] };
+        var base = buscarEnCache(it.id) || {};
+        var nombre = pick(it.nombre, base.nombre);
+        if (!nombre) { perdidos++; continue; }
+        productos.push({
+          nombre: nombre,
+          categoria: pick(it.categoria, base.categoria) || 'Varios',
+          notas: pick(it.notas, base.notas) || '',
+          url_foto: base.url_foto || '',
+          precio: num(pick(it.precio, base.precio))
+        });
+      }
+      if (perdidos > 0) toast(perdidos + ' producto(s) de esta lista antigua ya no existen y no se muestran.', 'err');
+
+      var porCat = {};
+      for (var c = 0; c < _categoriasOrden.length; c++) porCat[_categoriasOrden[c]] = [];
+      for (var p = 0; p < productos.length; p++) {
+        var cat = productos[p].categoria;
+        if (!porCat[cat]) porCat[cat] = [];
+        porCat[cat].push(productos[p]);
+      }
+      var catsOrden = _categoriasOrden.slice();
+      Object.keys(porCat).forEach(function (k) { if (catsOrden.indexOf(k) === -1) catsOrden.push(k); });
+
+      var plana = [];
+      for (var k = 0; k < catsOrden.length; k++) {
+        var arr = porCat[catsOrden[k]] || [];
+        for (var q = 0; q < arr.length; q++) plana.push({ categoria: catsOrden[k], producto: arr[q] });
+      }
+
+      var itemsPorPagina = 13, bloques = [], paginaHtml = '', contador = 0, ultimaCat = '';
+      for (var idx = 0; idx < plana.length; idx++) {
+        var d = plana[idx];
+        if (contador >= itemsPorPagina) { bloques.push(paginaHtml); paginaHtml = ''; contador = 0; ultimaCat = ''; }
+        if (d.categoria !== ultimaCat) {
+          paginaHtml += '<div style="margin-top: 6px; margin-bottom: 3px; padding: 3px 8px; background: #032b5f; color: #ffffff; font-family: \'Oswald\', sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; border-radius: 4px;">' + esc(d.categoria) + '</div>';
+          ultimaCat = d.categoria;
+          contador += 0.35;
+        }
+        var prod = d.producto;
+        var s = imgSrc(prod.url_foto);
+        var imgT = s ? '<img src="' + s + '" alt="" style="width: 55px; height: 55px; border-radius: 6px; object-fit: cover; border: 1px solid #cbd5e1;">'
+          : '<div style="width: 55px; height: 55px; background: #f1f5f9; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 1px solid #e2e8f0;">📦</div>';
+        var notaT = prod.notas ? '<div style="font-size: 10px; color: #64748b; margin-top: 1px;">📌 ' + esc(prod.notas) + '</div>' : '';
+        paginaHtml += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 3px 6px; border-bottom: 1px solid #e2e8f0; height: 64px;">' +
+          '<div style="width: 55px; flex-shrink: 0;">' + imgT + '</div>' +
+          '<div style="flex: 1; padding: 0 10px; overflow: hidden;">' +
+            '<div style="font-size: 13px; font-weight: 700; color: #0f172a; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + esc(prod.nombre) + '</div>' + notaT +
+          '</div>' +
+          '<div style="font-family: \'Oswald\', sans-serif; font-size: 17px; font-weight: 700; color: #2563eb; width: 80px; text-align: right; flex-shrink: 0;">' + prod.precio.toFixed(2) + ' €</div>' +
+        '</div>';
+        contador++;
+      }
+      if (paginaHtml) bloques.push(paginaHtml);
+      if (bloques.length === 0) bloques.push('<div style="padding:30px;text-align:center;color:#64748b;">Esta lista no tiene productos.</div>');
+
+      var total = bloques.length;
+      var marcaAgua = (logoSrc && cfg.es_marca_agua) ? '<div class="watermark-bg"><img src="' + logoSrc + '" alt="" style="width:100%;"></div>' : '';
+      var footerTxt = cfg.comercial ? esc(cfg.comercial) + (cfg.telefono ? ' | 📞 ' + esc(cfg.telefono) : '') : esc(cfg.empresa || 'EL ANCLA');
+      var empresa = esc(cfg.empresa || 'EL ANCLA');
+      var cli = esc(lista.cliente_nombre);
+      var fechaTxt = esc(new Date(lista.fecha).toLocaleDateString('es-ES'));
+
+      var out = '';
+      for (var n = 0; n < total; n++) {
+        var cabecera;
+        if (n === 0) {
+          cabecera = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 3px solid #032b5f;">' +
+            '<div style="display: flex; align-items: center; gap: 10px;">' + logoHeader + '<div><h1 style="margin: 0; font-family: \'Oswald\', sans-serif; font-size: 28px; line-height: 1.0; color: #032b5f; text-transform: uppercase;">' + empresa + '</h1></div></div>' +
+            '<div style="text-align: right; font-size: 12px; color: #475569;">' +
+              '<div style="font-family: \'Oswald\', sans-serif; font-size: 16px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin-bottom: 2px;">' + cli + '</div>' +
+              '<div><strong>Fecha:</strong> ' + fechaTxt + '</div>' +
+            '</div></div>';
+        } else {
+          cabecera = '<div style="margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px solid #cbd5e1; display:flex; justify-content: space-between; font-size:11px; color:#64748b;">' +
+            '<span><strong>' + empresa + '</strong> - Continuación</span><span>Cliente: <strong>' + cli + '</strong></span></div>';
+        }
+        out += '<div class="page-a4">' + marcaAgua +
+          '<div class="doc-content">' + cabecera + '<div>' + bloques[n] + '</div></div>' +
+          '<div class="doc-footer-bar">' +
+            '<div style="flex:1; font-size: 10px; color:#64748b;">Ref: ' + cli + '</div>' +
+            '<div class="doc-footer-center">' + footerTxt + '</div>' +
+            '<div class="doc-footer-right" style="flex:1; text-align:right;">Página ' + (n + 1) + ' de ' + total + '</div>' +
+          '</div></div>';
+      }
+
+      $('contenedorPaginasA4').innerHTML = out;
+      $('mainContainer').style.display = 'none';
+      $('topBar').style.display = 'none';
+      $('adminBottomNav').style.display = 'none';
+      $('vistaDocumento').style.display = 'block';
+      window.scrollTo(0, 0);
+    }
+
+    function cerrarVistaDocumento() { setMode(_mode); }
+
+    async function generarPDF() {
+      var paginas = document.querySelectorAll('.page-a4');
+      if (!paginas || paginas.length === 0) throw new Error('No hay documento abierto.');
+      var pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+      for (var i = 0; i < paginas.length; i++) {
+        if (i > 0) pdf.addPage();
+        var canvas = await html2canvas(paginas[i], { scale: 2, useCORS: true, scrollY: 0 });
+        pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 210, 297);
+      }
+      return pdf;
+    }
+    function nombrePDF() {
+      var cli = (_clienteActual || 'Cliente').replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ]+/g, '_');
+      return 'Lista_Precios_' + cli + '.pdf';
+    }
+
+    async function descargarPDF() {
+      var btn = $('btnDescargarPDF'), txt = btn.textContent;
+      btn.disabled = true; btn.textContent = 'Generando...';
+      try { (await generarPDF()).save(nombrePDF()); }
+      catch (e) { toast('No se pudo crear el PDF: ' + errMsg(e), 'err'); }
+      finally { btn.disabled = false; btn.textContent = txt; }
+    }
+
+    // Abre el menú de compartir del móvil (WhatsApp, correo...) con el PDF adjunto
+    async function compartirPDF() {
+      var btn = $('btnCompartirPDF'), txt = btn.textContent;
+      btn.disabled = true; btn.textContent = 'Generando...';
+      try {
+        var pdf = await generarPDF();
+        var file = new File([pdf.output('blob')], nombrePDF(), { type: 'application/pdf' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: 'Lista de precios' });
+        } else {
+          pdf.save(nombrePDF());
+          toast('Tu dispositivo no permite compartir directamente; se ha descargado el PDF.');
+        }
+      } catch (e) {
+        if (!e || e.name !== 'AbortError') toast('No se pudo compartir: ' + errMsg(e), 'err');
+      } finally { btn.disabled = false; btn.textContent = txt; }
+    }
+
+    /* ---------- caja ---------- */
+    async function guardarRegistroCaja() {
+      var fecha = $('cajaFecha').value;
+      var efectivo = num($('cajaEfectivo').value);
+      var bizum = num($('cajaBizum').value);
+      var transferencia = num($('cajaTransferencia').value);
+      var nota = $('cajaNota').value.trim();
+      if (!fecha) { toast('Selecciona una fecha.', 'err'); return; }
+      if (efectivo < 0 || bizum < 0 || transferencia < 0) { toast('Las cantidades no pueden ser negativas.', 'err'); return; }
+      var totalDia = efectivo + bizum + transferencia;
+      if (totalDia <= 0) { toast('Introduce una cantidad válida.', 'err'); return; }
+      var btn = $('btnGuardarCaja');
+      btn.disabled = true;
+      try {
+        chk(await _sb.from('caja_registros').insert([{ fecha: fecha, efectivo: efectivo, bizum: bizum, transferencia: transferencia, total: totalDia, nota: nota }]));
+        $('cajaEfectivo').value = '0.00'; $('cajaBizum').value = '0.00'; $('cajaTransferencia').value = '0.00'; $('cajaNota').value = '';
+        $('selectMesCaja').value = fecha.substring(0, 7);
+        await cargarCaja();
+        toast('¡Cobro guardado!');
+      } catch (e) { toast('NO se guardó el cobro: ' + errMsg(e), 'err'); }
+      finally { btn.disabled = false; }
+    }
+
+    async function cargarCaja() {
+      var container = $('listaCajaCard');
+      var mes = $('selectMesCaja').value;
+      if (!mes) return;
+      var partes = mes.split('-');
+      var anio = parseInt(partes[0], 10), m = parseInt(partes[1], 10);
+      var desde = mes + '-01';
+      var hasta = (m === 12) ? (anio + 1) + '-01-01' : anio + '-' + pad2(m + 1) + '-01';
+      var pct = pctComision();
+      try {
+        var data = chk(await _sb.from('caja_registros').select('*').gte('fecha', desde).lt('fecha', hasta).order('fecha', { ascending: false }));
+        var acumulado = 0;
+        if (!data || data.length === 0) {
+          container.innerHTML = '<div style="color:var(--muted); text-align:center; padding:20px;">No hay cobros para este mes.</div>';
+        } else {
+          var html = '<div class="caja-table-container"><table class="caja-table"><thead><tr><th>Fecha / Nota</th><th>Cobros</th><th style="text-align:right;">Total</th><th style="text-align:right;">' + esc(pct) + '% Com.</th><th style="text-align:center; width:40px;"></th></tr></thead><tbody>';
+          for (var j = 0; j < data.length; j++) {
+            var r = data[j];
+            var tot = num(r.total);
+            var com = tot * pct / 100;
+            acumulado += tot;
+            var nota = r.nota || r.notas;
+            var notaTxt = nota ? '<div style="font-size:11px; color:var(--muted);">💬 ' + esc(nota) + '</div>' : '';
+            var tags = '';
+            if (num(r.efectivo) > 0) tags += '<span class="pay-tag">💵 ' + num(r.efectivo).toFixed(2) + '€</span> ';
+            if (num(r.bizum) > 0) tags += '<span class="pay-tag">📱 ' + num(r.bizum).toFixed(2) + '€</span> ';
+            if (num(r.transferencia) > 0) tags += '<span class="pay-tag">🏦 ' + num(r.transferencia).toFixed(2) + '€</span>';
+            html += '<tr><td><strong style="color:var(--primary);">' + fmtFechaISO(r.fecha) + '</strong>' + notaTxt + '</td><td>' + tags + '</td>' +
+              '<td style="text-align:right; font-weight:700; color:var(--primary); font-family:\'Oswald\',sans-serif; font-size:15px;">' + tot.toFixed(2) + ' €</td>' +
+              '<td style="text-align:right; font-weight:700; color:var(--success); font-family:\'Oswald\',sans-serif; font-size:15px;">+' + com.toFixed(2) + ' €</td>' +
+              '<td style="text-align:center;"><button class="btn btn-danger btn-sm" style="padding:2px 6px; font-size:11px;" onclick="borrarRegistroCaja(' + Number(r.id) + ')">🗑️</button></td></tr>';
+          }
+          html += '</tbody></table></div>';
+          container.innerHTML = html;
+        }
+        $('statTotalCobrado').textContent = acumulado.toFixed(2) + ' €';
+        $('statTotalComision').textContent = (acumulado * pct / 100).toFixed(2) + ' €';
+      } catch (e) {
+        container.innerHTML = '<div style="color:var(--danger); text-align:center; padding:16px;">No se pudieron cargar los cobros.</div>';
+        toast('Error al cargar la caja: ' + errMsg(e), 'err');
+      }
+    }
+
+    async function borrarRegistroCaja(id) {
+      if (!confirm('¿Eliminar registro?')) return;
+      try {
+        chk(await _sb.from('caja_registros').delete().eq('id', id));
+        await cargarCaja();
+        toast('Registro eliminado.');
+      } catch (e) { toast('No se pudo eliminar: ' + errMsg(e), 'err'); }
     }
   </script>
 </body>
