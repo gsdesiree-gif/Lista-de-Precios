@@ -1764,17 +1764,18 @@
         '</div>' +
         '<div style="position:absolute; left:0; right:0; bottom:118px; display:flex; flex-direction:column; align-items:center; gap:22px;">' +
           '<div style="width:72px; height:3px; background:#d63a49; border-radius:2px;"></div>' +
-          '<div style="max-width:440px; text-align:center; font-size:19px; line-height:1.5; color:#e8e1d2;">Los mejores productos para los momentos más especiales</div></div>', NAV_NOCHE);
+          '<div style="max-width:560px; text-align:center; font-family:\'Fraunces\', Georgia, serif; font-style:italic; font-weight:500; font-size:34px; line-height:1.3; color:#e9d9ae;">Los mejores productos para los momentos más especiales</div></div>', NAV_NOCHE);
     }
     function navTarjeta(p, conPrecios) {
       var s = imgSrc(p.url_foto);
-      var foto = s ? '<img src="' + s + '"' + corsAttr(s) + ' alt="" style="width:100%; height:80px; object-fit:cover; display:block;">'
-        : '<div style="height:80px; background:#efe6d2; display:flex; align-items:center; justify-content:center;">' + navBayasSvg(40, 33, '#efe6d2') + '</div>';
+      var foto = '<div style="flex:1; min-height:90px; position:relative; background:#efe6d2; overflow:hidden;">' + (s
+        ? '<img src="' + s + '"' + corsAttr(s) + ' alt="" style="position:absolute; left:0; top:0; width:100%; height:100%; object-fit:cover; display:block;">'
+        : '<div style="position:absolute; left:0; top:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center;">' + navBayasSvg(56, 46, '#efe6d2') + '</div>') + '</div>';
       return '<div style="box-sizing:border-box; background:#fffaf0; border:1px solid #d9c9a3; border-radius:10px; overflow:hidden; display:flex; flex-direction:column; min-height:0;">' + foto +
-        '<div style="padding:11px 14px 10px; display:flex; flex-direction:column; gap:3px; flex:1; min-height:0;">' +
+        '<div style="padding:11px 14px 10px; display:flex; flex-direction:column; gap:3px; flex:none;">' +
           '<div style="font-size:12px; font-weight:600; color:#7d6224;">' + esc(p.categoria || 'Varios') + '</div>' +
           '<div style="font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:21px; line-height:1.1; color:#101b33;">' + esc(p.nombre) + '</div>' +
-          (p.notas ? '<div style="font-size:12.5px; line-height:1.35; color:#4a5266; max-height:34px; overflow:hidden;">' + esc(p.notas) + '</div>' : '') +
+          '<div style="font-size:12.5px; line-height:1.35; color:#4a5266; height:34px; overflow:hidden;">' + esc(p.notas || '') + '</div>' +
           '<div style="margin-top:auto; display:flex; align-items:center; justify-content:space-between; min-height:24px;">' +
             (conPrecios ? '<div style="font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:21px; color:#a3202f;">' + num(p.precio).toFixed(2) + ' €</div>' : '<span></span>') +
             navBayasSvg(26, 21, '#fffaf0') + '</div></div></div>';
@@ -1788,7 +1789,7 @@
             '<div><div style="font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:42px; line-height:1.05; color:#101b33;">Nuestra selección</div>' +
             '<div style="margin-top:6px; font-size:15px; color:#4a5266;">Los mejores productos para tus momentos más especiales</div></div>' +
             '<div style="font-family:\'Fraunces\', Georgia, serif; font-style:italic; font-size:22px; color:#a3202f;">' + esc(titulo) + '</div></div>' +
-          '<div style="flex:1; min-height:0; display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); grid-template-rows:repeat(3, minmax(0, 1fr)); gap:16px;">' + cards + '</div>' +
+          '<div style="flex:1; min-height:0; display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); grid-template-rows:repeat(' + Math.ceil(items.length / 2) + ', minmax(0, ' + (items.length > 4 ? '1fr' : '270px') + ')); gap:16px;">' + cards + '</div>' +
           '<div style="display:flex; justify-content:space-between; font-size:13px; color:#4a5266;"><span style="font-family:\'Fraunces\', Georgia, serif; font-size:16px; color:#101b33;">' + esc(empresa) + '</span>' +
           '<span>' + (conPrecios ? 'Precios por kilo salvo indicación. ' : '') + 'Consulta disponibilidad al hacer tu pedido</span></div></div>', NAV_MARFIL);
     }
