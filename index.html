@@ -1093,9 +1093,8 @@
       <div id="navLista" style="max-height:38vh; overflow-y:auto; margin-bottom:12px;"></div>
       <div class="field"><label>Título de la portada</label><input type="text" id="navTitulo" placeholder="Ej: Navidad 2026"></div>
       <label style="display:flex; align-items:center; gap:10px; margin:6px 0 14px; font-size:14px; font-weight:600;"><input type="checkbox" id="navPrecios"> Mostrar precios en el catálogo</label>
-      <div class="field"><label>Teléfono de pedidos</label><input type="text" id="navTel" placeholder="Ej: 600 000 000"></div>
-      <div class="field"><label>Pedidos hasta el (opcional)</label><input type="text" id="navFecha" placeholder="Ej: 20 de diciembre"></div>
-      <div class="field"><label>Entrega (opcional)</label><input type="text" id="navEntrega" placeholder="Ej: del 22 al 24 de diciembre"></div>
+      <div class="field"><label>Nombre (aparece en el pie de página)</label><input type="text" id="navNombre" placeholder="Ej: Kike"></div>
+      <div class="field"><label>Teléfono de pedidos</label><input type="text" id="navTel" placeholder="Ej: 660 87 59 27"></div>
       <div style="display:flex; gap:10px; margin-top:10px;">
         <button onclick="cerrarCatalogoNavidad()" class="btn btn-logout" style="flex:1;">Cancelar</button>
         <button onclick="crearCatalogoNavidad()" class="btn btn-accent" style="flex:1;">🎄 Crear catálogo</button>
@@ -1645,7 +1644,7 @@
       try {
         localStorage.setItem('elancla_nav', JSON.stringify({
           ids: Object.keys(_navSel).map(Number), titulo: $('navTitulo').value, precios: $('navPrecios').checked,
-          tel: $('navTel').value, fecha: $('navFecha').value, entrega: $('navEntrega').value
+          tel: $('navTel').value, nombre: $('navNombre').value
         }));
       } catch (e) {}
     }
@@ -1656,9 +1655,8 @@
       if (s && s.ids) s.ids.forEach(function (id) { if (buscarEnCache(id)) _navSel[id] = true; });
       $('navTitulo').value = (s && s.titulo) || ('Navidad ' + new Date().getFullYear());
       $('navPrecios').checked = !!(s && s.precios);
-      $('navTel').value = (s && s.tel !== undefined) ? s.tel : (_cfg.telefono || '');
-      $('navFecha').value = (s && s.fecha) || '';
-      $('navEntrega').value = (s && s.entrega) || '';
+      $('navTel').value = (s && s.tel) || '660 87 59 27';
+      $('navNombre').value = (s && s.nombre) || 'Kike';
       $('navBuscar').value = '';
       renderNavLista();
       $('modalNavidad').style.display = 'flex';
@@ -1780,7 +1778,7 @@
             (conPrecios ? '<div style="font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:21px; color:#a3202f;">' + num(p.precio).toFixed(2) + ' €</div>' : '<span></span>') +
             navBayasSvg(26, 21, '#fffaf0') + '</div></div></div>';
     }
-    function navPaginaProductos(items, titulo, conPrecios, empresa) {
+    function navPaginaProductos(items, titulo, conPrecios, pie) {
       var cards = '';
       items.forEach(function (p) { cards += navTarjeta(p, conPrecios); });
       return navPagina(navMarcos() + navDestellos() +
@@ -1790,18 +1788,15 @@
             '<div style="margin-top:6px; font-size:15px; color:#4a5266;">Los mejores productos para tus momentos más especiales</div></div>' +
             '<div style="font-family:\'Fraunces\', Georgia, serif; font-style:italic; font-size:22px; color:#a3202f;">' + esc(titulo) + '</div></div>' +
           '<div style="flex:1; min-height:0; display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); grid-template-rows:repeat(' + Math.ceil(items.length / 2) + ', minmax(0, ' + (items.length > 4 ? '1fr' : '270px') + ')); gap:16px;">' + cards + '</div>' +
-          '<div style="display:flex; justify-content:space-between; font-size:13px; color:#4a5266;"><span style="font-family:\'Fraunces\', Georgia, serif; font-size:16px; color:#101b33;">' + esc(empresa) + '</span>' +
-          '<span>' + (conPrecios ? 'Precios por kilo salvo indicación. ' : '') + 'Consulta disponibilidad al hacer tu pedido</span></div></div>', NAV_MARFIL);
+          '<div style="text-align:center; font-family:\'Fraunces\', Georgia, serif; font-size:19px; color:#101b33;">' + esc(pie) + '</div></div>', NAV_MARFIL);
     }
-    function navContraportada(empresa, tel, fecha, entrega) {
-      var bloque = function (t, v) { return v ? '<div><div style="font-size:15px; color:#c8a45a; font-weight:600;">' + t + '</div><div style="margin-top:6px; font-family:\'Fraunces\', Georgia, serif; font-size:34px; font-weight:500; color:#f6f0e4;">' + esc(v) + '</div></div>' : ''; };
+    function navContraportada(tel) {
       return navPagina(navEstrellasSvg() + navMarcos() + navLazosSvg() +
-        '<div style="position:absolute; left:96px; right:96px; top:250px; display:flex; flex-direction:column; align-items:center; gap:40px; text-align:center;">' +
-          '<div style="font-family:\'Fraunces\', Georgia, serif; font-style:italic; font-weight:500; font-size:80px; line-height:1; color:#f6f0e4;">Haz tu pedido</div>' +
+        '<div style="position:absolute; left:96px; right:96px; top:0; bottom:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:44px; text-align:center;">' +
+          '<div style="font-family:\'Fraunces\', Georgia, serif; font-style:italic; font-weight:500; font-size:104px; line-height:1; color:#f6f0e4;">Feliz Navidad</div>' +
           '<div style="width:72px; height:3px; background:#d63a49; border-radius:2px;"></div>' +
-          '<div style="display:flex; flex-direction:column; gap:26px; width:100%;">' + bloque('Llámanos o escríbenos', tel) + bloque('Pedidos hasta el', fecha) + bloque('Entrega', entrega) + '</div></div>' +
-        '<div style="position:absolute; left:0; right:0; bottom:112px; display:flex; flex-direction:column; align-items:center; gap:12px;">' + navAnclaSvg(30) +
-          '<div style="font-family:\'Fraunces\', Georgia, serif; font-size:24px; color:#f6f0e4;">' + esc(empresa) + ' te desea felices fiestas</div></div>', NAV_NOCHE);
+          (tel ? '<div style="font-family:\'Fraunces\', Georgia, serif; font-size:40px; font-weight:500; color:#e9d9ae;">Pedidos al ' + esc(tel) + '</div>' : '') +
+        '</div>', NAV_NOCHE);
     }
 
     function crearCatalogoNavidad() {
@@ -1815,9 +1810,10 @@
       });
       var titulo = $('navTitulo').value.trim() || ('Navidad ' + new Date().getFullYear());
       var precios = $('navPrecios').checked, empresa = _cfg.empresa || 'EL ANCLA';
+      var tel = $('navTel').value.trim(), nom = $('navNombre').value.trim(), pie = [nom, tel].filter(Boolean).join(' · ');
       var pags = [navPortada(titulo, empresa)];
-      for (var i = 0; i < elegidos.length; i += 6) pags.push(navPaginaProductos(elegidos.slice(i, i + 6), titulo, precios, empresa));
-      pags.push(navContraportada(empresa, $('navTel').value.trim(), $('navFecha').value.trim(), $('navEntrega').value.trim()));
+      for (var i = 0; i < elegidos.length; i += 6) pags.push(navPaginaProductos(elegidos.slice(i, i + 6), titulo, precios, pie));
+      pags.push(navContraportada(tel));
       $('modalNavidad').style.display = 'none';
       _clienteActual = ''; _pdfNombre = 'Catalogo_' + titulo.replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ]+/g, '_') + (precios ? '_con_precios' : '') + '.pdf';
       $('contenedorPaginasA4').innerHTML = pags.join('');
