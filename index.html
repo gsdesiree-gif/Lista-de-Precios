@@ -1047,6 +1047,7 @@
         </details>
       </div>
       <div class="field"><label>Notas</label><input type="text" id="cliNotas" placeholder="Ej: Paga los viernes"></div>
+      <button id="btnImprimirFicha" onclick="imprimirFicha(_cliModalId)" class="btn btn-accent" style="display:none; margin-top:10px;">🖨️ Imprimir ficha con productos y precios</button>
       <div style="display: flex; gap: 10px; margin-top: 20px;">
         <button onclick="cerrarModalCliente()" class="btn btn-logout" style="flex: 1;">Cancelar</button>
         <button id="btnGuardarCliente" onclick="guardarCliente()" class="btn btn-success" style="flex: 1;">💾 Guardar</button>
@@ -1101,6 +1102,7 @@
     var _preciosCli = {};          // precios especiales de ese cliente (producto_id -> precio)
     var _autoIds = {};             // precios rellenados automáticamente (no escritos a mano)
     var _autoSelIds = {};          // productos marcados automáticamente por ser habituales del cliente
+    var _cliModalId = 0;
     var _hab = [];                 // productos habituales de todos los clientes (cliente_id, producto_id, precio)
     var _soloAuto = false;         // true = "Solo marcados" lo activó la app al elegir cliente
 
@@ -1885,6 +1887,86 @@
       $('listaProdCli').innerHTML = html;
     }
 
+    /* ---------- imprimir ficha del cliente (PDF) ---------- */
+    async function imprimirFicha(cid) {
+      var c = buscarCliente(cid);
+      if (!c) return;
+      var btn = $('btnImprimirFicha'), txt = btn ? btn.textContent : '';
+      if (btn) { btn.disabled = true; btn.textContent = 'Generando...'; }
+      try {
+        var lista = habitualesDe(cid);
+        var pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+        var W = 210, M = 15, y = 0, pag = 0;
+        var cfg = _cfg || {};
+        var pie = (cfg.comercial ? cfg.comercial + (cfg.telefono ? '  |  Tel. ' + cfg.telefono : '') : (cfg.empresa || 'EL ANCLA'));
+        function cabecera() {
+          pag++;
+          pdf.setFillColor(15, 23, 42); pdf.rect(0, 0, W, 16, 'F');
+          pdf.setTextColor(255, 255, 255); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(13);
+          pdf.text(String(cfg.empresa || 'EL ANCLA'), M, 10.5);
+          pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9);
+          pdf.text('Ficha de cliente · ' + new Date().toLocaleDateString('es-ES'), W - M, 10.5, { align: 'right' });
+          pdf.setTextColor(15, 23, 42); y = 26;
+        }
+        function pieDePagina() {
+          pdf.setFontSize(8); pdf.setTextColor(100, 116, 139); pdf.setFont('helvetica', 'normal');
+          pdf.text(pie, M, 290); pdf.text('Página ' + pag, W - M, 290, { align: 'right' });
+        }
+        function nuevaPagina() { pieDePagina(); pdf.addPage(); cabecera(); }
+        cabecera();
+        pdf.setFont('helvetica', 'bold'); pdf.setFontSize(18); pdf.text(c.nombre || '', M, y); y += 8;
+        var datos = [
+          ['Razón social', c.razon_social], ['CIF / NIF', c.cif],
+          ['Dirección', [c.direccion, [c.cp, c.poblacion].filter(Boolean).join(' ')].filter(Boolean).join(', ')],
+          ['Teléfono', c.telefono], ['Email', c.email], ['Contacto', c.contacto],
+          ['Día de reparto', (c.dias_reparto && c.dias_reparto.length) ? c.dias_reparto.map(function (d) { return DIAS_LARGO[d]; }).join(', ') : ''],
+          ['Día de llamada', (c.dias_llamada && c.dias_llamada.length) ? c.dias_llamada.map(function (d) { return DIAS_LARGO[d]; }).join(', ') : ''],
+          ['Forma de pago', c.forma_pago], ['Notas', c.notas]
+        ];
+        pdf.setFontSize(10);
+        for (var i = 0; i < datos.length; i++) {
+          if (!datos[i][1]) continue;
+          var lineas = pdf.setFont('helvetica', 'normal').splitTextToSize(String(datos[i][1]), W - M - 55);
+          pdf.setFont('helvetica', 'bold'); pdf.setTextColor(100, 116, 139); pdf.text(datos[i][0], M, y);
+          pdf.setFont('helvetica', 'normal'); pdf.setTextColor(15, 23, 42); pdf.text(lineas, M + 40, y);
+          y += 5.5 * lineas.length;
+        }
+        y += 4;
+        pdf.setDrawColor(203, 213, 225); pdf.line(M, y, W - M, y); y += 8;
+        pdf.setFont('helvetica', 'bold'); pdf.setFontSize(13); pdf.text('Productos y precios', M, y); y += 7;
+        if (!lista.length) {
+          pdf.setFont('helvetica', 'normal'); pdf.setFontSize(10); pdf.text('Este cliente todavía no tiene productos habituales.', M, y);
+        }
+        var catAct = null;
+        for (var k = 0; k < lista.length; k++) {
+          var p = lista[k].p, cat = p.categoria || 'Varios';
+          var precio = (lista[k].precio !== null && lista[k].precio !== undefined) ? num(lista[k].precio) : num(p.precio);
+          if (cat !== catAct) {
+            if (y > 262) nuevaPagina();
+            y += 2; pdf.setFillColor(241, 245, 249); pdf.rect(M, y - 4.5, W - 2 * M, 6.5, 'F');
+            pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10); pdf.setTextColor(37, 99, 235); pdf.text(cat.toUpperCase(), M + 2, y); y += 6.5; catAct = cat;
+          }
+          if (y > 278) { nuevaPagina(); pdf.setFillColor(241, 245, 249); pdf.rect(M, y - 4.5, W - 2 * M, 6.5, 'F'); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10); pdf.setTextColor(37, 99, 235); pdf.text(cat.toUpperCase() + ' (cont.)', M + 2, y); y += 6.5; }
+          pdf.setFont('helvetica', 'normal'); pdf.setFontSize(10); pdf.setTextColor(15, 23, 42);
+          var nom = pdf.splitTextToSize(p.nombre || '', W - 2 * M - 40)[0];
+          pdf.text(nom, M + 2, y);
+          pdf.setFont('helvetica', 'bold'); pdf.text(precio.toFixed(2) + ' €', W - M - 2, y, { align: 'right' });
+          pdf.setDrawColor(226, 232, 240); pdf.line(M, y + 1.8, W - M, y + 1.8); y += 6;
+        }
+        pieDePagina();
+        var nombre = 'Ficha_' + (c.nombre || 'Cliente').replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ]+/g, '_') + '.pdf';
+        var file = new File([pdf.output('blob')], nombre, { type: 'application/pdf' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try { await navigator.share({ files: [file], title: 'Ficha de ' + c.nombre }); }
+          catch (e) { if (!e || e.name !== 'AbortError') throw e; }
+        } else {
+          pdf.save(nombre);
+          toast('Ficha descargada. Ábrela para imprimirla.');
+        }
+      } catch (e) { toast('No se pudo crear la ficha: ' + errMsg(e), 'err'); }
+      finally { if (btn) { btn.disabled = false; btn.textContent = txt; } }
+    }
+
     async function quitarHabitual(cid, pid) {
       var p = buscarEnCache(pid), c = buscarCliente(cid);
       if (!confirm('¿Quitar «' + (p ? p.nombre : 'este producto') + '» de la lista habitual de ' + (c ? c.nombre : 'este cliente') + '? Seguirá en tus productos y podrás volver a añadirlo.')) return;
@@ -2071,7 +2153,7 @@
           '<div style="min-width:0;"><div class="product-name">👤 ' + esc(c.nombre) + '</div>' +
           '<div class="product-notes">' + tel + n + ' lista' + (n === 1 ? '' : 's') + (hn ? ' · 📋 ' + hn + ' producto' + (hn === 1 ? '' : 's') : '') + '</div>' + dir + fisc + dias + falta + '</div>' +
           '<div class="cli-acciones">' +
-            '<button class="btn btn-accent btn-sm" onclick="nuevaListaCliente(' + id + ')">Nueva lista</button>' + (hn ? '<button class="btn btn-sm btn-logout" onclick="abrirModalCliente(' + id + ', true)">📋 Productos</button>' : '') + llamar + wa +
+            '<button class="btn btn-accent btn-sm" onclick="nuevaListaCliente(' + id + ')">Nueva lista</button>' + '<button class="btn btn-sm btn-logout" onclick="abrirModalCliente(' + id + ', true)">👁 Ver cliente</button>' + llamar + wa +
             '<button class="btn btn-sm btn-logout" onclick="abrirModalCliente(' + id + ')">✏️ Editar</button>' +
           '</div></div>';
       }
@@ -2135,6 +2217,8 @@
       $('avisoDias').style.display = _diasOk ? 'none' : '';
       pintarDias('diasReparto', _modalDias.rep, 'rep');
       pintarDias('diasLlamada', _modalDias.lla, 'lla');
+      _cliModalId = c ? c.id : 0;
+      $('btnImprimirFicha').style.display = c ? '' : 'none';
       $('bloqueProductosCli').style.display = (c && _clientesOk) ? '' : 'none';
       pintarProductosCliente(c ? c.id : 0);
       $('detProdCli').open = !!verProductos;
