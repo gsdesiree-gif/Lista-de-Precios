@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>El Ancla | Catálogo Pro</title>
-  <meta name="theme-color" content="#0e4d3f">
+  <meta name="theme-color" content="#2d4f47">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -642,8 +642,8 @@
 
     /* ===== Tema «Fresco de mercado» (se activa con data-tema="fresco") ===== */
     html[data-tema="fresco"] {
-      --bg: #f0f6f2; --primary: #0e4d3f; --accent: #0a7d8c; --text: #10271f;
-      --muted: #587268; --border: #d3e4db; --success: #1f9d55; --radius: 18px;
+      --bg: #f6f8f6; --primary: #2d4f47; --accent: #3a7f7b; --text: #1d2b27;
+      --muted: #66786f; --border: #dde7e1; --success: #4d8f68; --radius: 18px;
     }
     html[data-tema="fresco"] .brand-title,
     html[data-tema="fresco"] .card-header,
@@ -654,26 +654,28 @@
     html[data-tema="fresco"] .card-header { font-size: 21px; }
     html[data-tema="fresco"] .client-hero-title { font-size: 32px; letter-spacing: -0.3px; }
     html[data-tema="fresco"] .client-hero-subtitle { text-transform: none; letter-spacing: 0.3px; font-size: 13px; }
-    html[data-tema="fresco"] .top-bar { background: #ffffff; border-bottom: 1px solid var(--border); box-shadow: 0 4px 18px -12px rgba(14,77,63,.35); }
-    html[data-tema="fresco"] .card { border-color: transparent; box-shadow: 0 1px 2px rgba(14,77,63,.06), 0 12px 28px -16px rgba(14,77,63,.28); }
+    html[data-tema="fresco"] .top-bar { background: #ffffff; border-bottom: 1px solid var(--border); box-shadow: 0 4px 18px -12px rgba(45,79,71,.3); }
+    html[data-tema="fresco"] .card { border-color: transparent; box-shadow: 0 1px 2px rgba(14,77,63,.06), 0 12px 28px -16px rgba(45,79,71,.22); }
     html[data-tema="fresco"] .field label { text-transform: none; letter-spacing: 0; font-size: 12px; }
     html[data-tema="fresco"] input[type="text"], html[data-tema="fresco"] input[type="number"],
     html[data-tema="fresco"] input[type="date"], html[data-tema="fresco"] input[type="search"],
     html[data-tema="fresco"] input[type="email"], html[data-tema="fresco"] select, html[data-tema="fresco"] textarea {
-      background: #f5faf7; border-color: var(--border); border-radius: 12px;
+      background: #f8faf9; border-color: var(--border); border-radius: 12px;
     }
     html[data-tema="fresco"] .btn { border-radius: 14px; }
-    html[data-tema="fresco"] .btn-danger { background: #fdeceb; }
+    html[data-tema="fresco"] .btn-danger { background: #fbeeed; }
+    html[data-tema="fresco"] .btn-wa { background: #3f8c5e; }
+    html[data-tema="fresco"] .toast.ok { background: #4d8f68; }
     html[data-tema="fresco"] .product-item { border-color: var(--border); border-radius: 16px; }
-    html[data-tema="fresco"] .product-img { border-radius: 12px; background: #e8f2ed; }
+    html[data-tema="fresco"] .product-img { border-radius: 12px; background: #eef3f0; }
     html[data-tema="fresco"] .product-badge { background: #e2f3ee; }
     html[data-tema="fresco"] .product-price { font-family: 'Fraunces', Georgia, serif; font-size: 16px; }
     html[data-tema="fresco"] .web-nav-btn { border-radius: 999px; }
     html[data-tema="fresco"] .client-cat-btn { background: #fff; }
-    html[data-tema="fresco"] .doc-footer-center { color: #0e4d3f; text-transform: none; font-family: 'Fraunces', Georgia, serif; font-size: 13px; }
-    html[data-tema="fresco"] .doc-footer-right { color: #0a7d8c; }
-    html[data-tema="fresco"] .product-img { background: #e8f2ed; }
-    html[data-tema="fresco"] .doc-footer-bar { border-top-color: #bcd8cb; }
+    html[data-tema="fresco"] .doc-footer-center { color: #2d4f47; text-transform: none; font-family: 'Fraunces', Georgia, serif; font-size: 13px; }
+    html[data-tema="fresco"] .doc-footer-right { color: #3a7f7b; }
+    html[data-tema="fresco"] .product-img { background: #eef3f0; }
+    html[data-tema="fresco"] .doc-footer-bar { border-top-color: #cfddd5; }
 
 
     /* ===== AÑADIDOS V2 ===== */
@@ -1231,7 +1233,7 @@
     function paleta() {
       return temaActual() === 'marino'
         ? { marino: true, c1: '#032b5f', ac: '#2563eb', rgb1: [15, 23, 42], rgbAc: [37, 99, 235] }
-        : { marino: false, c1: '#0e4d3f', ac: '#0a7d8c', rgb1: [14, 77, 63], rgbAc: [10, 125, 140] };
+        : { marino: false, c1: '#2d4f47', ac: '#3a7f7b', rgb1: [45, 79, 71], rgbAc: [58, 127, 123] };
     }
     function ponerTema(nombre) {
       try { localStorage.setItem('elancla_tema', nombre); } catch (e) {}
