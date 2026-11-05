@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -1810,14 +1810,14 @@
     }
     function navTarjeta(p, conPrecios, alto) {
       var s = imgSrc(p.url_foto);
-      var foto = '<div style="width:100%; height:' + alto + 'px; position:relative; background:#efe6d2; overflow:hidden;">' + (s
+      var foto = '<div style="width:100%; height:' + alto + 'px; position:relative; background:#efe6d2; overflow:hidden; border:1px solid #c8a45a; border-radius:8px; box-sizing:border-box;">' + (s
         ? '<img src="' + s + '"' + corsAttr(s) + ' alt="" style="position:absolute; left:0; top:0; width:100%; height:100%; object-fit:cover; display:block;">'
         : '<div style="position:absolute; left:0; top:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center;">' + navBayasSvg(60, 49, '#efe6d2') + '</div>') + '</div>';
-      return '<div style="box-sizing:border-box; background:#fffaf0; border:1px solid #c8a45a; border-radius:8px; overflow:hidden; display:flex; flex-direction:column;">' + foto +
-        '<div style="padding:8px 10px 9px; height:46px; box-sizing:border-box; display:flex; align-items:center; justify-content:space-between; gap:6px;">' +
-          '<div style="font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:16px; line-height:1.1; color:#101b33; flex:1; min-width:0;">' + esc(p.nombre) + '</div>' +
-          (conPrecios ? '<div style="font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:16px; color:#a3202f; white-space:nowrap;">' + num(p.precio).toFixed(2) + ' €</div>' : '') +
-        '</div></div>';
+      return '<div style="display:flex; flex-direction:column; gap:6px;">' +
+        '<div style="height:28px; box-sizing:border-box; display:flex; align-items:flex-end; justify-content:space-between; gap:6px; padding:0 2px;">' +
+          '<div style="font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:17px; line-height:1.1; color:#101b33; flex:1; min-width:0;">' + esc(p.nombre) + '</div>' +
+          (conPrecios ? '<div style="font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:17px; color:#a3202f; white-space:nowrap;">' + num(p.precio).toFixed(2) + ' €</div>' : '') +
+        '</div>' + foto + '</div>';
     }
     function navTituloCat(nombre) {
       return '<div style="height:46px; display:flex; align-items:center; gap:14px;">' +
@@ -1826,7 +1826,7 @@
         '<div style="flex:1; height:1px; background:#c8a45a;"></div></div>';
     }
     function navPaginasProductos(elegidos, titulo, conPrecios, pie) {
-      var COLS = 3, ALTO = COLS === 2 ? 313 : 203, ROW = ALTO + 46 + 2 + 14, CAT = 46 + 14, DISP = 840, pags = [], cur = [], usado = 0;
+      var COLS = 3, ALTO = 196, ROW = ALTO + 34 + 14, CAT = 46 + 14, DISP = 850, pags = [], cur = [], usado = 0;
       var cats = [], mapa = {};
       elegidos.forEach(function (p) { var c = p.categoria || 'Varios'; if (!mapa[c]) { mapa[c] = []; cats.push(c); } mapa[c].push(p); });
       var cierra = function () { if (cur.length) pags.push(cur); cur = []; usado = 0; };
