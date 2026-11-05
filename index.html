@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>El Ancla | Catálogo Pro</title>
   <meta name="theme-color" content="#0e4d3f">
   <link rel="manifest" href="manifest.webmanifest">
@@ -617,6 +617,29 @@
       .page-a4-wrapper { overflow: visible; }
     }
   
+
+    /* ===== Ajustes para iPhone ===== */
+    html { -webkit-text-size-adjust: 100%; }
+    body, button, a, label, summary { touch-action: manipulation; }
+    .top-bar { padding-top: calc(14px + env(safe-area-inset-top)); padding-left: calc(24px + env(safe-area-inset-left)); padding-right: calc(24px + env(safe-area-inset-right)); }
+    .container { padding-left: calc(16px + env(safe-area-inset-left)); padding-right: calc(16px + env(safe-area-inset-right)); }
+    .nav-bar { padding-bottom: calc(10px + env(safe-area-inset-bottom)); padding-left: env(safe-area-inset-left); padding-right: env(safe-area-inset-right); }
+    body { padding-bottom: calc(90px + env(safe-area-inset-bottom)); }
+    .toast { bottom: calc(90px + env(safe-area-inset-bottom)); }
+    .sticky-action { bottom: calc(76px + env(safe-area-inset-bottom)); }
+    .login-screen { min-height: 100vh; min-height: 100dvh; }
+    .modal-overlay { padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); overscroll-behavior: contain; }
+    .modal-card { max-height: 90vh; max-height: 90dvh; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+    input[type="date"] { min-height: 46px; -webkit-appearance: none; appearance: none; text-align: left; }
+    @media (max-width: 767px) {
+      /* 16 px evita que el iPhone amplíe la pantalla al tocar un campo */
+      input, select, textarea { font-size: 16px !important; }
+      .btn-sm, .chip-dia, .cat-filter-btn { min-height: 40px; }
+      .nav-item { min-height: 46px; justify-content: center; }
+      .cat-block > summary { min-height: 46px; }
+    }
+    @media (min-width: 768px) { .sticky-action { bottom: 14px; } }
+
     /* ===== Tema «Fresco de mercado» (se activa con data-tema="fresco") ===== */
     html[data-tema="fresco"] {
       --bg: #f0f6f2; --primary: #0e4d3f; --accent: #0a7d8c; --text: #10271f;
@@ -713,7 +736,7 @@
     .chip-dia { padding: 8px 10px; border-radius: 20px; border: 1px solid var(--border); background: #fff; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; font-family: inherit; }
     .chip-dia.on { background: var(--primary); color: #fff; border-color: var(--primary); }
     .dias-fila { display: flex; gap: 6px; flex-wrap: wrap; }
-    .cli-row { flex-direction: column !important; align-items: stretch !important; }
+    .product-item.compact.cli-row { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; padding: 12px !important; }
     .cli-acciones { display: flex; gap: 6px; flex-wrap: wrap; }
 
     body.modo-public .no-client-view { display: none !important; }
@@ -1069,7 +1092,7 @@
       <div id="pedTotal" style="font-weight:700; text-align:right; margin:8px 0;"></div>
       <div style="display: flex; gap: 10px;">
         <button onclick="cerrarPedido()" class="btn btn-logout" style="flex: 1;">Cancelar</button>
-        <button id="btnGuardarPedido" onclick="guardarPedido()" class="btn btn-success" style="flex: 1;">💾 Guardar pedido</button>
+        <button id="btnGuardarPedido" onclick="guardarPedido()" class="btn btn-success" style="flex: 1;">💾 Guardar</button>
       </div>
       <button id="btnBorrarPedido" onclick="borrarPedido()" class="btn btn-danger" style="margin-top: 10px; display:none;">🗑️ Borrar pedido</button>
     </div>
