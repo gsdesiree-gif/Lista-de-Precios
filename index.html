@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>El Ancla | Catálogo Pro</title>
-  <meta name="theme-color" content="#0a192f">
+  <meta name="theme-color" content="#0e4d3f">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" type="image/png" href="icon-192.png">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -15,7 +15,8 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
+  <script>try { document.documentElement.setAttribute('data-tema', localStorage.getItem('elancla_tema') === 'marino' ? 'marino' : 'fresco'); } catch (e) { document.documentElement.setAttribute('data-tema', 'fresco'); }</script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -616,6 +617,41 @@
       .page-a4-wrapper { overflow: visible; }
     }
   
+    /* ===== Tema «Fresco de mercado» (se activa con data-tema="fresco") ===== */
+    html[data-tema="fresco"] {
+      --bg: #f0f6f2; --primary: #0e4d3f; --accent: #0a7d8c; --text: #10271f;
+      --muted: #587268; --border: #d3e4db; --success: #1f9d55; --radius: 18px;
+    }
+    html[data-tema="fresco"] .brand-title,
+    html[data-tema="fresco"] .card-header,
+    html[data-tema="fresco"] .client-hero-title {
+      font-family: 'Fraunces', Georgia, serif; font-weight: 700; text-transform: none; letter-spacing: 0;
+    }
+    html[data-tema="fresco"] .brand-title { font-size: 24px; }
+    html[data-tema="fresco"] .card-header { font-size: 21px; }
+    html[data-tema="fresco"] .client-hero-title { font-size: 32px; letter-spacing: -0.3px; }
+    html[data-tema="fresco"] .client-hero-subtitle { text-transform: none; letter-spacing: 0.3px; font-size: 13px; }
+    html[data-tema="fresco"] .top-bar { background: #ffffff; border-bottom: 1px solid var(--border); box-shadow: 0 4px 18px -12px rgba(14,77,63,.35); }
+    html[data-tema="fresco"] .card { border-color: transparent; box-shadow: 0 1px 2px rgba(14,77,63,.06), 0 12px 28px -16px rgba(14,77,63,.28); }
+    html[data-tema="fresco"] .field label { text-transform: none; letter-spacing: 0; font-size: 12px; }
+    html[data-tema="fresco"] input[type="text"], html[data-tema="fresco"] input[type="number"],
+    html[data-tema="fresco"] input[type="date"], html[data-tema="fresco"] input[type="search"],
+    html[data-tema="fresco"] input[type="email"], html[data-tema="fresco"] select, html[data-tema="fresco"] textarea {
+      background: #f5faf7; border-color: var(--border); border-radius: 12px;
+    }
+    html[data-tema="fresco"] .btn { border-radius: 14px; }
+    html[data-tema="fresco"] .btn-danger { background: #fdeceb; }
+    html[data-tema="fresco"] .product-item { border-color: var(--border); border-radius: 16px; }
+    html[data-tema="fresco"] .product-img { border-radius: 12px; background: #e8f2ed; }
+    html[data-tema="fresco"] .product-badge { background: #e2f3ee; }
+    html[data-tema="fresco"] .product-price { font-family: 'Fraunces', Georgia, serif; font-size: 16px; }
+    html[data-tema="fresco"] .web-nav-btn { border-radius: 999px; }
+    html[data-tema="fresco"] .client-cat-btn { background: #fff; }
+    html[data-tema="fresco"] .doc-footer-center { color: #0e4d3f; text-transform: none; font-family: 'Fraunces', Georgia, serif; font-size: 13px; }
+    html[data-tema="fresco"] .doc-footer-right { color: #0a7d8c; }
+    html[data-tema="fresco"] .product-img { background: #e8f2ed; }
+    html[data-tema="fresco"] .doc-footer-bar { border-top-color: #bcd8cb; }
+
 
     /* ===== AÑADIDOS V2 ===== */
     input[type="email"], input[type="password"], input[type="search"] {
@@ -931,6 +967,12 @@
     <div id="tabAjustes" class="tab-content">
       <div class="card">
         <div class="card-header">⚙️ Configuración de Empresa</div>
+        <div class="field"><label>Estilo de la app y de las listas de precios</label>
+          <div style="display:flex; gap:8px;">
+            <button id="btnTemaFresco" class="btn btn-sm btn-accent" style="flex:1;" onclick="ponerTema('fresco')">🌿 Fresco de mercado</button>
+            <button id="btnTemaMarino" class="btn btn-sm btn-logout" style="flex:1;" onclick="ponerTema('marino')">⚓ Marino</button>
+          </div>
+        </div>
         <div class="field"><label>Nombre de la Empresa</label><input type="text" id="cfgEmpresa" placeholder="Ej: EL ANCLA"></div>
         <div class="field"><label>Nombre del Comercial / Agente</label><input type="text" id="cfgComercial" placeholder="Ej: Désirée Guerrero"></div>
         <div class="field"><label>Teléfono / WhatsApp</label><input type="text" id="cfgTelefono" placeholder="Ej: 600 000 000"></div>
@@ -1108,7 +1150,7 @@
     <div class="doc-actions-bar no-print">
       <button onclick="cerrarVistaDocumento()" class="btn btn-sm" style="background: #ffffff; color: #0f172a; border: 1px solid #cbd5e1;">⬅️ Volver Atrás</button>
       <div>
-        <button onclick="window.print()" class="btn btn-sm" style="background:#0f172a; color:#ffffff;">🖨️ Imprimir</button>
+        <button onclick="window.print()" class="btn btn-sm" style="background:var(--primary); color:#ffffff;">🖨️ Imprimir</button>
         <button id="btnCompartirPDF" onclick="compartirPDF()" class="btn btn-wa btn-sm">📤 Compartir</button>
         <button id="btnDescargarPDF" onclick="descargarPDF()" class="btn btn-accent btn-sm">📄 Descargar PDF</button>
       </div>
@@ -1162,6 +1204,20 @@
     function corsAttr(s) { return /^https:/i.test(s) ? ' crossorigin="anonymous"' : ''; }
     function num(v) { var n = parseFloat(v); return isNaN(n) ? 0 : n; }
     function pick(a, b) { return (a !== undefined && a !== null) ? a : b; }
+    function temaActual() { try { return localStorage.getItem('elancla_tema') === 'marino' ? 'marino' : 'fresco'; } catch (e) { return 'fresco'; } }
+    function paleta() {
+      return temaActual() === 'marino'
+        ? { marino: true, c1: '#032b5f', ac: '#2563eb', rgb1: [15, 23, 42], rgbAc: [37, 99, 235] }
+        : { marino: false, c1: '#0e4d3f', ac: '#0a7d8c', rgb1: [14, 77, 63], rgbAc: [10, 125, 140] };
+    }
+    function ponerTema(nombre) {
+      try { localStorage.setItem('elancla_tema', nombre); } catch (e) {}
+      document.documentElement.setAttribute('data-tema', nombre);
+      var a = $('btnTemaFresco'), b = $('btnTemaMarino');
+      if (a) a.className = 'btn btn-sm ' + (nombre === 'fresco' ? 'btn-accent' : 'btn-logout');
+      if (b) b.className = 'btn btn-sm ' + (nombre === 'marino' ? 'btn-accent' : 'btn-logout');
+      toast(nombre === 'fresco' ? 'Estilo «Fresco de mercado» activado.' : 'Estilo «Marino» activado.');
+    }
     function pad2(n) { return String(n).padStart(2, '0'); }
     // Fecha de HOY en hora local (no UTC)
     function hoyLocal() {
@@ -1429,6 +1485,7 @@
         $('cfgEmpresa').value = _cfg.empresa || 'EL ANCLA';
         $('cfgComercial').value = _cfg.comercial || '';
         $('cfgTelefono').value = _cfg.telefono || '';
+        (function () { var m = temaActual() === 'marino'; $('btnTemaFresco').className = 'btn btn-sm ' + (m ? 'btn-logout' : 'btn-accent'); $('btnTemaMarino').className = 'btn btn-sm ' + (m ? 'btn-accent' : 'btn-logout'); })();
         $('cfgCif').value = _cfg.cif || '';
         $('cfgDireccion').value = _cfg.direccion || '';
         $('cfgEmail').value = _cfg.email || '';
@@ -1958,7 +2015,7 @@
         var pie = (cfg.comercial ? cfg.comercial + (cfg.telefono ? '  |  Tel. ' + cfg.telefono : '') : (cfg.empresa || 'EL ANCLA'));
         function cabecera() {
           pag++;
-          pdf.setFillColor(15, 23, 42); pdf.rect(0, 0, W, 16, 'F');
+          pdf.setFillColor.apply(pdf, paleta().rgb1); pdf.rect(0, 0, W, 16, 'F');
           pdf.setTextColor(255, 255, 255); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(13);
           pdf.text(String(cfg.empresa || 'EL ANCLA'), M, 10.5);
           pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9);
@@ -2002,9 +2059,9 @@
           if (cat !== catAct) {
             if (y > 262) nuevaPagina();
             y += 2; pdf.setFillColor(241, 245, 249); pdf.rect(M, y - 4.5, W - 2 * M, 6.5, 'F');
-            pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10); pdf.setTextColor(37, 99, 235); pdf.text(cat.toUpperCase(), M + 2, y); y += 6.5; catAct = cat;
+            pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10); pdf.setTextColor.apply(pdf, paleta().rgbAc); pdf.text(cat.toUpperCase(), M + 2, y); y += 6.5; catAct = cat;
           }
-          if (y > 278) { nuevaPagina(); pdf.setFillColor(241, 245, 249); pdf.rect(M, y - 4.5, W - 2 * M, 6.5, 'F'); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10); pdf.setTextColor(37, 99, 235); pdf.text(cat.toUpperCase() + ' (cont.)', M + 2, y); y += 6.5; }
+          if (y > 278) { nuevaPagina(); pdf.setFillColor(241, 245, 249); pdf.rect(M, y - 4.5, W - 2 * M, 6.5, 'F'); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10); pdf.setTextColor.apply(pdf, paleta().rgbAc); pdf.text(cat.toUpperCase() + ' (cont.)', M + 2, y); y += 6.5; }
           pdf.setFont('helvetica', 'normal'); pdf.setFontSize(10); pdf.setTextColor(15, 23, 42);
           var nom = pdf.splitTextToSize(p.nombre || '', W - 2 * M - 40)[0];
           pdf.text(nom, M + 2, y);
@@ -2587,7 +2644,7 @@
       try {
         var pdf = new jspdf.jsPDF('p', 'mm', 'a4'), W = 210, M = 15, y = 0, pag = 0, cfg = _cfg || {};
         function cab() {
-          pag++; pdf.setFillColor(15, 23, 42); pdf.rect(0, 0, W, 16, 'F'); pdf.setTextColor(255, 255, 255);
+          pag++; pdf.setFillColor.apply(pdf, paleta().rgb1); pdf.rect(0, 0, W, 16, 'F'); pdf.setTextColor(255, 255, 255);
           pdf.setFont('helvetica', 'bold'); pdf.setFontSize(13); pdf.text(String(cfg.empresa || 'EL ANCLA'), M, 10.5);
           pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9); pdf.text('Hoja de reparto · ' + fechaLarga(f), W - M, 10.5, { align: 'right' });
           pdf.setTextColor(15, 23, 42); y = 26;
@@ -2872,12 +2929,15 @@
         for (var q = 0; q < arr.length; q++) plana.push({ categoria: catsOrden[k], producto: arr[q] });
       }
 
+      var PAL = paleta();
       var itemsPorPagina = 13, bloques = [], paginaHtml = '', contador = 0, ultimaCat = '';
       for (var idx = 0; idx < plana.length; idx++) {
         var d = plana[idx];
         if (contador >= itemsPorPagina) { bloques.push(paginaHtml); paginaHtml = ''; contador = 0; ultimaCat = ''; }
         if (d.categoria !== ultimaCat) {
-          paginaHtml += '<div style="margin-top: 6px; margin-bottom: 3px; padding: 3px 8px; background: #032b5f; color: #ffffff; font-family: \'Oswald\', sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; border-radius: 4px;">' + esc(d.categoria) + '</div>';
+          paginaHtml += PAL.marino
+            ? '<div style="margin-top: 6px; margin-bottom: 3px; padding: 3px 8px; background: #032b5f; color: #ffffff; font-family: \'Oswald\', sans-serif; font-size: 12px; font-weight: 700; text-transform: uppercase; border-radius: 4px;">' + esc(d.categoria) + '</div>'
+            : '<div style="margin-top: 10px; margin-bottom: 2px; padding: 0 2px 3px 2px; color: ' + PAL.c1 + '; font-family: \'Fraunces\', Georgia, serif; font-size: 17px; font-weight: 700; border-bottom: 2px solid ' + PAL.ac + ';">' + esc(d.categoria) + '</div>';
           ultimaCat = d.categoria;
           contador += 0.35;
         }
@@ -2891,7 +2951,7 @@
           '<div style="flex: 1; padding: 0 10px; overflow: hidden;">' +
             '<div style="font-size: 13px; font-weight: 700; color: #0f172a; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">' + esc(prod.nombre) + '</div>' + notaT +
           '</div>' +
-          '<div style="font-family: \'Oswald\', sans-serif; font-size: 17px; font-weight: 700; color: #2563eb; width: 80px; text-align: right; flex-shrink: 0;">' + prod.precio.toFixed(2) + ' €</div>' +
+          '<div style="font-family: ' + (PAL.marino ? '\'Oswald\', sans-serif; font-size: 17px' : '\'Fraunces\', Georgia, serif; font-size: 16px') + '; font-weight: 700; color: ' + PAL.ac + '; width: 80px; text-align: right; flex-shrink: 0;">' + prod.precio.toFixed(2) + ' €</div>' +
         '</div>';
         contador++;
       }
@@ -2909,10 +2969,10 @@
       for (var n = 0; n < total; n++) {
         var cabecera;
         if (n === 0) {
-          cabecera = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 3px solid #032b5f;">' +
-            '<div style="display: flex; align-items: center; gap: 10px;">' + logoHeader + '<div><h1 style="margin: 0; font-family: \'Oswald\', sans-serif; font-size: 28px; line-height: 1.0; color: #032b5f; text-transform: uppercase;">' + empresa + '</h1>' + (lineaFiscalEmpresa() ? '<div style="font-size: 10px; color: #475569; margin-top: 3px;">' + esc(lineaFiscalEmpresa()) + '</div>' : '') + '</div></div>' +
+          cabecera = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 3px solid ' + PAL.c1 + ';">' +
+            '<div style="display: flex; align-items: center; gap: 10px;">' + logoHeader + '<div><h1 style="margin: 0; ' + (PAL.marino ? 'font-family: \'Oswald\', sans-serif; font-size: 28px; line-height: 1.0; text-transform: uppercase;' : 'font-family: \'Fraunces\', Georgia, serif; font-size: 32px; line-height: 1.05; letter-spacing: -0.5px;') + ' color: ' + PAL.c1 + ';">' + empresa + '</h1>' + (lineaFiscalEmpresa() ? '<div style="font-size: 10px; color: #475569; margin-top: 3px;">' + esc(lineaFiscalEmpresa()) + '</div>' : '') + '</div></div>' +
             '<div style="text-align: right; font-size: 12px; color: #475569;">' +
-              '<div style="font-family: \'Oswald\', sans-serif; font-size: 16px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin-bottom: 2px;">' + cli + '</div>' +
+              '<div style="' + (PAL.marino ? 'font-family: \'Oswald\', sans-serif; font-size: 16px; text-transform: uppercase;' : 'font-family: \'Fraunces\', Georgia, serif; font-size: 18px;') + ' font-weight: 700; color: ' + PAL.ac + '; margin-bottom: 2px;">' + cli + '</div>' +
               '<div><strong>Fecha:</strong> ' + fechaTxt + '</div>' +
             '</div></div>';
         } else {
