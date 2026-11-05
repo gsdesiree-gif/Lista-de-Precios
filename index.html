@@ -759,12 +759,18 @@
     .np-titulo { font-family:'Fraunces',Georgia,serif; font-style:italic; font-weight:500; font-size:clamp(54px,17vw,110px); line-height:1; color:#f6f0e4; }
     .np-anio { margin-top:8px; font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:clamp(24px,7vw,38px); letter-spacing:.14em; color:#c8a45a; }
     .np-slogan { margin:18px auto 0; max-width:420px; font-family:'Fraunces',Georgia,serif; font-style:italic; font-size:clamp(18px,5vw,24px); line-height:1.3; color:#e9d9ae; }
-    .np-sub { display:none; }
+    .np-ico { margin-bottom:6px; }
+    .np-cat-t { display:flex; align-items:center; gap:10px; margin:30px 0 14px; }
+    .np-lin { flex:1; height:1px; background:linear-gradient(90deg,transparent,#c8a45a); }
+    .np-lin:last-child { background:linear-gradient(270deg,transparent,#c8a45a); }
+    .np-cat-n { font-family:'Fraunces',Georgia,serif; font-style:italic; font-weight:500; font-size:clamp(26px,7vw,34px); color:#f6f0e4; }
+    .np-bay { width:14px; height:14px; border-radius:50%; background:radial-gradient(circle at 35% 35%,#e85a67,#b3212f); box-shadow:10px 4px 0 -3px #b3212f; margin-right:10px; }
+    .np-card { box-shadow:0 6px 18px rgba(0,0,0,.35); }
     .np-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
     @media (min-width:640px) { .np-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; } }
     .np-card { background:#fffaf0; border:1px solid #c8a45a; border-radius:12px; overflow:hidden; cursor:pointer; display:flex; flex-direction:column; -webkit-tap-highlight-color:transparent; }
     .np-card:active { transform:scale(.98); }
-    .np-foto { aspect-ratio:4/5; background:#efe6d2; display:flex; align-items:center; justify-content:center; font-size:40px; }
+    .np-foto { aspect-ratio:1/1; background:#efe6d2; display:flex; align-items:center; justify-content:center; font-size:40px; }
     .np-foto img { width:100%; height:100%; object-fit:cover; display:block; }
     .np-info { padding:9px 11px 11px; }
     .np-nom { font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:17px; line-height:1.15; color:#101b33; }
@@ -1804,27 +1810,50 @@
     }
     function navTarjeta(p, conPrecios) {
       var s = imgSrc(p.url_foto);
-      var foto = '<div style="flex:1; min-height:120px; position:relative; background:#efe6d2; overflow:hidden;">' + (s
+      var foto = '<div style="width:100%; height:203px; position:relative; background:#efe6d2; overflow:hidden;">' + (s
         ? '<img src="' + s + '"' + corsAttr(s) + ' alt="" style="position:absolute; left:0; top:0; width:100%; height:100%; object-fit:cover; display:block;">'
-        : '<div style="position:absolute; left:0; top:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center;">' + navBayasSvg(56, 46, '#efe6d2') + '</div>') + '</div>';
-      return '<div style="box-sizing:border-box; background:#fffaf0; border:1px solid #d9c9a3; border-radius:10px; overflow:hidden; display:flex; flex-direction:column; min-height:0;">' + foto +
-        '<div style="padding:9px 11px 10px; display:flex; flex-direction:column; gap:2px; flex:none;">' +
-          '<div style="font-size:11px; font-weight:600; color:#7d6224;">' + esc(p.categoria || 'Varios') + '</div>' +
-          '<div style="font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:18px; line-height:1.1; color:#101b33;">' + esc(p.nombre) + '</div>' +
-          (conPrecios ? '<div style="font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:18px; color:#a3202f; margin-top:2px;">' + num(p.precio).toFixed(2) + ' €</div>' : '') +
+        : '<div style="position:absolute; left:0; top:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center;">' + navBayasSvg(60, 49, '#efe6d2') + '</div>') + '</div>';
+      return '<div style="box-sizing:border-box; background:#fffaf0; border:1px solid #c8a45a; border-radius:8px; overflow:hidden; display:flex; flex-direction:column;">' + foto +
+        '<div style="padding:8px 10px 9px; height:46px; box-sizing:border-box; display:flex; align-items:center; justify-content:space-between; gap:6px;">' +
+          '<div style="font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:16px; line-height:1.1; color:#101b33; flex:1; min-width:0;">' + esc(p.nombre) + '</div>' +
+          (conPrecios ? '<div style="font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:16px; color:#a3202f; white-space:nowrap;">' + num(p.precio).toFixed(2) + ' €</div>' : '') +
         '</div></div>';
     }
-    function navPaginaProductos(items, titulo, conPrecios, pie) {
-      var cards = '';
-      items.forEach(function (p) { cards += navTarjeta(p, conPrecios); });
-      return navPagina(navMarcos() + navDestellos() +
-        '<div style="position:absolute; left:76px; right:76px; top:80px; bottom:80px; display:flex; flex-direction:column; gap:16px;">' +
-          '<div style="display:flex; align-items:flex-end; justify-content:space-between; border-bottom:2px solid #c8a45a; padding-bottom:12px;">' +
-            '<div><div style="font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:42px; line-height:1.05; color:#101b33;">Nuestra selección</div>' +
-            '<div style="margin-top:6px; font-size:15px; color:#4a5266;">Los mejores productos para tus momentos más especiales</div></div>' +
-            '<div style="font-family:\'Fraunces\', Georgia, serif; font-style:italic; font-size:22px; color:#a3202f;">' + esc(titulo) + '</div></div>' +
-          '<div style="flex:1; min-height:0; display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); grid-template-rows:repeat(' + Math.ceil(items.length / 3) + ', minmax(0, ' + (items.length > 4 ? '1fr' : '400px') + ')); gap:16px;">' + cards + '</div>' +
-          '<div style="text-align:center; font-family:\'Fraunces\', Georgia, serif; font-size:19px; color:#101b33;">' + esc(pie) + '</div></div>', NAV_MARFIL);
+    function navTituloCat(nombre) {
+      return '<div style="height:46px; display:flex; align-items:center; gap:14px;">' +
+        '<div style="flex:1; height:1px; background:#c8a45a;"></div>' + navBayasSvg(26, 21, NAV_MARFIL) +
+        '<div style="font-family:\'Fraunces\', Georgia, serif; font-style:italic; font-weight:500; font-size:30px; color:#101b33;">' + esc(nombre) + '</div>' + navBayasSvg(26, 21, NAV_MARFIL) +
+        '<div style="flex:1; height:1px; background:#c8a45a;"></div></div>';
+    }
+    function navPaginasProductos(elegidos, titulo, conPrecios, pie) {
+      var ROW = 261 + 14, CAT = 46 + 14, DISP = 800, pags = [], cur = [], usado = 0;
+      var cats = [], mapa = {};
+      elegidos.forEach(function (p) { var c = p.categoria || 'Varios'; if (!mapa[c]) { mapa[c] = []; cats.push(c); } mapa[c].push(p); });
+      var cierra = function () { if (cur.length) pags.push(cur); cur = []; usado = 0; };
+      cats.forEach(function (c) {
+        var filas = []; for (var i = 0; i < mapa[c].length; i += 3) filas.push(mapa[c].slice(i, i + 3));
+        if (usado + CAT + ROW > DISP) cierra();
+        cur.push({ cat: c }); usado += CAT;
+        filas.forEach(function (f) {
+          if (usado + ROW > DISP) { cierra(); cur.push({ cat: c }); usado += CAT; }
+          cur.push({ fila: f }); usado += ROW;
+        });
+      });
+      cierra();
+      return pags.map(function (bloques) {
+        var h = '';
+        bloques.forEach(function (b) {
+          if (b.cat) h += navTituloCat(b.cat);
+          else { h += '<div style="display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:16px; align-items:start;">'; b.fila.forEach(function (p) { h += navTarjeta(p, conPrecios); }); h += '</div>'; }
+        });
+        return navPagina(navMarcos() + navDestellos() +
+          '<div style="position:absolute; left:76px; right:76px; top:72px; bottom:70px; display:flex; flex-direction:column; gap:14px;">' +
+            '<div style="display:flex; align-items:flex-end; justify-content:space-between; border-bottom:2px solid #c8a45a; padding-bottom:8px; margin-bottom:2px;">' +
+              '<div style="font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:30px; line-height:1.05; color:#101b33;">Nuestra selección</div>' +
+              '<div style="font-family:\'Fraunces\', Georgia, serif; font-style:italic; font-size:21px; color:#a3202f;">' + esc(titulo) + '</div></div>' +
+            h +
+            '<div style="margin-top:auto; text-align:center; font-family:\'Fraunces\', Georgia, serif; font-size:18px; color:#101b33;">' + esc(pie) + '</div></div>', NAV_MARFIL);
+      });
     }
     function navContraportada(tel) {
       return navPagina(navEstrellasSvg() + navMarcos() + navLazosSvg() +
@@ -1848,7 +1877,7 @@
       var precios = $('navPrecios').checked, empresa = _cfg.empresa || 'EL ANCLA';
       var tel = $('navTel').value.trim(), nom = $('navNombre').value.trim(), pie = [nom, tel].filter(Boolean).join(' · ');
       var pags = [navPortada(titulo, empresa)];
-      for (var i = 0; i < elegidos.length; i += 6) pags.push(navPaginaProductos(elegidos.slice(i, i + 6), titulo, precios, pie));
+      navPaginasProductos(elegidos, titulo, precios, pie).forEach(function (h) { pags.push(h); });
       pags.push(navContraportada(tel));
       $('modalNavidad').style.display = 'none';
       _clienteActual = ''; _pdfNombre = 'Catalogo_' + titulo.replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ]+/g, '_') + (precios ? '_con_precios' : '') + '.pdf';
@@ -1913,17 +1942,25 @@
       });
       _navPub.prods = prods;
       var pal = titulo.trim().split(/\s+/), grande = pal.shift() || 'Navidad', resto = pal.join(' ');
+      var star = '<svg class="np-star" viewBox="0 0 24 24" width="22" height="22"><path d="M12 1 L14 10 L23 12 L14 14 L12 23 L10 14 L1 12 L10 10 Z" fill="#c8a45a"/></svg>';
       var h = '<div class="np-wrap"><div class="np-head"><div class="np-cinta np-l"></div><div class="np-cinta np-r"></div>' +
-        '<div class="np-sub">' + esc(grande === 'Navidad' ? '' : '') + '</div>' +
-        '<div class="np-titulo">' + esc(grande) + '</div>' + (resto ? '<div class="np-anio">' + esc(resto) + '</div>' : '') +
-        '<div class="np-slogan">Los mejores productos para los momentos más especiales</div></div><div class="np-grid">';
+        '<div class="np-ico">' + star + '</div>' +
+        '<div class="np-titulo">' + esc(grande) + '</div>' + (resto ? '<div class="np-anio">✦ ' + esc(resto) + ' ✦</div>' : '') +
+        '<div class="np-slogan">Los mejores productos para los momentos más especiales</div></div>';
+      var catAct = null;
       prods.forEach(function (p, i) {
+        var c = p.categoria || 'Varios';
+        if (c !== catAct) {
+          if (catAct !== null) h += '</div>';
+          h += '<div class="np-cat-t"><span class="np-lin"></span><span class="np-bay"></span><span class="np-cat-n">' + esc(c) + '</span><span class="np-bay"></span><span class="np-lin"></span></div><div class="np-grid">';
+          catAct = c;
+        }
         var s = imgSrc(p.url_foto);
         h += '<div class="np-card" onclick="navAbrirProducto(' + i + ')">' +
           '<div class="np-foto">' + (s ? '<img src="' + s + '" alt="" loading="lazy">' : '<span>🎄</span>') + '</div>' +
           '<div class="np-info"><div class="np-nom">' + esc(p.nombre) + '</div>' + (p._precio !== undefined ? '<div class="np-pre">' + p._precio.toFixed(2) + ' €</div>' : '') + '</div></div>';
       });
-      h += '</div>';
+      if (catAct !== null) h += '</div>';
       if (!prods.length) h += '<div style="text-align:center; color:#e9d9ae; padding:40px 20px;">Este catálogo ya no tiene productos disponibles.</div>';
       var telL = _navPub.tel.replace(/[^\d+]/g, '');
       h += '<div class="np-pie">' + (_navPub.tel ? '<div class="np-feliz">Feliz Navidad</div><a class="np-tel" href="tel:' + esc(telL) + '">Pedidos al ' + esc(_navPub.tel) + '</a>' : '<div class="np-feliz">Feliz Navidad</div>') +
