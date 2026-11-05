@@ -934,6 +934,9 @@
         <div class="field"><label>Nombre de la Empresa</label><input type="text" id="cfgEmpresa" placeholder="Ej: EL ANCLA"></div>
         <div class="field"><label>Nombre del Comercial / Agente</label><input type="text" id="cfgComercial" placeholder="Ej: Désirée Guerrero"></div>
         <div class="field"><label>Teléfono / WhatsApp</label><input type="text" id="cfgTelefono" placeholder="Ej: 600 000 000"></div>
+        <div class="field"><label>CIF / NIF de la empresa</label><input type="text" id="cfgCif" autocapitalize="characters" placeholder="Ej: B12345678"></div>
+        <div class="field"><label>Dirección de la empresa</label><input type="text" id="cfgDireccion" placeholder="Ej: C/ Mar 1, 11001 Cádiz"></div>
+        <div class="field"><label>Email de la empresa</label><input type="email" id="cfgEmail" inputmode="email" placeholder="Ej: pedidos@elancla.es"></div>
         <div class="field"><label>Tu comisión (%)</label><input type="number" step="0.1" inputmode="decimal" id="cfgComision" placeholder="3"></div>
         <div class="field">
           <label>Logo de la Empresa (Imagen)</label>
@@ -1009,6 +1012,7 @@
     <div class="modal-card">
       <div class="card-header" id="pedTitulo" style="margin-bottom: 14px;">🛒 Pedido</div>
       <div class="field"><label>📅 Fecha de entrega</label><input type="date" id="pedFecha"></div>
+      <button id="btnRepetirPed" class="btn btn-accent btn-sm" onclick="repetirUltimoPedido()" style="margin-bottom:8px; display:none;">🔁 Repetir último pedido</button>
       <button class="btn btn-wa btn-sm" onclick="togglePegar()" style="margin-bottom:8px;">📋 Pegar pedido de WhatsApp</button>
       <div id="pedPegarBox" style="display:none; margin-bottom:12px;">
         <textarea id="pedPegar" rows="5" placeholder="Pega aquí el mensaje del cliente. Ej: Hola, para el viernes 2 kg de gambas y 3 lubinas" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; font:inherit; box-sizing:border-box;"></textarea>
@@ -1425,6 +1429,9 @@
         $('cfgEmpresa').value = _cfg.empresa || 'EL ANCLA';
         $('cfgComercial').value = _cfg.comercial || '';
         $('cfgTelefono').value = _cfg.telefono || '';
+        $('cfgCif').value = _cfg.cif || '';
+        $('cfgDireccion').value = _cfg.direccion || '';
+        $('cfgEmail').value = _cfg.email || '';
         $('cfgComision').value = pctComision();
         $('cfgLogoBase64').value = _cfg.logo || '';
         $('cfgMarcaAgua').checked = !!_cfg.es_marca_agua;
@@ -1436,6 +1443,10 @@
       } catch (e) { toast('No se pudo cargar la configuración: ' + errMsg(e), 'err'); }
     }
 
+    function lineaFiscalEmpresa() {
+      var c = _cfg || {};
+      return [c.cif ? 'CIF ' + c.cif : '', c.direccion || '', c.email || ''].filter(Boolean).join('  ·  ');
+    }
     async function guardarConfiguracion() {
       var btn = $('btnGuardarCfg');
       var com = parseFloat($('cfgComision').value);
@@ -1450,14 +1461,25 @@
         logo: $('cfgLogoBase64').value,
         es_marca_agua: $('cfgMarcaAgua').checked
       };
+      var fisc = { cif: $('cfgCif').value.trim().toUpperCase(), direccion: $('cfgDireccion').value.trim(), email: $('cfgEmail').value.trim() };
+      var avisoFisc = '';
       try {
-        chk(await _sb.from('configuracion').upsert([payload]));
+        var conFisc = Object.assign({}, payload, fisc);
+        var r1 = await _sb.from('configuracion').upsert([conFisc]);
+        if (r1.error) {
+          if (!(fisc.cif || fisc.direccion || fisc.email)) { chk(await _sb.from('configuracion').upsert([payload])); }
+          else if (/cif|direccion|email|column/i.test(String(r1.error.message || ''))) {
+            chk(await _sb.from('configuracion').upsert([payload]));
+            fisc = {}; avisoFisc = 'Ajustes guardados, pero los datos fiscales no: pega el script datos-fiscales.sql en Supabase.';
+          } else chk(r1);
+        }
+        payload = Object.assign(payload, fisc);
         _cfg = Object.assign({}, _cfg, payload);
         $('brandTitle').textContent = _cfg.empresa;
         $('clientTitle').textContent = _cfg.empresa;
         aplicarComisionUI();
         cargarCaja();
-        toast('¡Ajustes guardados!');
+        toast(avisoFisc || '¡Ajustes guardados!', avisoFisc ? 'err' : 'ok');
       } catch (e) { toast('No se guardó: ' + errMsg(e), 'err'); }
       finally { btn.disabled = false; btn.textContent = '💾 Guardar Ajustes'; }
     }
@@ -1942,6 +1964,7 @@
           pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9);
           pdf.text('Ficha de cliente · ' + new Date().toLocaleDateString('es-ES'), W - M, 10.5, { align: 'right' });
           pdf.setTextColor(15, 23, 42); y = 26;
+          if (lineaFiscalEmpresa()) { pdf.setFontSize(8); pdf.setTextColor(100, 116, 139); pdf.text(lineaFiscalEmpresa(), M, 21); pdf.setTextColor(15, 23, 42); y = 29; }
         }
         function pieDePagina() {
           pdf.setFontSize(8); pdf.setTextColor(100, 116, 139); pdf.setFont('helvetica', 'normal');
@@ -2228,11 +2251,31 @@
     async function cargarPedidos() {
       if (!_clientesOk) { _pedidos = []; _pedidosOk = false; actualizarBtnPedidos(); return; }
       try {
-        _pedidos = chk(await _sb.from('pedidos').select('*').gte('fecha_entrega', sumarDias(hoyLocal(), -45)).order('fecha_entrega')) || [];
+        _pedidos = chk(await _sb.from('pedidos').select('*').gte('fecha_entrega', sumarDias(hoyLocal(), -180)).order('fecha_entrega')) || [];
         _pedidosOk = true;
       } catch (e) { _pedidos = []; _pedidosOk = false; }
       actualizarBtnPedidos();
       renderizarClientes();
+    }
+    function ultimoPedidoDe(cid, excluirId) {
+      var r = _pedidos.filter(function (p) { return p.cliente_id === cid && p.id !== excluirId; });
+      r.sort(function (a, b) { return String(b.fecha_entrega).localeCompare(String(a.fecha_entrega)) || b.id - a.id; });
+      return r[0] || null;
+    }
+    function repetirUltimoPedido() {
+      var u = ultimoPedidoDe(_pedCli, _pedId);
+      if (!u) { toast('Este cliente aún no tiene pedidos anteriores.', 'err'); return; }
+      Object.keys(_pedLineas).forEach(function (k) { _pedLineas[k].cantidad = 0; });
+      var faltan = 0;
+      (u.lineas || []).forEach(function (l) {
+        var k = Number(l.id), p = buscarEnCache(k);
+        if (!p) { faltan++; return; }
+        if (!_pedLineas[k]) _pedLineas[k] = { id: k, nombre: p.nombre, categoria: p.categoria || 'Varios', cantidad: 0, precio: 0 };
+        _pedLineas[k].cantidad = num(l.cantidad);
+        _pedLineas[k].precio = precioClienteDe(_pedCli, p);
+      });
+      pintarPedido();
+      toast('Repetido el pedido del ' + fechaLarga(String(u.fecha_entrega).substring(0, 10)) + (faltan ? ' (' + faltan + ' producto(s) ya no existen)' : '') + '. Ajusta las cantidades.');
     }
     function pedidosPendientes() { return _pedidos.filter(function (p) { return !p.entregado; }); }
     function pendienteDe(cid) {
@@ -2390,6 +2433,9 @@
       $('pedBuscar').value = ''; $('pedResultados').innerHTML = '';
       $('pedPegar').value = ''; $('pedPegarRes').innerHTML = ''; $('pedPegarBox').style.display = 'none';
       $('btnBorrarPedido').style.display = ex ? '' : 'none';
+      var ult = ultimoPedidoDe(cid, ex ? ex.id : 0);
+      $('btnRepetirPed').style.display = ult ? '' : 'none';
+      $('btnRepetirPed').textContent = ult ? '🔁 Repetir último pedido (' + fechaLarga(String(ult.fecha_entrega).substring(0, 10)) + ')' : '';
       pintarPedido();
       $('modalPedido').style.display = 'flex';
     }
@@ -2411,7 +2457,7 @@
         var l = arr[i];
         html += '<div style="display:flex; align-items:center; gap:6px; padding:6px 0; border-bottom:1px solid var(--border);">' +
           '<div style="flex:1; min-width:0;"><div style="font-weight:600; font-size:14px;">' + esc(l.nombre) + '</div>' +
-          '<div style="font-size:11px; color:var(--muted);">' + num(l.precio).toFixed(2) + ' €</div></div>' +
+          '<div style="font-size:11px; color:var(--muted);">' + num(l.precio).toFixed(2) + ' €</div>' + '</div>' +
           '<button class="btn btn-sm btn-logout" onclick="pedMas(' + l.id + ', -1)">−</button>' +
           '<input type="number" inputmode="decimal" min="0" step="any" value="' + (l.cantidad || '') + '" placeholder="0" style="width:62px; text-align:center;" oninput="pedCant(' + l.id + ', this.value)">' +
           '<button class="btn btn-sm btn-accent" onclick="pedMas(' + l.id + ', 1)">+</button></div>';
@@ -2434,7 +2480,7 @@
         var p = _productosCache[i];
         if (norm(p.nombre).indexOf(q) === -1 || _pedLineas[p.id]) continue;
         n++;
-        html += '<button class="btn btn-sm btn-logout" style="width:100%; text-align:left; margin-top:4px;" onclick="pedAnadir(' + Number(p.id) + ')">➕ ' + esc(p.nombre) + ' <span style="color:var(--muted)">· ' + esc(p.categoria || 'Varios') + '</span></button>';
+        html += '<button class="btn btn-sm btn-logout" style="width:100%; text-align:left; margin-top:4px;" onclick="pedAnadir(' + Number(p.id) + ')">➕ ' + esc(p.nombre) + ' <span style="color:var(--muted)">· ' + esc(p.categoria || 'Varios') + '</span>' + '</button>';
       }
       $('pedResultados').innerHTML = html || '<div style="color:var(--muted); font-size:13px; padding:4px;">No hay más productos con ese nombre.</div>';
     }
@@ -2545,6 +2591,7 @@
           pdf.setFont('helvetica', 'bold'); pdf.setFontSize(13); pdf.text(String(cfg.empresa || 'EL ANCLA'), M, 10.5);
           pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9); pdf.text('Hoja de reparto · ' + fechaLarga(f), W - M, 10.5, { align: 'right' });
           pdf.setTextColor(15, 23, 42); y = 26;
+          if (lineaFiscalEmpresa()) { pdf.setFontSize(8); pdf.setTextColor(100, 116, 139); pdf.text(lineaFiscalEmpresa(), M, 21); pdf.setTextColor(15, 23, 42); y = 29; }
         }
         function pie() { pdf.setFontSize(8); pdf.setTextColor(100, 116, 139); pdf.setFont('helvetica', 'normal'); pdf.text('Página ' + pag, W - M, 290, { align: 'right' }); }
         function salto(h) { if (y + h > 280) { pie(); pdf.addPage(); cab(); } }
@@ -2863,7 +2910,7 @@
         var cabecera;
         if (n === 0) {
           cabecera = '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 3px solid #032b5f;">' +
-            '<div style="display: flex; align-items: center; gap: 10px;">' + logoHeader + '<div><h1 style="margin: 0; font-family: \'Oswald\', sans-serif; font-size: 28px; line-height: 1.0; color: #032b5f; text-transform: uppercase;">' + empresa + '</h1></div></div>' +
+            '<div style="display: flex; align-items: center; gap: 10px;">' + logoHeader + '<div><h1 style="margin: 0; font-family: \'Oswald\', sans-serif; font-size: 28px; line-height: 1.0; color: #032b5f; text-transform: uppercase;">' + empresa + '</h1>' + (lineaFiscalEmpresa() ? '<div style="font-size: 10px; color: #475569; margin-top: 3px;">' + esc(lineaFiscalEmpresa()) + '</div>' : '') + '</div></div>' +
             '<div style="text-align: right; font-size: 12px; color: #475569;">' +
               '<div style="font-family: \'Oswald\', sans-serif; font-size: 16px; font-weight: 700; color: #2563eb; text-transform: uppercase; margin-bottom: 2px;">' + cli + '</div>' +
               '<div><strong>Fecha:</strong> ' + fechaTxt + '</div>' +
