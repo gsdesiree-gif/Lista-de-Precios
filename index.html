@@ -749,7 +749,40 @@
     @media (max-width: 767px) {
       .top-bar { justify-content: space-between; padding: 10px 14px; }
     }
-  </style>
+  
+    /* catálogo de Navidad público */
+    #navPublica { position:fixed; inset:0; z-index:9999; overflow-y:auto; background:#101b33; color:#f6f0e4; -webkit-overflow-scrolling:touch; }
+    .np-wrap { max-width:760px; margin:0 auto; padding:0 16px 40px; position:relative; }
+    .np-head { position:relative; text-align:center; padding:56px 10px 26px; }
+    .np-cinta { position:absolute; top:0; width:26px; height:92px; background:#b3212f; clip-path:polygon(0 0,100% 0,100% 100%,50% 86%,0 100%); }
+    .np-l { left:10px; } .np-r { right:10px; }
+    .np-titulo { font-family:'Fraunces',Georgia,serif; font-style:italic; font-weight:500; font-size:clamp(54px,17vw,110px); line-height:1; color:#f6f0e4; }
+    .np-anio { margin-top:8px; font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:clamp(24px,7vw,38px); letter-spacing:.14em; color:#c8a45a; }
+    .np-slogan { margin:18px auto 0; max-width:420px; font-family:'Fraunces',Georgia,serif; font-style:italic; font-size:clamp(18px,5vw,24px); line-height:1.3; color:#e9d9ae; }
+    .np-sub { display:none; }
+    .np-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
+    @media (min-width:640px) { .np-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; } }
+    .np-card { background:#fffaf0; border:1px solid #c8a45a; border-radius:12px; overflow:hidden; cursor:pointer; display:flex; flex-direction:column; -webkit-tap-highlight-color:transparent; }
+    .np-card:active { transform:scale(.98); }
+    .np-foto { aspect-ratio:4/5; background:#efe6d2; display:flex; align-items:center; justify-content:center; font-size:40px; }
+    .np-foto img { width:100%; height:100%; object-fit:cover; display:block; }
+    .np-info { padding:9px 11px 11px; }
+    .np-nom { font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:17px; line-height:1.15; color:#101b33; }
+    .np-pre { font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:17px; color:#a3202f; margin-top:3px; }
+    .np-pie { text-align:center; padding:36px 0 10px; }
+    .np-feliz { font-family:'Fraunces',Georgia,serif; font-style:italic; font-size:clamp(36px,10vw,56px); color:#f6f0e4; }
+    .np-tel { display:inline-block; margin-top:12px; font-family:'Fraunces',Georgia,serif; font-size:24px; color:#e9d9ae; text-decoration:none; }
+    .np-quien { margin-top:6px; color:#c8a45a; font-size:15px; }
+    .np-lb { position:fixed; inset:0; z-index:10000; background:rgba(8,14,28,.88); display:none; align-items:center; justify-content:center; padding:16px; }
+    .np-lbcard { position:relative; background:#fffaf0; border-radius:14px; overflow:hidden; max-width:520px; width:100%; max-height:94vh; display:flex; flex-direction:column; }
+    .np-lbcard img { width:100%; max-height:62vh; object-fit:contain; background:#efe6d2; display:block; }
+    .np-lbtxt { padding:14px 18px 18px; overflow-y:auto; }
+    .np-cat { font-size:12px; font-weight:700; color:#7d6224; }
+    .np-lbnom { font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:26px; line-height:1.1; color:#101b33; margin-top:2px; }
+    .np-desc { margin-top:8px; font-size:14px; line-height:1.4; color:#4a5266; }
+    .np-wa { display:block; margin-top:14px; text-align:center; background:#3f8c5e; color:#fff; font-weight:700; padding:12px; border-radius:10px; text-decoration:none; }
+    .np-x { position:absolute; top:10px; right:10px; z-index:2; width:36px; height:36px; border-radius:50%; border:none; background:rgba(16,27,51,.75); color:#fff; font-size:16px; cursor:pointer; }
+</style>
 </head>
 <body>
 
@@ -1084,6 +1117,8 @@
   </div>
 
   <!-- MODAL CLIENTE -->
+  <div id="navPublica" style="display:none;"></div>
+
   <div id="modalNavidad" class="modal-overlay no-print">
     <div class="modal-card">
       <div class="card-header" style="margin-bottom: 6px;">🎄 Catálogo de Navidad</div>
@@ -1097,8 +1132,10 @@
       <div class="field"><label>Teléfono de pedidos</label><input type="text" id="navTel" placeholder="Ej: 660 87 59 27"></div>
       <div style="display:flex; gap:10px; margin-top:10px;">
         <button onclick="cerrarCatalogoNavidad()" class="btn btn-logout" style="flex:1;">Cancelar</button>
-        <button onclick="crearCatalogoNavidad()" class="btn btn-accent" style="flex:1;">🎄 Crear catálogo</button>
+        <button onclick="crearCatalogoNavidad()" class="btn btn-logout" style="flex:1;">📄 Crear PDF</button>
       </div>
+      <button onclick="navEnviarWhatsApp()" class="btn btn-wa" style="width:100%; margin-top:10px;">📲 Enviar catálogo interactivo por WhatsApp</button>
+      <button onclick="navCopiarEnlace()" class="btn btn-logout btn-sm" style="width:100%; margin-top:8px;">🔗 Copiar enlace</button>
     </div>
   </div>
 
@@ -1321,6 +1358,7 @@
 
       var modo = new URLSearchParams(window.location.search).get('modo');
       if (modo === 'cliente') { iniciarPublico(); return; }
+      if (modo === 'navidad') { iniciarNavidadPublica(); return; }
 
       try {
         var s = await _sb.auth.getSession();
@@ -1619,7 +1657,7 @@
     }
 
     /* ---------- catálogo de Navidad ---------- */
-    var _navSel = {}, _pdfNombre = '';
+    var _navSel = {}, _pdfNombre = '', _pdfListo = null, _pdfTok = 0;
     var NAV_ROJO = '#b3212f', NAV_ORO = '#c8a45a', NAV_NOCHE = '#101b33', NAV_MARFIL = '#f6f0e4';
 
     var NAV_GUIR = '', NAV_GUIR_ABAJO = '';
@@ -1766,17 +1804,15 @@
     }
     function navTarjeta(p, conPrecios) {
       var s = imgSrc(p.url_foto);
-      var foto = '<div style="flex:1; min-height:90px; position:relative; background:#efe6d2; overflow:hidden;">' + (s
+      var foto = '<div style="flex:1; min-height:120px; position:relative; background:#efe6d2; overflow:hidden;">' + (s
         ? '<img src="' + s + '"' + corsAttr(s) + ' alt="" style="position:absolute; left:0; top:0; width:100%; height:100%; object-fit:cover; display:block;">'
         : '<div style="position:absolute; left:0; top:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center;">' + navBayasSvg(56, 46, '#efe6d2') + '</div>') + '</div>';
       return '<div style="box-sizing:border-box; background:#fffaf0; border:1px solid #d9c9a3; border-radius:10px; overflow:hidden; display:flex; flex-direction:column; min-height:0;">' + foto +
-        '<div style="padding:11px 14px 10px; display:flex; flex-direction:column; gap:3px; flex:none;">' +
-          '<div style="font-size:12px; font-weight:600; color:#7d6224;">' + esc(p.categoria || 'Varios') + '</div>' +
-          '<div style="font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:21px; line-height:1.1; color:#101b33;">' + esc(p.nombre) + '</div>' +
-          '<div style="font-size:12.5px; line-height:1.35; color:#4a5266; height:34px; overflow:hidden;">' + esc(p.notas || '') + '</div>' +
-          '<div style="margin-top:auto; display:flex; align-items:center; justify-content:space-between; min-height:24px;">' +
-            (conPrecios ? '<div style="font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:21px; color:#a3202f;">' + num(p.precio).toFixed(2) + ' €</div>' : '<span></span>') +
-            navBayasSvg(26, 21, '#fffaf0') + '</div></div></div>';
+        '<div style="padding:9px 11px 10px; display:flex; flex-direction:column; gap:2px; flex:none;">' +
+          '<div style="font-size:11px; font-weight:600; color:#7d6224;">' + esc(p.categoria || 'Varios') + '</div>' +
+          '<div style="font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:18px; line-height:1.1; color:#101b33;">' + esc(p.nombre) + '</div>' +
+          (conPrecios ? '<div style="font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:18px; color:#a3202f; margin-top:2px;">' + num(p.precio).toFixed(2) + ' €</div>' : '') +
+        '</div></div>';
     }
     function navPaginaProductos(items, titulo, conPrecios, pie) {
       var cards = '';
@@ -1787,7 +1823,7 @@
             '<div><div style="font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:42px; line-height:1.05; color:#101b33;">Nuestra selección</div>' +
             '<div style="margin-top:6px; font-size:15px; color:#4a5266;">Los mejores productos para tus momentos más especiales</div></div>' +
             '<div style="font-family:\'Fraunces\', Georgia, serif; font-style:italic; font-size:22px; color:#a3202f;">' + esc(titulo) + '</div></div>' +
-          '<div style="flex:1; min-height:0; display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); grid-template-rows:repeat(' + Math.ceil(items.length / 2) + ', minmax(0, ' + (items.length > 4 ? '1fr' : '270px') + ')); gap:16px;">' + cards + '</div>' +
+          '<div style="flex:1; min-height:0; display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); grid-template-rows:repeat(' + Math.ceil(items.length / 3) + ', minmax(0, ' + (items.length > 4 ? '1fr' : '400px') + ')); gap:16px;">' + cards + '</div>' +
           '<div style="text-align:center; font-family:\'Fraunces\', Georgia, serif; font-size:19px; color:#101b33;">' + esc(pie) + '</div></div>', NAV_MARFIL);
     }
     function navContraportada(tel) {
@@ -1822,7 +1858,95 @@
       $('adminBottomNav').style.display = 'none';
       $('vistaDocumento').style.display = 'block';
       window.scrollTo(0, 0);
+      /* se prepara el PDF de antemano: el móvil solo deja compartir si se pulsa justo al momento */
+      _pdfListo = null;
+      var tok = _pdfTok = Date.now();
+      setTimeout(function () {
+        generarPDF().then(function (pdf) { if (tok === _pdfTok) _pdfListo = { pdf: pdf, nombre: _pdfNombre }; }).catch(function () {});
+      }, 900);
     }
+
+    /* ---------- catálogo de Navidad interactivo (enlace para WhatsApp) ---------- */
+    function navEnlace() {
+      var ids = Object.keys(_navSel).map(Number);
+      if (!ids.length) { toast('Elige al menos un producto para el catálogo.', 'err'); return ''; }
+      navGuardar();
+      var orden = categoriasDe(_productosCache);
+      var els = _productosCache.filter(function (p) { return _navSel[p.id]; }).sort(function (a, b) {
+        var d = orden.indexOf(a.categoria || 'Varios') - orden.indexOf(b.categoria || 'Varios');
+        return d !== 0 ? d : porNombre(a, b);
+      });
+      var u = window.location.href.split('?')[0].split('#')[0] + '?modo=navidad&p=' + els.map(function (p) { return p.id; }).join(',') +
+        '&t=' + encodeURIComponent($('navTitulo').value.trim() || ('Navidad ' + new Date().getFullYear())) +
+        '&n=' + encodeURIComponent($('navNombre').value.trim()) + '&tel=' + encodeURIComponent($('navTel').value.trim());
+      if ($('navPrecios').checked) u += '&pr=' + els.map(function (p) { return num(p.precio); }).join(',');
+      return u;
+    }
+    function navEnviarWhatsApp() {
+      var u = navEnlace(); if (!u) return;
+      var titulo = $('navTitulo').value.trim() || ('Navidad ' + new Date().getFullYear());
+      var msg = '🎄 ' + titulo + ': mira nuestro catálogo y pulsa en cada producto para verlo en grande 👇\n' + u;
+      window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+    }
+    async function navCopiarEnlace() {
+      var u = navEnlace(); if (!u) return;
+      try { await navigator.clipboard.writeText(u); toast('Enlace copiado. Ya puedes pegarlo donde quieras.'); }
+      catch (e) { window.prompt('Copia este enlace:', u); }
+    }
+
+    var _navPub = { prods: [], precios: {}, tel: '', nombre: '' };
+    async function iniciarNavidadPublica() {
+      var q = new URLSearchParams(window.location.search);
+      var ids = (q.get('p') || '').split(',').map(Number).filter(Boolean);
+      var pr = q.get('pr') ? q.get('pr').split(',') : null;
+      _navPub.tel = q.get('tel') || ''; _navPub.nombre = q.get('n') || '';
+      var titulo = q.get('t') || 'Navidad';
+      document.title = titulo;
+      var root = $('navPublica'); root.style.display = 'block';
+      root.innerHTML = '<div class="np-wrap"><div style="text-align:center; color:#e9d9ae; padding:80px 0;">Cargando…</div></div>';
+      var cat = [];
+      try { cat = chk(await _sb.from('catalogo_publico').select('*').order('nombre')) || []; }
+      catch (e) { root.innerHTML = '<div class="np-wrap"><div style="text-align:center; color:#e9d9ae; padding:80px 20px;">No se pudo cargar el catálogo. Inténtalo de nuevo en unos minutos.</div></div>'; return; }
+      var prods = [];
+      ids.forEach(function (id, i) {
+        for (var k = 0; k < cat.length; k++) if (cat[k].id === id) { var p = Object.assign({}, cat[k]); if (pr && pr[i] !== undefined) p._precio = Number(pr[i]); prods.push(p); break; }
+      });
+      _navPub.prods = prods;
+      var pal = titulo.trim().split(/\s+/), grande = pal.shift() || 'Navidad', resto = pal.join(' ');
+      var h = '<div class="np-wrap"><div class="np-head"><div class="np-cinta np-l"></div><div class="np-cinta np-r"></div>' +
+        '<div class="np-sub">' + esc(grande === 'Navidad' ? '' : '') + '</div>' +
+        '<div class="np-titulo">' + esc(grande) + '</div>' + (resto ? '<div class="np-anio">' + esc(resto) + '</div>' : '') +
+        '<div class="np-slogan">Los mejores productos para los momentos más especiales</div></div><div class="np-grid">';
+      prods.forEach(function (p, i) {
+        var s = imgSrc(p.url_foto);
+        h += '<div class="np-card" onclick="navAbrirProducto(' + i + ')">' +
+          '<div class="np-foto">' + (s ? '<img src="' + s + '" alt="" loading="lazy">' : '<span>🎄</span>') + '</div>' +
+          '<div class="np-info"><div class="np-nom">' + esc(p.nombre) + '</div>' + (p._precio !== undefined ? '<div class="np-pre">' + p._precio.toFixed(2) + ' €</div>' : '') + '</div></div>';
+      });
+      h += '</div>';
+      if (!prods.length) h += '<div style="text-align:center; color:#e9d9ae; padding:40px 20px;">Este catálogo ya no tiene productos disponibles.</div>';
+      var telL = _navPub.tel.replace(/[^\d+]/g, '');
+      h += '<div class="np-pie">' + (_navPub.tel ? '<div class="np-feliz">Feliz Navidad</div><a class="np-tel" href="tel:' + esc(telL) + '">Pedidos al ' + esc(_navPub.tel) + '</a>' : '<div class="np-feliz">Feliz Navidad</div>') +
+        (_navPub.nombre ? '<div class="np-quien">' + esc(_navPub.nombre) + '</div>' : '') + '</div></div>' +
+        '<div id="npLB" class="np-lb" onclick="if(event.target===this)navCerrarProducto()"><div class="np-lbcard"><button class="np-x" onclick="navCerrarProducto()">✕</button>' +
+        '<img id="npLBimg" alt=""><div class="np-lbtxt"><div id="npLBcat" class="np-cat"></div><div id="npLBnom" class="np-lbnom"></div><div id="npLBpre" class="np-pre"></div><div id="npLBdesc" class="np-desc"></div>' +
+        '<a id="npLBwa" class="np-wa" target="_blank" rel="noopener">💬 Pedir por WhatsApp</a></div></div></div>';
+      root.innerHTML = h;
+    }
+    function navAbrirProducto(i) {
+      var p = _navPub.prods[i]; if (!p) return;
+      var s = imgSrc(p.url_foto), im = $('npLBimg');
+      im.style.display = s ? '' : 'none'; im.src = s || '';
+      $('npLBcat').textContent = p.categoria || '';
+      $('npLBnom').textContent = p.nombre || '';
+      $('npLBpre').textContent = p._precio !== undefined ? p._precio.toFixed(2) + ' €' : '';
+      $('npLBdesc').textContent = p.notas || '';
+      var d = _navPub.tel.replace(/\D/g, ''); if (d.length === 9) d = '34' + d;
+      var a = $('npLBwa');
+      if (d) { a.style.display = ''; a.href = 'https://wa.me/' + d + '?text=' + encodeURIComponent('Hola, me gustaría pedir: ' + p.nombre); } else a.style.display = 'none';
+      $('npLB').style.display = 'flex';
+    }
+    function navCerrarProducto() { $('npLB').style.display = 'none'; }
 
     var _filtroProd = 'TODAS';
 
@@ -3158,7 +3282,7 @@
       try { lista = chk(await _sb.from('listas_generadas').select('*').eq('id', id).single()); }
       catch (e) { toast('No se pudo abrir la lista: ' + errMsg(e), 'err'); return; }
       if (!lista) return;
-      _clienteActual = lista.cliente_nombre || ''; _pdfNombre = '';
+      _clienteActual = lista.cliente_nombre || ''; _pdfNombre = ''; _pdfListo = null; _pdfTok = 0;
       var cfg = _cfg;
       var logoSrc = imgSrc(cfg.logo);
       var logoHeader = (logoSrc && !cfg.es_marca_agua) ? '<img src="' + logoSrc + '" alt="" style="max-height: 65px; max-width: 130px; object-fit: contain;">' : '';
@@ -3294,9 +3418,10 @@
     // Abre el menú de compartir del móvil (WhatsApp, correo...) con el PDF adjunto
     async function compartirPDF() {
       var btn = $('btnCompartirPDF'), txt = btn.textContent;
+      if (_pdfNombre && !_pdfListo) { toast('Estoy preparando el PDF. Vuelve a pulsar Compartir en unos segundos.'); return; }
       btn.disabled = true; btn.textContent = 'Generando...';
       try {
-        var pdf = await generarPDF();
+        var pdf = (_pdfNombre && _pdfListo) ? _pdfListo.pdf : await generarPDF();
         var file = new File([pdf.output('blob')], nombrePDF(), { type: 'application/pdf' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({ files: [file], title: 'Lista de precios' });
