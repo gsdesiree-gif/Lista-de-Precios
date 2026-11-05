@@ -823,6 +823,7 @@
           <input type="search" id="buscarCli" placeholder="🔎 Buscar cliente..." oninput="renderizarClientes()">
           <button class="btn btn-sm btn-accent" onclick="abrirModalCliente(0)" style="white-space:nowrap;">➕ Nuevo</button>
         </div>
+        <button id="btnReparto" class="btn btn-accent" style="margin-bottom:10px;" onclick="abrirReparto()">🧾 Pedidos y hoja de reparto</button>
         <div class="cat-filter-bar" id="barraCli">
           <button class="cat-filter-btn active" onclick="filtrarClientes('TODOS', this)">Todos</button>
           <button class="cat-filter-btn" onclick="filtrarClientes('LLAMAR', this)">📞 Llamar</button>
@@ -1004,6 +1005,40 @@
   </div>
 
   <!-- MODAL CLIENTE -->
+  <div id="modalPedido" class="modal-overlay no-print">
+    <div class="modal-card">
+      <div class="card-header" id="pedTitulo" style="margin-bottom: 14px;">🛒 Pedido</div>
+      <div class="field"><label>📅 Fecha de entrega</label><input type="date" id="pedFecha"></div>
+      <button class="btn btn-wa btn-sm" onclick="togglePegar()" style="margin-bottom:8px;">📋 Pegar pedido de WhatsApp</button>
+      <div id="pedPegarBox" style="display:none; margin-bottom:12px;">
+        <textarea id="pedPegar" rows="5" placeholder="Pega aquí el mensaje del cliente. Ej: Hola, para el viernes 2 kg de gambas y 3 lubinas" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; font:inherit; box-sizing:border-box;"></textarea>
+        <button class="btn btn-accent btn-sm" onclick="rellenarDesdeTexto()" style="margin-top:6px;">✨ Rellenar pedido</button>
+        <div id="pedPegarRes"></div>
+      </div>
+      <div id="pedLineas"></div>
+      <div class="field" style="margin-top:12px;"><label>➕ Añadir otro producto</label>
+        <input type="search" id="pedBuscar" placeholder="Buscar producto..." oninput="pintarBuscaPedido()">
+        <div id="pedResultados"></div></div>
+      <div class="field"><label>Nota</label><input type="text" id="pedNota" placeholder="Ej: Entregar por la puerta de atrás"></div>
+      <div id="pedTotal" style="font-weight:700; text-align:right; margin:8px 0;"></div>
+      <div style="display: flex; gap: 10px;">
+        <button onclick="cerrarPedido()" class="btn btn-logout" style="flex: 1;">Cancelar</button>
+        <button id="btnGuardarPedido" onclick="guardarPedido()" class="btn btn-success" style="flex: 1;">💾 Guardar pedido</button>
+      </div>
+      <button id="btnBorrarPedido" onclick="borrarPedido()" class="btn btn-danger" style="margin-top: 10px; display:none;">🗑️ Borrar pedido</button>
+    </div>
+  </div>
+
+  <div id="modalReparto" class="modal-overlay no-print">
+    <div class="modal-card">
+      <div class="card-header" id="repTitulo" style="margin-bottom: 10px;">🧾 Reparto</div>
+      <div class="field"><label>📅 Día</label><input type="date" id="repFecha" onchange="pintarReparto()"></div>
+      <div id="repContenido"></div>
+      <button id="btnPdfReparto" onclick="pdfReparto()" class="btn btn-accent" style="margin-top:10px;">🖨️ Imprimir hoja de reparto</button>
+      <button onclick="cerrarReparto()" class="btn btn-logout" style="margin-top:10px;">Cerrar</button>
+    </div>
+  </div>
+
   <div id="modalCliente" class="modal-overlay no-print">
     <div class="modal-card">
       <div class="card-header" id="cliTitulo" style="margin-bottom: 14px;">➕ Nuevo cliente</div>
@@ -1231,7 +1266,7 @@
 
     async function cerrarSesion() {
       try { await _sb.auth.signOut(); } catch (e) {}
-      _productosCache = []; _catalogo = []; _sel = {}; _precios = {}; _historico = []; _clientes = []; _clientesOk = false; _clienteSel = null; _preciosCli = {}; _autoIds = {}; _autoSelIds = {}; _hab = [];
+      _productosCache = []; _catalogo = []; _sel = {}; _precios = {}; _historico = []; _clientes = []; _clientesOk = false; _clienteSel = null; _preciosCli = {}; _autoIds = {}; _autoSelIds = {}; _hab = []; _pedidos = []; _pedidosOk = false;
       setMode('login');
     }
 
@@ -2041,6 +2076,7 @@
         if (!_avisoClientes) { _avisoClientes = true; toast('Falta preparar la base de datos para clientes (script clientes.sql en Supabase).', 'err'); }
       }
       await cargarHabituales();
+      await cargarPedidos();
       poblarClientes();
       renderizarClientes();
       if (_historico.length) renderizarHistorico();
@@ -2146,18 +2182,407 @@
         var dr = diasTxt(c.dias_reparto), dl = diasTxt(c.dias_llamada);
         var pago = c.forma_pago ? '<div class="product-notes">💳 ' + esc(c.forma_pago) + '</div>' : '';
         var dias = ((dr || dl) ? '<div class="product-notes">' + (dr ? '🚚 ' + esc(dr) : '') + (dr && dl ? ' · ' : '') + (dl ? '📞 llamar ' + esc(dl) : '') + '</div>' : '') + pago;
+        var pend = pendienteDe(c.id);
+        var pedTxt = pend ? '<div class="product-notes" style="color:var(--accent); font-weight:600;">🛒 Pedido para ' + esc(fechaLarga(String(pend.fecha_entrega).substring(0, 10))) + ' · ' + totalLineas(pend.lineas || []).toFixed(2) + ' €</div>' : '';
         var hayTel = !!telWa(c.telefono);
         var llamar = hayTel ? '<button class="btn btn-sm btn-logout" onclick="llamarCliente(' + id + ')">📞 Llamar</button>' : '';
         var wa = hayTel ? '<button class="btn btn-wa btn-sm" onclick="abrirWhatsApp(' + id + ')">💬 WhatsApp</button>' : '';
         html += '<div class="product-item compact cli-row" style="margin-bottom:8px;">' +
           '<div style="min-width:0;"><div class="product-name">👤 ' + esc(c.nombre) + '</div>' +
-          '<div class="product-notes">' + tel + n + ' lista' + (n === 1 ? '' : 's') + (hn ? ' · 📋 ' + hn + ' producto' + (hn === 1 ? '' : 's') : '') + '</div>' + dir + fisc + dias + falta + '</div>' +
+          '<div class="product-notes">' + tel + n + ' lista' + (n === 1 ? '' : 's') + (hn ? ' · 📋 ' + hn + ' producto' + (hn === 1 ? '' : 's') : '') + '</div>' + dir + fisc + dias + pedTxt + falta + '</div>' +
           '<div class="cli-acciones">' +
-            '<button class="btn btn-accent btn-sm" onclick="nuevaListaCliente(' + id + ')">Nueva lista</button>' + '<button class="btn btn-sm btn-logout" onclick="abrirModalCliente(' + id + ', true)">👁 Ver cliente</button>' + llamar + wa +
+            '<button class="btn btn-accent btn-sm" onclick="abrirPedido(' + id + ')">🛒 Pedido</button>' + '<button class="btn btn-sm btn-logout" onclick="nuevaListaCliente(' + id + ')">Nueva lista</button>' + '<button class="btn btn-sm btn-logout" onclick="abrirModalCliente(' + id + ', true)">👁 Ver cliente</button>' + llamar + wa +
             '<button class="btn btn-sm btn-logout" onclick="abrirModalCliente(' + id + ')">✏️ Editar</button>' +
           '</div></div>';
       }
       cont.innerHTML = html;
+    }
+
+    /* ---------- pedidos y hoja de reparto ---------- */
+    var _pedidos = [], _pedidosOk = false, _avisoPed = false;
+    var _pedCli = 0, _pedId = 0, _pedLineas = {};
+
+    function norm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+    function sumarDias(iso, n) {
+      var p = iso.split('-'), d = new Date(+p[0], +p[1] - 1, +p[2] + n);
+      return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+    }
+    function codDeFecha(iso) { var p = iso.split('-'); return ['dom', 'lun', 'mar', 'mie', 'jue', 'vie', 'sab'][new Date(+p[0], +p[1] - 1, +p[2]).getDay()]; }
+    function fechaLarga(iso) { return DIAS_CORTO[codDeFecha(iso)] + ' ' + fmtFechaISO(iso); }
+    function totalLineas(ls) { var t = 0; for (var i = 0; i < ls.length; i++) t += num(ls[i].cantidad) * num(ls[i].precio); return t; }
+    function fmtCant(n) { n = num(n); return (Math.round(n * 100) / 100).toString().replace('.', ','); }
+    // Próximo día de reparto del cliente (a partir de mañana); si no tiene, mañana
+    function fechaEntregaSugerida(c) {
+      var hoy = hoyLocal();
+      if (c && c.dias_reparto && c.dias_reparto.length) {
+        for (var i = 1; i <= 7; i++) { var f = sumarDias(hoy, i); if (tieneDia(c.dias_reparto, codDeFecha(f))) return f; }
+      }
+      return sumarDias(hoy, 1);
+    }
+    function precioClienteDe(cid, p) {
+      for (var i = 0; i < _hab.length; i++)
+        if (_hab[i].cliente_id === cid && Number(_hab[i].producto_id) === p.id && _hab[i].precio !== null && _hab[i].precio !== undefined) return num(_hab[i].precio);
+      return num(p.precio);
+    }
+
+    async function cargarPedidos() {
+      if (!_clientesOk) { _pedidos = []; _pedidosOk = false; actualizarBtnPedidos(); return; }
+      try {
+        _pedidos = chk(await _sb.from('pedidos').select('*').gte('fecha_entrega', sumarDias(hoyLocal(), -45)).order('fecha_entrega')) || [];
+        _pedidosOk = true;
+      } catch (e) { _pedidos = []; _pedidosOk = false; }
+      actualizarBtnPedidos();
+      renderizarClientes();
+    }
+    function pedidosPendientes() { return _pedidos.filter(function (p) { return !p.entregado; }); }
+    function pendienteDe(cid) {
+      var r = pedidosPendientes().filter(function (p) { return p.cliente_id === cid; });
+      return r.length ? r[0] : null;
+    }
+    function actualizarBtnPedidos() {
+      var n = pedidosPendientes().length, b = $('btnReparto');
+      if (b) b.textContent = '🧾 Pedidos y hoja de reparto' + (n ? ' (' + n + ' pendientes)' : '');
+    }
+    function avisoPedidosFalta() {
+      if (!_avisoPed) { _avisoPed = true; }
+      toast('Falta preparar la base de datos para pedidos (script pedidos.sql en Supabase).', 'err');
+    }
+
+    /* ---------- pegar pedido de WhatsApp ---------- */
+    var WA_NUMS = { un: 1, uno: 1, una: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9, diez: 10, doce: 12, quince: 15, veinte: 20, medio: 0.5, media: 0.5, docena: 12 };
+    var WA_UNIDADES = { kg: 1, kgs: 1, kilo: 1, kilos: 1, kilogramo: 1, kilogramos: 1, k: 1, g: 0.001, gr: 0.001, grs: 0.001, gramo: 0.001, gramos: 0.001,
+      caja: 1, cajas: 1, bandeja: 1, bandejas: 1, paquete: 1, paquetes: 1, unidad: 1, unidades: 1, ud: 1, uds: 1, pieza: 1, piezas: 1, bolsa: 1, bolsas: 1, saco: 1, sacos: 1, botella: 1, botellas: 1, tarro: 1, tarros: 1, lata: 1, latas: 1 };
+    var WA_RELLENO = ('de del la el los las lo y e con en al a para por favor porfa hola buenas buenos dias tardes noches buen saludos gracias necesito necesitamos necesitaria quiero queremos quisiera ponme ponnos ponerme ' +
+      'mandame mandanos manda mandar enviame envia enviar traeme trae traer me nos mas otro otra otros otras x pedido pedir pido pedimos si ok vale amigo jefe kike que te le dame deme dar unos unas algo ' +
+      'lunes martes miercoles jueves viernes sabado domingo manana hoy pasado entrega entregar reparto ya es son hay tengo tenemos favor gracias').split(' ');
+    var WA_DIAS = { lunes: 'lun', martes: 'mar', miercoles: 'mie', jueves: 'jue', viernes: 'vie', sabado: 'sab', domingo: 'dom' };
+
+    function waStem(t) { if (t.length > 4 && /es$/.test(t)) return t.slice(0, -2); if (t.length > 3 && /s$/.test(t)) return t.slice(0, -1); return t; }
+    function waMatch(a, b) {
+      var x = waStem(a), y = waStem(b);
+      if (x === y) return true;
+      var m = Math.min(x.length, y.length);
+      return m >= 4 && (x.indexOf(y) === 0 || y.indexOf(x) === 0);
+    }
+    function waTokens(s) { return norm(s).split(/[^a-z0-9ñ.]+/).map(function (t) { return t.replace(/^\.+|\.+$/g, ''); }).filter(function (t) { return t.length > 0; }); }
+    function waEsNum(t) { return /^\d+(\.\d+)?$/.test(t) || (WA_NUMS.hasOwnProperty(t) && t !== 'medio' && t !== 'media') || t === 'medio' || t === 'media'; }
+    function waValor(t) { return /^\d/.test(t) ? parseFloat(t) : WA_NUMS[t]; }
+
+    // Devuelve { items:[{pid,cant}], noRec:[texto], dudas:[texto], fecha:'' }
+    function interpretarTextoPedido(texto, cid) {
+      var res = { items: [], noRec: [], dudas: [], fecha: '' };
+      var t = norm(texto).replace(/(\d),(\d)/g, '$1.$2').replace(/(\d)([a-z])/g, '$1 $2').replace(/([a-z])(\d)/g, '$1 $2');
+      // fecha
+      var hoy = hoyLocal();
+      if (/\bpasado manana\b/.test(t)) res.fecha = sumarDias(hoy, 2);
+      else if (/\bmanana\b/.test(t)) res.fecha = sumarDias(hoy, 1);
+      else if (/\bpara hoy\b/.test(t)) res.fecha = hoy;
+      else for (var d in WA_DIAS) if (new RegExp('\\b' + d + '\\b').test(t)) {
+        for (var i = 1; i <= 7; i++) { var f = sumarDias(hoy, i); if (codDeFecha(f) === WA_DIAS[d]) { res.fecha = f; break; } }
+        break;
+      }
+      // trocear en segmentos
+      var lineas = t.split(/[\n\r;,+•\-–]+|\s+y\s+(?=\d|un\s|una\s|uno\s|dos\s|tres\s|cuatro\s|cinco\s|seis\s)/);
+      var segs = [];
+      lineas.forEach(function (ln) {
+        var toks = waTokens(ln), cur = [], hasQty = false, despues = false;
+        toks.forEach(function (tk) {
+          if (waEsNum(tk) && !/^medi[oa]$/.test(tk) && hasQty && despues) { segs.push(cur); cur = []; hasQty = false; despues = false; }
+          cur.push(tk);
+          if (waEsNum(tk)) hasQty = true;
+          else if (hasQty && !WA_UNIDADES.hasOwnProperty(tk) && WA_RELLENO.indexOf(tk) === -1) despues = true;
+        });
+        if (cur.length) segs.push(cur);
+      });
+      var hab = {}; habitualesDe(cid).forEach(function (h) { hab[h.p.id] = true; });
+      var prods = _productosCache.map(function (p) {
+        return { p: p, toks: waTokens(p.nombre).filter(function (x) { return WA_RELLENO.indexOf(x) === -1 && x.length > 1; }) };
+      });
+      var acum = {};
+      segs.forEach(function (toks) {
+        // cantidad y palabras del producto
+        var cant = null, unidad = 1, palabras = [];
+        for (var i = 0; i < toks.length; i++) {
+          var tk = toks[i];
+          if (cant === null && waEsNum(tk)) {
+            cant = waValor(tk);
+            if (tk === 'docena') cant = 12;
+            var sig = toks[i + 1];
+            if (sig && WA_UNIDADES.hasOwnProperty(sig)) { unidad = WA_UNIDADES[sig]; i++; sig = toks[i + 1]; }
+            if (sig === 'y' && /^medi[oa]$/.test(toks[i + 2] || '') && cant >= 1) { cant += 0.5; i += 2; }
+            continue;
+          }
+          if (WA_UNIDADES.hasOwnProperty(tk)) {
+            if (cant === null && toks[i + 1] === 'y' && /^medi[oa]$/.test(toks[i + 2] || '')) { cant = 1.5; i += 2; }
+            continue;
+          }
+          if (WA_RELLENO.indexOf(tk) !== -1 || /^\d/.test(tk)) continue;
+          palabras.push(tk);
+        }
+        if (!palabras.length) return;
+        var mejores = [];
+        prods.forEach(function (pr) {
+          if (!pr.toks.length) return;
+          var m = 0;
+          pr.toks.forEach(function (pt) { if (palabras.some(function (w) { return waMatch(w, pt); })) m++; });
+          if (!m) return;
+          var sinCasar = palabras.filter(function (w) { return !pr.toks.some(function (pt) { return waMatch(w, pt); }); }).length;
+          var score = m / pr.toks.length + (hab[pr.p.id] ? 0.3 : 0) - sinCasar / palabras.length;
+          if (m / pr.toks.length >= 0.5) mejores.push({ pr: pr, score: score });
+        });
+        if (!mejores.length) { res.noRec.push(palabras.join(' ')); return; }
+        mejores.sort(function (a, b) { return b.score - a.score; });
+        var b = mejores[0];
+        if (mejores[1] && mejores[1].pr.p.id !== b.pr.p.id && b.score - mejores[1].score < 0.01)
+          res.dudas.push('«' + palabras.join(' ') + '» podría ser ' + b.pr.p.nombre + ' o ' + mejores[1].pr.p.nombre + ' (he puesto ' + b.pr.p.nombre + ')');
+        var q = (cant === null ? 1 : cant * unidad);
+        acum[b.pr.p.id] = (acum[b.pr.p.id] || 0) + q;
+      });
+      for (var k in acum) res.items.push({ pid: Number(k), cant: Math.round(acum[k] * 100) / 100 });
+      return res;
+    }
+
+    function togglePegar() {
+      var b = $('pedPegarBox');
+      b.style.display = b.style.display === 'none' ? '' : 'none';
+      if (b.style.display !== 'none') $('pedPegar').focus();
+    }
+    function rellenarDesdeTexto() {
+      var texto = $('pedPegar').value;
+      if (!texto.trim()) { toast('Pega primero el mensaje del cliente.', 'err'); return; }
+      var r = interpretarTextoPedido(texto, _pedCli);
+      r.items.forEach(function (it) {
+        var p = buscarEnCache(it.pid);
+        if (!p) return;
+        if (!_pedLineas[it.pid]) _pedLineas[it.pid] = { id: it.pid, nombre: p.nombre, categoria: p.categoria || 'Varios', cantidad: 0, precio: precioClienteDe(_pedCli, p) };
+        _pedLineas[it.pid].cantidad = it.cant;
+      });
+      if (r.fecha) $('pedFecha').value = r.fecha;
+      pintarPedido();
+      var h = '<div style="font-size:13px; margin-top:8px;">';
+      h += '<div style="color:var(--success); font-weight:700;">✔ ' + r.items.length + ' producto' + (r.items.length === 1 ? '' : 's') + ' añadido' + (r.items.length === 1 ? '' : 's') + (r.fecha ? ' · 📅 ' + esc(fechaLarga(r.fecha)) : '') + '</div>';
+      r.dudas.forEach(function (d) { h += '<div style="color:#b45309;">⚠ ' + esc(d) + '</div>'; });
+      r.noRec.forEach(function (n) { h += '<div style="color:var(--danger);">✖ No he reconocido: «' + esc(n) + '». Búscalo abajo y añádelo.</div>'; });
+      h += '<div style="color:var(--muted);">Revisa las cantidades antes de guardar.</div></div>';
+      $('pedPegarRes').innerHTML = h;
+    }
+
+    /* --- tomar un pedido --- */
+    function abrirPedido(cid, pedId) {
+      var c = buscarCliente(cid);
+      if (!c) return;
+      if (!_pedidosOk) { avisoPedidosFalta(); return; }
+      var ex = null;
+      if (pedId) ex = _pedidos.filter(function (p) { return p.id === pedId; })[0] || null;
+      else ex = pendienteDe(cid);
+      _pedCli = cid; _pedId = ex ? ex.id : 0; _pedLineas = {};
+      var hab = habitualesDe(cid);
+      for (var i = 0; i < hab.length; i++) _pedLineas[hab[i].p.id] = { id: hab[i].p.id, nombre: hab[i].p.nombre, categoria: hab[i].p.categoria || 'Varios', cantidad: 0, precio: precioClienteDe(cid, hab[i].p) };
+      if (ex) {
+        (ex.lineas || []).forEach(function (l) {
+          var k = Number(l.id);
+          _pedLineas[k] = { id: k, nombre: l.nombre, categoria: l.categoria || 'Varios', cantidad: num(l.cantidad), precio: num(l.precio) };
+        });
+      }
+      $('pedTitulo').textContent = (ex ? '✏️ Pedido de ' : '🛒 Pedido de ') + c.nombre;
+      $('pedFecha').value = ex ? String(ex.fecha_entrega).substring(0, 10) : fechaEntregaSugerida(c);
+      $('pedNota').value = ex ? (ex.nota || '') : '';
+      $('pedBuscar').value = ''; $('pedResultados').innerHTML = '';
+      $('pedPegar').value = ''; $('pedPegarRes').innerHTML = ''; $('pedPegarBox').style.display = 'none';
+      $('btnBorrarPedido').style.display = ex ? '' : 'none';
+      pintarPedido();
+      $('modalPedido').style.display = 'flex';
+    }
+    function cerrarPedido() { $('modalPedido').style.display = 'none'; }
+
+    function lineasOrdenadas() {
+      var arr = Object.keys(_pedLineas).map(function (k) { return _pedLineas[k]; });
+      var orden = categoriasDe(_productosCache);
+      arr.sort(function (a, b) {
+        var d = orden.indexOf(a.categoria) - orden.indexOf(b.categoria);
+        return d !== 0 ? d : String(a.nombre).localeCompare(String(b.nombre), 'es');
+      });
+      return arr;
+    }
+    function pintarPedido() {
+      var arr = lineasOrdenadas(), html = '';
+      if (!arr.length) html = '<div style="color:var(--muted); padding:8px 4px; font-size:13px;">Este cliente no tiene productos habituales. Busca abajo los productos que pide.</div>';
+      for (var i = 0; i < arr.length; i++) {
+        var l = arr[i];
+        html += '<div style="display:flex; align-items:center; gap:6px; padding:6px 0; border-bottom:1px solid var(--border);">' +
+          '<div style="flex:1; min-width:0;"><div style="font-weight:600; font-size:14px;">' + esc(l.nombre) + '</div>' +
+          '<div style="font-size:11px; color:var(--muted);">' + num(l.precio).toFixed(2) + ' €</div></div>' +
+          '<button class="btn btn-sm btn-logout" onclick="pedMas(' + l.id + ', -1)">−</button>' +
+          '<input type="number" inputmode="decimal" min="0" step="any" value="' + (l.cantidad || '') + '" placeholder="0" style="width:62px; text-align:center;" oninput="pedCant(' + l.id + ', this.value)">' +
+          '<button class="btn btn-sm btn-accent" onclick="pedMas(' + l.id + ', 1)">+</button></div>';
+      }
+      $('pedLineas').innerHTML = html;
+      pedTotal();
+    }
+    function pedTotal() {
+      var arr = lineasOrdenadas().filter(function (l) { return l.cantidad > 0; });
+      $('pedTotal').textContent = arr.length + ' producto' + (arr.length === 1 ? '' : 's') + ' · Total aprox.: ' + totalLineas(arr).toFixed(2) + ' €';
+    }
+    function pedCant(pid, v) { if (_pedLineas[pid]) { _pedLineas[pid].cantidad = Math.max(0, num(v)); pedTotal(); } }
+    function pedMas(pid, d) { if (_pedLineas[pid]) { _pedLineas[pid].cantidad = Math.max(0, Math.round((num(_pedLineas[pid].cantidad) + d) * 100) / 100); pintarPedido(); } }
+
+    function pintarBuscaPedido() {
+      var q = norm($('pedBuscar').value), html = '';
+      if (q.length < 2) { $('pedResultados').innerHTML = ''; return; }
+      var n = 0;
+      for (var i = 0; i < _productosCache.length && n < 8; i++) {
+        var p = _productosCache[i];
+        if (norm(p.nombre).indexOf(q) === -1 || _pedLineas[p.id]) continue;
+        n++;
+        html += '<button class="btn btn-sm btn-logout" style="width:100%; text-align:left; margin-top:4px;" onclick="pedAnadir(' + Number(p.id) + ')">➕ ' + esc(p.nombre) + ' <span style="color:var(--muted)">· ' + esc(p.categoria || 'Varios') + '</span></button>';
+      }
+      $('pedResultados').innerHTML = html || '<div style="color:var(--muted); font-size:13px; padding:4px;">No hay más productos con ese nombre.</div>';
+    }
+    function pedAnadir(pid) {
+      var p = buscarEnCache(pid);
+      if (!p) return;
+      _pedLineas[pid] = { id: pid, nombre: p.nombre, categoria: p.categoria || 'Varios', cantidad: 1, precio: precioClienteDe(_pedCli, p) };
+      $('pedBuscar').value = ''; $('pedResultados').innerHTML = '';
+      pintarPedido();
+    }
+
+    async function guardarPedido() {
+      var ls = lineasOrdenadas().filter(function (l) { return l.cantidad > 0; }).map(function (l) {
+        return { id: l.id, nombre: l.nombre, categoria: l.categoria, cantidad: l.cantidad, precio: l.precio };
+      });
+      var fecha = $('pedFecha').value;
+      if (!fecha) { toast('Elige la fecha de entrega.', 'err'); return; }
+      if (!ls.length) { toast('Pon la cantidad de al menos un producto.', 'err'); return; }
+      var datos = { cliente_id: _pedCli, fecha_entrega: fecha, lineas: ls, nota: $('pedNota').value.trim() };
+      var btn = $('btnGuardarPedido'); btn.disabled = true;
+      try {
+        if (_pedId) chk(await _sb.from('pedidos').update(datos).eq('id', _pedId));
+        else chk(await _sb.from('pedidos').insert([datos]));
+        cerrarPedido();
+        await cargarPedidos();
+        toast('Pedido guardado para el ' + fechaLarga(fecha) + '.');
+      } catch (e) { toast('No se pudo guardar el pedido: ' + errMsg(e), 'err'); }
+      finally { btn.disabled = false; }
+    }
+    async function borrarPedido() {
+      if (!_pedId || !confirm('¿Borrar este pedido?')) return;
+      try { chk(await _sb.from('pedidos').delete().eq('id', _pedId)); cerrarPedido(); await cargarPedidos(); pintarReparto(); toast('Pedido borrado.'); }
+      catch (e) { toast('No se pudo borrar: ' + errMsg(e), 'err'); }
+    }
+
+    /* --- hoja de reparto --- */
+    function abrirReparto() {
+      if (!_pedidosOk) { avisoPedidosFalta(); return; }
+      var hoy = hoyLocal(), pend = pedidosPendientes();
+      var f = hoy;
+      if (!pend.some(function (p) { return String(p.fecha_entrega).substring(0, 10) === hoy; })) {
+        var fut = pend.filter(function (p) { return String(p.fecha_entrega).substring(0, 10) > hoy; });
+        if (fut.length) f = String(fut[0].fecha_entrega).substring(0, 10);
+      }
+      $('repFecha').value = f;
+      pintarReparto();
+      $('modalReparto').style.display = 'flex';
+    }
+    function cerrarReparto() { $('modalReparto').style.display = 'none'; }
+    function pedidosDelDia(f) {
+      return _pedidos.filter(function (p) { return String(p.fecha_entrega).substring(0, 10) === f; });
+    }
+    function resumenCarga(peds) {
+      var m = {};
+      peds.forEach(function (p) { (p.lineas || []).forEach(function (l) {
+        var k = l.id; if (!m[k]) m[k] = { nombre: l.nombre, categoria: l.categoria || 'Varios', cantidad: 0 };
+        m[k].cantidad += num(l.cantidad); }); });
+      return Object.keys(m).map(function (k) { return m[k]; }).sort(function (a, b) {
+        return a.categoria.localeCompare(b.categoria, 'es') || a.nombre.localeCompare(b.nombre, 'es'); });
+    }
+    function pintarReparto() {
+      var f = $('repFecha').value || hoyLocal(), hoy = hoyLocal();
+      var peds = pedidosDelDia(f), html = '';
+      var atras = pedidosPendientes().filter(function (p) { return String(p.fecha_entrega).substring(0, 10) < hoy; });
+      if (atras.length) html += '<div style="background:#fef3c7; border-radius:8px; padding:8px 10px; font-size:13px; margin-bottom:8px;">⚠ ' + atras.length + ' pedido' + (atras.length === 1 ? '' : 's') + ' de días anteriores sin marcar como entregado. <a href="#" onclick="$(\'repFecha\').value=\'' + String(atras[0].fecha_entrega).substring(0, 10) + '\'; pintarReparto(); return false;">Verlos</a></div>';
+      $('repTitulo').textContent = '🧾 Reparto del ' + fechaLarga(f);
+      if (!peds.length) html += '<div style="color:var(--muted); padding:12px 4px;">No hay pedidos para este día.</div>';
+      var totalDia = 0;
+      for (var i = 0; i < peds.length; i++) {
+        var p = peds[i], c = buscarCliente(p.cliente_id), ls = p.lineas || [], tot = totalLineas(ls);
+        totalDia += tot;
+        var lugar = c ? [c.direccion, c.poblacion].filter(Boolean).join(', ') : '';
+        html += '<div style="border:1px solid var(--border); border-radius:10px; padding:10px; margin-bottom:10px;' + (p.entregado ? ' opacity:.55;' : '') + '">' +
+          '<div style="display:flex; justify-content:space-between; gap:8px;"><div style="font-weight:700;">👤 ' + esc(c ? c.nombre : 'Cliente') + '</div>' +
+          '<label style="font-size:13px; white-space:nowrap;"><input type="checkbox" ' + (p.entregado ? 'checked ' : '') + 'onchange="marcarEntregado(' + Number(p.id) + ', this.checked)"> Entregado</label></div>' +
+          (lugar ? '<div class="product-notes">📍 ' + esc(lugar) + '</div>' : '') +
+          (c && c.telefono ? '<div class="product-notes">📞 ' + esc(c.telefono) + '</div>' : '') +
+          (c && c.forma_pago ? '<div class="product-notes">💳 ' + esc(c.forma_pago) + '</div>' : '');
+        for (var j = 0; j < ls.length; j++) html += '<div style="display:flex; justify-content:space-between; font-size:14px; padding:2px 0;"><span><strong>' + esc(fmtCant(ls[j].cantidad)) + '</strong> × ' + esc(ls[j].nombre) + '</span><span>' + (num(ls[j].cantidad) * num(ls[j].precio)).toFixed(2) + ' €</span></div>';
+        html += (p.nota ? '<div class="product-notes">📝 ' + esc(p.nota) + '</div>' : '') +
+          '<div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;"><button class="btn btn-sm btn-logout" onclick="cerrarReparto(); abrirPedido(' + Number(p.cliente_id) + ', ' + Number(p.id) + ')">✏️ Editar</button><strong>Total: ' + tot.toFixed(2) + ' €</strong></div></div>';
+      }
+      var res = resumenCarga(peds);
+      if (res.length) {
+        html += '<details class="cat-block" open><summary>🚚 Resumen para cargar</summary><div class="inner">';
+        for (var k = 0; k < res.length; k++) html += '<div style="display:flex; justify-content:space-between; padding:3px 0; font-size:14px;"><span>' + esc(res[k].nombre) + '</span><strong>' + esc(fmtCant(res[k].cantidad)) + '</strong></div>';
+        html += '</div></details><div style="text-align:right; font-weight:700; margin-top:8px;">Total del día: ' + totalDia.toFixed(2) + ' €</div>';
+      }
+      $('repContenido').innerHTML = html;
+      $('btnPdfReparto').style.display = peds.length ? '' : 'none';
+    }
+    async function marcarEntregado(id, v) {
+      try {
+        chk(await _sb.from('pedidos').update({ entregado: !!v }).eq('id', id));
+        _pedidos.forEach(function (p) { if (p.id === id) p.entregado = !!v; });
+        actualizarBtnPedidos(); renderizarClientes(); pintarReparto();
+      } catch (e) { toast('No se pudo actualizar: ' + errMsg(e), 'err'); pintarReparto(); }
+    }
+
+    async function pdfReparto() {
+      var f = $('repFecha').value, peds = pedidosDelDia(f);
+      if (!peds.length) return;
+      var btn = $('btnPdfReparto'), txt = btn.textContent; btn.disabled = true; btn.textContent = 'Generando...';
+      try {
+        var pdf = new jspdf.jsPDF('p', 'mm', 'a4'), W = 210, M = 15, y = 0, pag = 0, cfg = _cfg || {};
+        function cab() {
+          pag++; pdf.setFillColor(15, 23, 42); pdf.rect(0, 0, W, 16, 'F'); pdf.setTextColor(255, 255, 255);
+          pdf.setFont('helvetica', 'bold'); pdf.setFontSize(13); pdf.text(String(cfg.empresa || 'EL ANCLA'), M, 10.5);
+          pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9); pdf.text('Hoja de reparto · ' + fechaLarga(f), W - M, 10.5, { align: 'right' });
+          pdf.setTextColor(15, 23, 42); y = 26;
+        }
+        function pie() { pdf.setFontSize(8); pdf.setTextColor(100, 116, 139); pdf.setFont('helvetica', 'normal'); pdf.text('Página ' + pag, W - M, 290, { align: 'right' }); }
+        function salto(h) { if (y + h > 280) { pie(); pdf.addPage(); cab(); } }
+        cab();
+        var totalDia = 0;
+        for (var i = 0; i < peds.length; i++) {
+          var p = peds[i], c = buscarCliente(p.cliente_id), ls = p.lineas || [], tot = totalLineas(ls); totalDia += tot;
+          salto(30 + ls.length * 5.5);
+          pdf.setFillColor(241, 245, 249); pdf.rect(M, y - 5, W - 2 * M, 7, 'F');
+          pdf.setFont('helvetica', 'bold'); pdf.setFontSize(12); pdf.setTextColor(15, 23, 42);
+          pdf.text(String(i + 1) + '. ' + (c ? c.nombre : 'Cliente'), M + 2, y); y += 6;
+          pdf.setFont('helvetica', 'normal'); pdf.setFontSize(9); pdf.setTextColor(71, 85, 105);
+          var sub = c ? [[c.direccion, c.poblacion].filter(Boolean).join(', '), c.telefono ? 'Tel. ' + c.telefono : '', c.forma_pago ? 'Pago: ' + c.forma_pago : ''].filter(Boolean).join('  ·  ') : '';
+          if (sub) { pdf.text(pdf.splitTextToSize(sub, W - 2 * M)[0], M + 2, y); y += 5; }
+          pdf.setFontSize(10); pdf.setTextColor(15, 23, 42);
+          for (var j = 0; j < ls.length; j++) {
+            pdf.setFont('helvetica', 'bold'); pdf.text(fmtCant(ls[j].cantidad) + ' x', M + 2, y);
+            pdf.setFont('helvetica', 'normal'); pdf.text(pdf.splitTextToSize(String(ls[j].nombre || ''), 110)[0], M + 18, y);
+            pdf.text((num(ls[j].cantidad) * num(ls[j].precio)).toFixed(2) + ' €', W - M - 2, y, { align: 'right' }); y += 5.5;
+          }
+          if (p.nota) { pdf.setFontSize(9); pdf.setTextColor(71, 85, 105); pdf.text('Nota: ' + pdf.splitTextToSize(p.nota, W - 2 * M - 14)[0], M + 2, y); y += 5; pdf.setTextColor(15, 23, 42); }
+          pdf.setFont('helvetica', 'bold'); pdf.setFontSize(10); pdf.text('Total: ' + tot.toFixed(2) + ' €', W - M - 2, y, { align: 'right' });
+          pdf.setDrawColor(203, 213, 225); pdf.line(M, y + 2.5, W - M, y + 2.5); y += 10;
+        }
+        salto(20); pdf.setFont('helvetica', 'bold'); pdf.setFontSize(11); pdf.text('Total del día: ' + totalDia.toFixed(2) + ' €', W - M - 2, y, { align: 'right' }); y += 12;
+        var res = resumenCarga(peds);
+        salto(20); pdf.setFontSize(13); pdf.text('Resumen para cargar', M, y); y += 7; pdf.setFontSize(10);
+        for (var k = 0; k < res.length; k++) {
+          salto(8); pdf.setFont('helvetica', 'normal'); pdf.text(pdf.splitTextToSize(res[k].nombre, 130)[0], M + 2, y);
+          pdf.setFont('helvetica', 'bold'); pdf.text(fmtCant(res[k].cantidad), W - M - 2, y, { align: 'right' }); y += 5.5;
+        }
+        pie();
+        var nombre = 'Reparto_' + f + '.pdf', file = new File([pdf.output('blob')], nombre, { type: 'application/pdf' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try { await navigator.share({ files: [file], title: 'Hoja de reparto' }); } catch (e) { if (!e || e.name !== 'AbortError') throw e; }
+        } else { pdf.save(nombre); toast('Hoja de reparto descargada. Ábrela para imprimirla.'); }
+      } catch (e) { toast('No se pudo crear la hoja: ' + errMsg(e), 'err'); }
+      finally { btn.disabled = false; btn.textContent = txt; }
     }
 
     function llamarCliente(id) {
