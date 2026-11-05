@@ -618,6 +618,8 @@
     }
   
 
+    #detNuevoProd > summary::-webkit-details-marker { display: none; }
+    #detNuevoProd > summary::marker { content: ''; }
     /* ===== Ajustes para iPhone ===== */
     html { -webkit-text-size-adjust: 100%; }
     body, button, a, label, summary { touch-action: manipulation; }
@@ -774,10 +776,10 @@
   <div class="top-bar no-print" id="topBar" style="display:none;">
     <div class="brand-title" id="brandTitle">EL ANCLA</div>
     <div class="web-nav" id="adminWebNav">
-      <button class="web-nav-btn active" data-tab="tabCatalogo" onclick="switchTab('tabCatalogo')">📦 Productos</button>
+      <button class="web-nav-btn active" data-tab="tabClientes" onclick="switchTab('tabClientes')">👥 Clientes</button>
+      <button class="web-nav-btn" data-tab="tabCatalogo" onclick="switchTab('tabCatalogo')">📦 Productos</button>
       <button class="web-nav-btn" data-tab="tabCrear" onclick="switchTab('tabCrear')">📝 Crear Lista</button>
       <button class="web-nav-btn" data-tab="tabHistorial" onclick="switchTab('tabHistorial')">📜 Histórico</button>
-      <button class="web-nav-btn" data-tab="tabClientes" onclick="switchTab('tabClientes')">👥 Clientes</button>
       <button class="web-nav-btn" data-tab="tabCaja" onclick="switchTab('tabCaja')">💰 Caja &amp; Comisión</button>
       <button class="web-nav-btn" data-tab="tabClienteView" onclick="switchTab('tabClienteView')">🌐 Vista Cliente</button>
       <button class="web-nav-btn" data-tab="tabAjustes" onclick="switchTab('tabAjustes')">⚙️ Empresa</button>
@@ -788,10 +790,12 @@
   <div class="container no-print" id="mainContainer" style="display:none;">
 
     <!-- PRODUCTOS -->
-    <div id="tabCatalogo" class="tab-content active">
+    <div id="tabCatalogo" class="tab-content">
       <div class="grid-layout">
         <div class="card">
-          <div class="card-header">➕ Registrar Producto</div>
+          <details id="detNuevoProd">
+          <summary class="btn btn-accent" style="list-style:none; text-align:center; cursor:pointer;">➕ Añadir un producto nuevo</summary>
+          <div style="margin-top:16px;">
           <div class="field">
             <label>Familia / Categoría</label>
             <select id="prodCategoria">
@@ -822,6 +826,8 @@
             <div id="previewNuevaFoto" style="margin-top:8px;"></div>
           </div>
           <button id="btnGuardarProd" onclick="guardarProducto()" class="btn">Guardar Producto</button>
+          </div>
+          </details>
         </div>
 
         <div class="card">
@@ -877,7 +883,7 @@
     </div>
 
     <!-- CLIENTES -->
-    <div id="tabClientes" class="tab-content">
+    <div id="tabClientes" class="tab-content active">
       <div class="card">
         <div class="card-header">👥 Clientes</div>
         <div class="toolbar">
@@ -1163,11 +1169,11 @@
   </div>
 
   <div class="nav-bar no-print" id="adminBottomNav" style="display:none;">
-    <button class="nav-item active" data-tab="tabCatalogo" onclick="switchTab('tabCatalogo')"><span class="ni">📦</span><span>Productos</span></button>
+    <button class="nav-item active" data-tab="tabClientes" onclick="switchTab('tabClientes')"><span class="ni">👥</span><span>Clientes</span></button>
+    <button class="nav-item" data-tab="tabCatalogo" onclick="switchTab('tabCatalogo')"><span class="ni">📦</span><span>Productos</span></button>
     <button class="nav-item" data-tab="tabCrear" onclick="switchTab('tabCrear')"><span class="ni">📝</span><span>Crear</span></button>
     <button class="nav-item" data-tab="tabHistorial" onclick="switchTab('tabHistorial')"><span class="ni">📜</span><span>Historial</span></button>
     <button class="nav-item" data-tab="tabCaja" onclick="switchTab('tabCaja')"><span class="ni">💰</span><span>Caja</span></button>
-    <button class="nav-item" data-tab="tabClientes" onclick="switchTab('tabClientes')"><span class="ni">👥</span><span>Clientes</span></button>
     <button class="nav-item" data-tab="tabAjustes" onclick="switchTab('tabAjustes')"><span class="ni">⚙️</span><span>Empresa</span></button>
   </div>
 
@@ -1357,7 +1363,7 @@
 
     async function iniciarAdmin() {
       setMode('admin');
-      switchTab('tabCatalogo');
+      switchTab('tabClientes');
       await cargarConfiguracion();   // primero: la caja necesita tu % de comisión
       await Promise.all([cargarProductos(), cargarHistorico(), cargarCaja(), cargarClientes()]);
     }
@@ -1628,6 +1634,7 @@
         '</div></div>';
     }
 
+    var _prodAbiertas = {};
     function renderizarListaProductos() {
       var c = $('listaProductosCard');
       var q = ($('buscarProd').value || '').trim().toLowerCase();
@@ -1641,11 +1648,19 @@
         return;
       }
       var cats = categoriasDe(lista), html = '';
+      var plegado = (_filtroProd === 'TODAS' && !q);
       for (var k = 0; k < cats.length; k++) {
         var items = lista.filter(function (p) { return (p.categoria || 'Varios') === cats[k]; }).sort(porNombre);
         if (items.length === 0) continue;
-        if (_filtroProd === 'TODAS') html += '<div class="cat-title">📂 ' + esc(cats[k]) + ' <span>(' + items.length + ')</span></div>';
-        for (var i = 0; i < items.length; i++) html += htmlProductoAdmin(items[i]);
+        if (plegado) {
+          html += '<details class="cat-block" data-k="' + esc(cats[k]) + '"' + (_prodAbiertas[cats[k]] ? ' open' : '') + ' ontoggle="_prodAbiertas[this.getAttribute(\'data-k\')] = this.open">' +
+            '<summary>📂 ' + esc(cats[k]) + ' <span class="muted">(' + items.length + ')</span></summary><div class="inner">';
+          for (var j = 0; j < items.length; j++) html += htmlProductoAdmin(items[j]);
+          html += '</div></details>';
+        } else {
+          if (_filtroProd === 'TODAS') html += '<div class="cat-title">📂 ' + esc(cats[k]) + ' <span>(' + items.length + ')</span></div>';
+          for (var i = 0; i < items.length; i++) html += htmlProductoAdmin(items[i]);
+        }
       }
       c.innerHTML = html;
     }
@@ -1665,6 +1680,7 @@
         $('prodNombre').value = ''; $('prodPrecio').value = ''; $('prodNotas').value = '';
         $('prodArchivoFoto').value = ''; $('prodFotoBase64').value = ''; $('previewNuevaFoto').innerHTML = '';
         await cargarProductos();
+        $('detNuevoProd').open = false;
         toast('Producto guardado.');
       } catch (e) { toast('No se guardó el producto: ' + errMsg(e), 'err'); }
       finally { btn.disabled = false; btn.textContent = 'Guardar Producto'; }
