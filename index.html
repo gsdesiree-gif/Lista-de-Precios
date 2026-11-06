@@ -1143,7 +1143,7 @@
       <div id="navCont" class="count-txt" style="margin-top:8px; font-weight:700; color:var(--success);"></div>
       <div id="navLista" style="max-height:38vh; overflow-y:auto; margin-bottom:12px;"></div>
       <div class="field"><label>Título de la portada</label><input type="text" id="navTitulo" placeholder="Ej: Navidad 2026"></div>
-      <div class="field"><label>Portada y contraportada</label><select id="navPortada"><option value="clara">Clara (marfil)</option><option value="oscura">Oscura (azul noche)</option></select></div>
+      <div class="field"><label>Portada y contraportada</label><select id="navPortada"><option value="oscura">Oscura (azul noche)</option><option value="clara">Clara (marfil)</option></select></div>
       <label style="display:flex; align-items:center; gap:10px; margin:6px 0 14px; font-size:14px; font-weight:600;"><input type="checkbox" id="navPrecios"> Mostrar precios en el catálogo</label>
       <div class="field"><label>Nombre (aparece en el pie de página)</label><input type="text" id="navNombre" placeholder="Ej: Kike"></div>
       <div class="field"><label>Teléfono de pedidos</label><input type="text" id="navTel" placeholder="Ej: 660 87 59 27"></div>
@@ -1699,14 +1699,14 @@
     function navLeerLista() { return _navLista; }
     function navLocal() { try { return JSON.parse(localStorage.getItem('elancla_nav_lista') || '[]') || []; } catch (e) { return []; } }
     function navGuardarLocal(l) { try { localStorage.setItem('elancla_nav_lista', JSON.stringify(l.slice(0, 30))); } catch (e) {} }
-    function navFila(r) { return { id: r.id, fecha: r.fecha, titulo: r.titulo, ids: r.ids || [], precios: !!r.precios, tel: r.tel || '', nombre: r.nombre || '', portada: r.portada || 'clara' }; }
+    function navFila(r) { return { id: r.id, fecha: r.fecha, titulo: r.titulo, ids: r.ids || [], precios: !!r.precios, tel: r.tel || '', nombre: r.nombre || '', portada: r.portada || 'oscura' }; }
     async function cargarNavLista() {
       try {
         var data = chk(await _sb.from('catalogos_navidad').select('*').order('fecha', { ascending: false }).limit(30));
         _navNube = true; _navLista = (data || []).map(navFila);
         var loc = navLocal();   // pasa a la nube lo que se hubiera guardado solo en este móvil
         if (loc.length) {
-          var filas = loc.map(function (e) { return { fecha: e.fecha, titulo: e.titulo, ids: e.ids, precios: !!e.precios, tel: e.tel || '', nombre: e.nombre || '', portada: e.portada || 'clara' }; });
+          var filas = loc.map(function (e) { return { fecha: e.fecha, titulo: e.titulo, ids: e.ids, precios: !!e.precios, tel: e.tel || '', nombre: e.nombre || '', portada: e.portada || 'oscura' }; });
           var ins = chk(await _sb.from('catalogos_navidad').insert(filas).select());
           _navLista = (ins || []).map(navFila).concat(_navLista); navGuardarLocal([]);
         }
@@ -1745,7 +1745,7 @@
     function navAbrirGuardado(id) {
       var e = navLeerLista().filter(function (x) { return x.id === id; })[0]; if (!e) return;
       _navSel = {}; e.ids.forEach(function (i) { if (buscarEnCache(i)) _navSel[i] = true; });
-      $('navTitulo').value = e.titulo; $('navPrecios').checked = !!e.precios; $('navTel').value = e.tel || ''; $('navNombre').value = e.nombre || ''; $('navPortada').value = e.portada || 'clara';
+      $('navTitulo').value = e.titulo; $('navPrecios').checked = !!e.precios; $('navTel').value = e.tel || ''; $('navNombre').value = e.nombre || ''; $('navPortada').value = e.portada || 'oscura';
       renderNavLista();
       var perdidos = e.ids.length - Object.keys(_navSel).length;
       toast(perdidos > 0 ? 'Catálogo cargado. ' + perdidos + ' producto(s) ya no existen.' : 'Catálogo cargado. Ya puedes crear el PDF o enviarlo.');
@@ -1761,7 +1761,7 @@
       try {
         localStorage.setItem('elancla_nav', JSON.stringify({
           ids: Object.keys(_navSel).map(Number), titulo: $('navTitulo').value, precios: $('navPrecios').checked,
-          tel: $('navTel').value, nombre: $('navNombre').value, portada: $('navPortada').value
+          tel: $('navTel').value, nombre: $('navNombre').value, portada2: $('navPortada').value
         }));
       } catch (e) {}
     }
@@ -1774,7 +1774,7 @@
       $('navPrecios').checked = !!(s && s.precios);
       $('navTel').value = (s && s.tel) || '660 87 59 27';
       $('navNombre').value = (s && s.nombre) || 'Kike';
-      $('navPortada').value = (s && s.portada) || 'clara';
+      $('navPortada').value = (s && s.portada2) || 'oscura';
       $('navBuscar').value = '';
       renderNavLista(); renderNavGuardados(); cargarNavLista();
       $('modalNavidad').style.display = 'flex';
@@ -1895,8 +1895,8 @@
         ? '<img src="' + s + '"' + corsAttr(s) + ' alt="" style="position:absolute; left:0; top:0; width:100%; height:100%; object-fit:cover; display:block;">'
         : '<div style="position:absolute; left:0; top:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center;">' + navBayasSvg(60, 49, '#efe6d2') + '</div>') + '</div>';
       return '<div style="display:flex; flex-direction:column; gap:6px;">' +
-        '<div style="height:36px; box-sizing:border-box; display:flex; align-items:flex-end; padding:0 2px;">' +
-          '<div style="font-family:\'Great Vibes\', \'Fraunces\', Georgia, cursive; font-weight:400; font-size:29px; line-height:1; color:#8e1b28;">' + esc(p.nombre) + '</div>' +
+        '<div style="height:36px; box-sizing:border-box; display:flex; align-items:flex-end; padding:0 2px; overflow:hidden;">' +
+          '<div style="font-family:\'Great Vibes\', \'Fraunces\', Georgia, cursive; font-weight:400; font-size:' + (String(p.nombre).length <= 14 ? 29 : (String(p.nombre).length <= 18 ? 24 : (String(p.nombre).length <= 24 ? 19 : 16))) + 'px; line-height:1.1; white-space:nowrap; max-width:100%; overflow:hidden; color:#8e1b28;">' + esc(p.nombre) + '</div>' +
         '</div><div style="position:relative;">' + foto +
           (conPrecios ? '<div style="position:absolute; right:8px; bottom:8px; background:#b3212f; color:#fff; border:1.5px solid #f6f0e4; border-radius:14px; padding:4px 10px; font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:15px; line-height:1.1;">' + num(p.precio).toFixed(2) + ' €</div>' : '') +
         '</div></div>';
@@ -1976,7 +1976,7 @@
       var titulo = $('navTitulo').value.trim() || ('Navidad ' + new Date().getFullYear());
       var precios = $('navPrecios').checked, empresa = _cfg.empresa || 'EL ANCLA';
       var tel = $('navTel').value.trim(), nom = $('navNombre').value.trim(), pie = [nom, tel].filter(Boolean).join(' · ');
-      var clara = $('navPortada').value !== 'oscura';
+      var clara = $('navPortada').value === 'clara';
       var pags = [navPortada(titulo, empresa, clara)];
       navPaginasProductos(elegidos, titulo, precios, pie).forEach(function (h) { pags.push(h); });
       pags.push(navContraportada(tel, clara));
