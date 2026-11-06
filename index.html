@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -765,7 +765,15 @@
     .np-lin:last-child { background:linear-gradient(270deg,transparent,#c8a45a); }
     .np-cat-n { font-family:'Fraunces',Georgia,serif; font-style:italic; font-weight:500; font-size:clamp(26px,7vw,34px); color:#f6f0e4; }
     .np-bay { width:14px; height:14px; border-radius:50%; background:radial-gradient(circle at 35% 35%,#e85a67,#b3212f); box-shadow:10px 4px 0 -3px #b3212f; margin-right:10px; }
-    .np-card { box-shadow:0 6px 18px rgba(0,0,0,.35); }
+    .np-card { box-shadow:0 6px 18px rgba(0,0,0,.35); position:relative; }
+    .np-tag { position:absolute; right:8px; top:calc((100% - 48px) - 38px); background:#b3212f; color:#fff; border:1.5px solid #f6f0e4; border-radius:14px; padding:3px 10px; font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:15px; }
+    .np-cat-t { justify-content:center; }
+    .np-snow { position:fixed; inset:0; pointer-events:none; z-index:1; opacity:.55;
+      background-image: radial-gradient(2px 2px at 20px 30px,#fff,transparent), radial-gradient(2px 2px at 90px 120px,#fff,transparent), radial-gradient(1.5px 1.5px at 160px 60px,#fff,transparent), radial-gradient(2.5px 2.5px at 230px 180px,#fff,transparent), radial-gradient(1.5px 1.5px at 300px 90px,#fff,transparent);
+      background-size:320px 220px; animation:np-nieve 14s linear infinite; }
+    @keyframes np-nieve { from { background-position:0 0; } to { background-position:-40px 220px; } }
+    .np-wrap { z-index:2; }
+    @media (prefers-reduced-motion: reduce) { .np-snow { animation:none; } }
     .np-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; }
     @media (min-width:640px) { .np-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; } }
     .np-card { background:#fffaf0; border:1px solid #c8a45a; border-radius:12px; overflow:hidden; cursor:pointer; display:flex; flex-direction:column; -webkit-tap-highlight-color:transparent; }
@@ -1814,16 +1822,24 @@
         ? '<img src="' + s + '"' + corsAttr(s) + ' alt="" style="position:absolute; left:0; top:0; width:100%; height:100%; object-fit:cover; display:block;">'
         : '<div style="position:absolute; left:0; top:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center;">' + navBayasSvg(60, 49, '#efe6d2') + '</div>') + '</div>';
       return '<div style="display:flex; flex-direction:column; gap:6px;">' +
-        '<div style="height:28px; box-sizing:border-box; display:flex; align-items:flex-end; justify-content:space-between; gap:6px; padding:0 2px;">' +
-          '<div style="font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:17px; line-height:1.1; color:#101b33; flex:1; min-width:0;">' + esc(p.nombre) + '</div>' +
-          (conPrecios ? '<div style="font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:17px; color:#a3202f; white-space:nowrap;">' + num(p.precio).toFixed(2) + ' €</div>' : '') +
-        '</div>' + foto + '</div>';
+        '<div style="height:28px; box-sizing:border-box; display:flex; align-items:flex-end; padding:0 2px;">' +
+          '<div style="font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:18px; line-height:1.1; color:#101b33;">' + esc(p.nombre) + '</div>' +
+        '</div><div style="position:relative;">' + foto +
+          (conPrecios ? '<div style="position:absolute; right:8px; bottom:8px; background:#b3212f; color:#fff; border:1.5px solid #f6f0e4; border-radius:14px; padding:4px 10px; font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:15px; line-height:1.1;">' + num(p.precio).toFixed(2) + ' €</div>' : '') +
+        '</div></div>';
     }
     function navTituloCat(nombre) {
-      return '<div style="height:46px; display:flex; align-items:center; gap:14px;">' +
-        '<div style="flex:1; height:1px; background:#c8a45a;"></div>' + navBayasSvg(26, 21, NAV_MARFIL) +
-        '<div style="font-family:\'Fraunces\', Georgia, serif; font-style:italic; font-weight:500; font-size:30px; color:#101b33;">' + esc(nombre) + '</div>' + navBayasSvg(26, 21, NAV_MARFIL) +
-        '<div style="flex:1; height:1px; background:#c8a45a;"></div></div>';
+      return '<div style="height:46px; display:flex; align-items:center; justify-content:center;">' +
+        '<div style="height:40px; padding:0 30px; border-radius:20px; background:#101b33; border:1px solid #c8a45a; display:flex; align-items:center; gap:14px;">' +
+        navBayasSvg(22, 18, '#101b33') +
+        '<div style="font-family:\'Fraunces\', Georgia, serif; font-style:italic; font-weight:500; font-size:25px; color:#f6f0e4; line-height:1;">' + esc(nombre) + '</div>' +
+        navBayasSvg(22, 18, '#101b33') + '</div></div>';
+    }
+    function navCopos() {
+      var f = function (x, y, r, o) { var s = ''; for (var k = 0; k < 3; k++) s += '<line x1="' + x + '" y1="' + (y - r) + '" x2="' + x + '" y2="' + (y + r) + '" transform="rotate(' + (k * 60) + ' ' + x + ' ' + y + ')"/>'; return '<g opacity="' + o + '">' + s + '<circle cx="' + x + '" cy="' + y + '" r="' + (r * 0.18) + '" fill="#c8a45a" stroke="none"/></g>'; };
+      return '<svg aria-hidden="true" width="794" height="1123" viewBox="0 0 794 1123" style="position:absolute; left:0; top:0;"><g stroke="#c8a45a" stroke-width="1.4" fill="none" stroke-linecap="round">' +
+        f(62, 230, 11, .45) + f(738, 300, 9, .4) + f(60, 480, 8, .35) + f(740, 560, 12, .45) + f(64, 760, 10, .4) + f(736, 820, 8, .35) + f(66, 980, 9, .4) + f(730, 960, 11, .45) +
+        f(400, 1058, 7, .4) + '</g></svg>';
     }
     function navPaginasProductos(elegidos, titulo, conPrecios, pie) {
       var COLS = 3, ALTO = 196, ROW = ALTO + 34 + 14, CAT = 46 + 14, DISP = 850, pags = [], cur = [], usado = 0;
@@ -1846,11 +1862,11 @@
           if (b.cat) h += navTituloCat(b.cat);
           else { h += '<div style="display:grid; grid-template-columns:repeat(' + COLS + ', minmax(0, 1fr)); gap:16px; align-items:start;">'; b.fila.forEach(function (p) { h += navTarjeta(p, conPrecios, ALTO); }); h += '</div>'; }
         });
-        return navPagina(navMarcos() + navDestellos() +
+        return navPagina(navMarcos() + navCopos() + navDestellos() +
           '<div style="position:absolute; left:76px; right:76px; top:72px; bottom:70px; display:flex; flex-direction:column; gap:14px;">' +
-            '<div style="display:flex; align-items:flex-end; justify-content:space-between; border-bottom:2px solid #c8a45a; padding-bottom:8px; margin-bottom:2px;">' +
-              '<div style="font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:30px; line-height:1.05; color:#101b33;">Nuestra selección</div>' +
-              '<div style="font-family:\'Fraunces\', Georgia, serif; font-style:italic; font-size:21px; color:#a3202f;">' + esc(titulo) + '</div></div>' +
+            '<div style="height:48px; box-sizing:border-box; display:flex; align-items:center; justify-content:space-between; padding:0 20px; border-radius:6px; background:#101b33; border-bottom:3px solid #b3212f;">' +
+              '<div style="font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:25px; line-height:1; color:#f6f0e4;">Nuestra selección</div>' +
+              '<div style="font-family:\'Fraunces\', Georgia, serif; font-style:italic; font-size:21px; color:#c8a45a;">' + esc(titulo) + '</div></div>' +
             '<div style="flex:1; display:flex; flex-direction:column; justify-content:flex-start; gap:14px;">' + h + '</div>' +
             '<div style="margin-top:auto; text-align:center; font-family:\'Fraunces\', Georgia, serif; font-size:18px; color:#101b33;">' + esc(pie) + '</div></div>', NAV_MARFIL);
       });
@@ -1891,7 +1907,11 @@
       _pdfListo = null;
       var tok = _pdfTok = Date.now();
       setTimeout(function () {
-        generarPDF().then(function (pdf) { if (tok === _pdfTok) _pdfListo = { pdf: pdf, nombre: _pdfNombre }; }).catch(function () {});
+        if (tok !== _pdfTok) return;
+        _pdfProgreso = function (i, n) { if (tok === _pdfTok) navBotonesPDF('⏳ Preparando ' + i + '/' + n + '…'); };
+        generarPDF().then(function (pdf) { if (tok === _pdfTok) { _pdfListo = { pdf: pdf, nombre: _pdfNombre }; navBotonesPDF(''); } })
+          .catch(function () { if (tok === _pdfTok) navBotonesPDF(''); })
+          .then(function () { _pdfProgreso = null; });
       }, 900);
     }
 
@@ -1942,6 +1962,7 @@
       });
       _navPub.prods = prods;
       var pal = titulo.trim().split(/\s+/), grande = pal.shift() || 'Navidad', resto = pal.join(' ');
+      root.insertAdjacentHTML('beforebegin', '');
       var star = '<svg class="np-star" viewBox="0 0 24 24" width="22" height="22"><path d="M12 1 L14 10 L23 12 L14 14 L12 23 L10 14 L1 12 L10 10 Z" fill="#c8a45a"/></svg>';
       var h = '<div class="np-wrap"><div class="np-head"><div class="np-cinta np-l"></div><div class="np-cinta np-r"></div>' +
         '<div class="np-ico">' + star + '</div>' +
@@ -1958,7 +1979,8 @@
         var s = imgSrc(p.url_foto);
         h += '<div class="np-card" onclick="navAbrirProducto(' + i + ')">' +
           '<div class="np-foto">' + (s ? '<img src="' + s + '" alt="" loading="lazy">' : '<span>🎄</span>') + '</div>' +
-          '<div class="np-info"><div class="np-nom">' + esc(p.nombre) + '</div>' + (p._precio !== undefined ? '<div class="np-pre">' + p._precio.toFixed(2) + ' €</div>' : '') + '</div></div>';
+          '<div class="np-info"><div class="np-nom">' + esc(p.nombre) + '</div></div>' +
+          (p._precio !== undefined ? '<div class="np-tag">' + p._precio.toFixed(2) + ' €</div>' : '') + '</div>';
       });
       if (catAct !== null) h += '</div>';
       if (!prods.length) h += '<div style="text-align:center; color:#e9d9ae; padding:40px 20px;">Este catálogo ya no tiene productos disponibles.</div>';
@@ -1968,7 +1990,7 @@
         '<div id="npLB" class="np-lb" onclick="if(event.target===this)navCerrarProducto()"><div class="np-lbcard"><button class="np-x" onclick="navCerrarProducto()">✕</button>' +
         '<img id="npLBimg" alt=""><div class="np-lbtxt"><div id="npLBcat" class="np-cat"></div><div id="npLBnom" class="np-lbnom"></div><div id="npLBpre" class="np-pre"></div><div id="npLBdesc" class="np-desc"></div>' +
         '<a id="npLBwa" class="np-wa" target="_blank" rel="noopener">💬 Pedir por WhatsApp</a></div></div></div>';
-      root.innerHTML = h;
+      root.innerHTML = '<div class="np-snow"></div>' + h;
     }
     function navAbrirProducto(i) {
       var p = _navPub.prods[i]; if (!p) return;
@@ -3427,14 +3449,26 @@
 
     function cerrarVistaDocumento() { setMode(_mode); }
 
+    var _pdfProgreso = null;
+    function navBotonesPDF(txt) {
+      ['btnDescargarPDF', 'btnCompartirPDF'].forEach(function (id) {
+        var b = $(id); if (!b) return;
+        if (b.dataset.t === undefined) b.dataset.t = b.textContent;
+        if (txt) { b.textContent = txt; b.style.opacity = '.7'; } else { b.textContent = b.dataset.t; b.style.opacity = ''; delete b.dataset.t; }
+      });
+    }
     async function generarPDF() {
       var paginas = document.querySelectorAll('.page-a4');
       if (!paginas || paginas.length === 0) throw new Error('No hay documento abierto.');
       var pdf = new jspdf.jsPDF('p', 'mm', 'a4');
       for (var i = 0; i < paginas.length; i++) {
         if (i > 0) pdf.addPage();
-        var canvas = await html2canvas(paginas[i], { scale: 2, useCORS: true, scrollY: 0 });
-        pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 210, 297);
+        if (typeof _pdfProgreso === 'function') _pdfProgreso(i + 1, paginas.length);
+        await new Promise(function (r) { setTimeout(r, 30); });
+        var rapido = !!_pdfNombre;
+        var canvas = await html2canvas(paginas[i], { scale: rapido ? 1.5 : 2, useCORS: true, scrollY: 0, logging: false });
+        pdf.addImage(canvas.toDataURL('image/jpeg', rapido ? 0.85 : 0.92), 'JPEG', 0, 0, 210, 297);
+        canvas.width = canvas.height = 0;
       }
       return pdf;
     }
@@ -3447,7 +3481,8 @@
     async function descargarPDF() {
       var btn = $('btnDescargarPDF'), txt = btn.textContent;
       btn.disabled = true; btn.textContent = 'Generando...';
-      try { (await generarPDF()).save(nombrePDF()); }
+      if (_pdfNombre && !_pdfListo) { toast('Estoy preparando el PDF. En unos segundos podrás descargarlo.'); btn.disabled = false; btn.textContent = txt; return; }
+      try { ((_pdfNombre && _pdfListo) ? _pdfListo.pdf : await generarPDF()).save(nombrePDF()); }
       catch (e) { toast('No se pudo crear el PDF: ' + errMsg(e), 'err'); }
       finally { btn.disabled = false; btn.textContent = txt; }
     }
