@@ -15,7 +15,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Great+Vibes&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&display=swap" rel="stylesheet">
   <script>try { document.documentElement.setAttribute('data-tema', localStorage.getItem('elancla_tema') === 'marino' ? 'marino' : 'fresco'); } catch (e) { document.documentElement.setAttribute('data-tema', 'fresco'); }</script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -767,7 +767,8 @@
     .np-bay { width:14px; height:14px; border-radius:50%; background:radial-gradient(circle at 35% 35%,#e85a67,#b3212f); box-shadow:10px 4px 0 -3px #b3212f; margin-right:10px; }
     .np-card { box-shadow:0 6px 18px rgba(0,0,0,.35); position:relative; }
     .np-tag { position:absolute; right:8px; top:calc((100% - 48px) - 38px); background:#b3212f; color:#fff; border:1.5px solid #f6f0e4; border-radius:14px; padding:3px 10px; font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:15px; }
-    .np-cat-t { justify-content:center; }
+    .np-cat-t { justify-content:center; margin-bottom:4px; }
+    .np-fr { text-align:center; font-family:'Fraunces',Georgia,serif; font-style:italic; color:#e9d9ae; opacity:.9; font-size:15px; margin-bottom:14px; }
     .np-snow { position:fixed; inset:0; pointer-events:none; z-index:1; opacity:.55;
       background-image: radial-gradient(2px 2px at 20px 30px,#fff,transparent), radial-gradient(2px 2px at 90px 120px,#fff,transparent), radial-gradient(1.5px 1.5px at 160px 60px,#fff,transparent), radial-gradient(2.5px 2.5px at 230px 180px,#fff,transparent), radial-gradient(1.5px 1.5px at 300px 90px,#fff,transparent);
       background-size:320px 220px; animation:np-nieve 14s linear infinite; }
@@ -781,7 +782,7 @@
     .np-foto { aspect-ratio:1/1; background:#efe6d2; display:flex; align-items:center; justify-content:center; font-size:40px; }
     .np-foto img { width:100%; height:100%; object-fit:cover; display:block; }
     .np-info { padding:9px 11px 11px; }
-    .np-nom { font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:17px; line-height:1.15; color:#101b33; }
+    .np-nom { font-family:'Great Vibes','Fraunces',Georgia,cursive; font-weight:400; font-size:25px; line-height:1.1; color:#8e1b28; }
     .np-pre { font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:17px; color:#a3202f; margin-top:3px; }
     .np-pie { text-align:center; padding:36px 0 10px; }
     .np-feliz { font-family:'Fraunces',Georgia,serif; font-style:italic; font-size:clamp(36px,10vw,56px); color:#f6f0e4; }
@@ -1136,11 +1137,13 @@
   <div id="modalNavidad" class="modal-overlay no-print">
     <div class="modal-card">
       <div class="card-header" style="margin-bottom: 6px;">🎄 Catálogo de Navidad</div>
+      <div id="navGuardados"></div>
       <div style="font-size:13px; color:var(--muted); margin-bottom:12px;">Elige los productos que quieres enseñar. Saldrán con su foto, nombre y observaciones.</div>
       <input type="search" id="navBuscar" placeholder="🔎 Buscar producto..." oninput="renderNavLista()">
       <div id="navCont" class="count-txt" style="margin-top:8px; font-weight:700; color:var(--success);"></div>
       <div id="navLista" style="max-height:38vh; overflow-y:auto; margin-bottom:12px;"></div>
       <div class="field"><label>Título de la portada</label><input type="text" id="navTitulo" placeholder="Ej: Navidad 2026"></div>
+      <div class="field"><label>Portada y contraportada</label><select id="navPortada"><option value="clara">Clara (marfil)</option><option value="oscura">Oscura (azul noche)</option></select></div>
       <label style="display:flex; align-items:center; gap:10px; margin:6px 0 14px; font-size:14px; font-weight:600;"><input type="checkbox" id="navPrecios"> Mostrar precios en el catálogo</label>
       <div class="field"><label>Nombre (aparece en el pie de página)</label><input type="text" id="navNombre" placeholder="Ej: Kike"></div>
       <div class="field"><label>Teléfono de pedidos</label><input type="text" id="navTel" placeholder="Ej: 660 87 59 27"></div>
@@ -1692,11 +1695,45 @@
         (NAV_GUIR_ABAJO ? '<img src="' + NAV_GUIR_ABAJO + '" alt="" style="' + base + ' bottom:0;">'
                         : '<img src="' + NAV_GUIR + '" alt="" style="' + base + ' bottom:0; transform:scaleY(-1);">');
     }
+    function navLeerLista() { try { return JSON.parse(localStorage.getItem('elancla_nav_lista') || '[]') || []; } catch (e) { return []; } }
+    function navGuardarCatalogo() {
+      var ids = Object.keys(_navSel).map(Number).sort(function (a, b) { return a - b; });
+      if (!ids.length) return;
+      var e = { id: Date.now(), fecha: new Date().toISOString(), titulo: $('navTitulo').value.trim() || ('Navidad ' + new Date().getFullYear()), ids: ids,
+        precios: $('navPrecios').checked, tel: $('navTel').value, nombre: $('navNombre').value, portada: $('navPortada').value };
+      var firma = e.titulo + '|' + ids.join(',') + '|' + e.precios, l = navLeerLista().filter(function (x) { return (x.titulo + '|' + x.ids.join(',') + '|' + x.precios) !== firma; });
+      l.unshift(e);
+      try { localStorage.setItem('elancla_nav_lista', JSON.stringify(l.slice(0, 30))); } catch (x) {}
+    }
+    function renderNavGuardados() {
+      var l = navLeerLista(), box = $('navGuardados');
+      if (!l.length) { box.innerHTML = ''; return; }
+      var h = '<div style="font-size:13px; font-weight:700; margin-bottom:6px;">📁 Mis catálogos guardados</div>';
+      l.forEach(function (e) {
+        var f = new Date(e.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+        h += '<div class="product-item compact" style="margin-bottom:6px;"><div style="flex:1; min-width:0;"><div class="product-name">' + esc(e.titulo) + '</div><div class="product-notes">' + f + ' · ' + e.ids.length + ' productos' + (e.precios ? ' · con precios' : '') + '</div></div>' +
+          '<div style="display:flex; gap:6px; flex-shrink:0;"><button class="btn btn-accent btn-sm" onclick="navAbrirGuardado(' + e.id + ')">Abrir</button><button class="btn btn-danger btn-sm" onclick="navBorrarGuardado(' + e.id + ')">🗑️</button></div></div>';
+      });
+      box.innerHTML = h + '<hr style="border:none; border-top:1px solid var(--border); margin:12px 0;">';
+    }
+    function navAbrirGuardado(id) {
+      var e = navLeerLista().filter(function (x) { return x.id === id; })[0]; if (!e) return;
+      _navSel = {}; e.ids.forEach(function (i) { if (buscarEnCache(i)) _navSel[i] = true; });
+      $('navTitulo').value = e.titulo; $('navPrecios').checked = !!e.precios; $('navTel').value = e.tel || ''; $('navNombre').value = e.nombre || ''; $('navPortada').value = e.portada || 'clara';
+      renderNavLista();
+      var perdidos = e.ids.length - Object.keys(_navSel).length;
+      toast(perdidos > 0 ? 'Catálogo cargado. ' + perdidos + ' producto(s) ya no existen.' : 'Catálogo cargado. Ya puedes crear el PDF o enviarlo.');
+    }
+    function navBorrarGuardado(id) {
+      if (!confirm('¿Borrar este catálogo guardado?')) return;
+      try { localStorage.setItem('elancla_nav_lista', JSON.stringify(navLeerLista().filter(function (x) { return x.id !== id; }))); } catch (e) {}
+      renderNavGuardados();
+    }
     function navGuardar() {
       try {
         localStorage.setItem('elancla_nav', JSON.stringify({
           ids: Object.keys(_navSel).map(Number), titulo: $('navTitulo').value, precios: $('navPrecios').checked,
-          tel: $('navTel').value, nombre: $('navNombre').value
+          tel: $('navTel').value, nombre: $('navNombre').value, portada: $('navPortada').value
         }));
       } catch (e) {}
     }
@@ -1709,8 +1746,9 @@
       $('navPrecios').checked = !!(s && s.precios);
       $('navTel').value = (s && s.tel) || '660 87 59 27';
       $('navNombre').value = (s && s.nombre) || 'Kike';
+      $('navPortada').value = (s && s.portada) || 'clara';
       $('navBuscar').value = '';
-      renderNavLista();
+      renderNavLista(); renderNavGuardados();
       $('modalNavidad').style.display = 'flex';
     }
     function cerrarCatalogoNavidad() { navGuardar(); $('modalNavidad').style.display = 'none'; }
@@ -1800,21 +1838,28 @@
       return '<div style="position:absolute; left:36px; top:36px; right:36px; bottom:36px; border:1px solid #c8a45a;"></div>' +
              '<div style="position:absolute; left:48px; top:48px; right:48px; bottom:48px; border:1px solid rgba(200,164,90,0.4);"></div>';
     }
-    function navPortada(titulo, empresa) {
+    function navTema(clara) {
+      return clara ? { fondo: '#f6f0e4', txt: '#101b33', oro: '#a98642', sub: '#6b5420', bay: NAV_MARFIL, glow: '<radialGradient id="gl" cx="50%" cy="36%" r="55%"><stop offset="0" stop-color="#fffaf0"/><stop offset="1" stop-color="#f6f0e4" stop-opacity="0"/></radialGradient>' }
+                   : { fondo: NAV_NOCHE, txt: '#f6f0e4', oro: '#c8a45a', sub: '#e9d9ae', bay: NAV_NOCHE, glow: '' };
+    }
+    function navPortada(titulo, empresa, clara) {
+      var T = navTema(clara);
       var pal = titulo.trim().split(/\s+/), grande = pal.shift() || 'Navidad', resto = pal.join(' ');
       var fs = grande.length <= 8 ? 168 : (grande.length <= 11 ? 128 : 96);
-      var circ = '<svg aria-hidden="true" width="794" height="1123" viewBox="0 0 794 1123" style="position:absolute; left:0; top:0;"><g fill="none" stroke="#c8a45a"><circle cx="397" cy="400" r="150" opacity="0.5"/><circle cx="397" cy="400" r="215" opacity="0.32"/><circle cx="397" cy="400" r="280" opacity="0.18"/></g><path d="M397 330 L405 392 L467 400 L405 408 L397 470 L389 408 L327 400 L389 392 Z" fill="#c8a45a"/></svg>';
-      return navPagina(circ + navEstrellasSvg() + navMarcos() + navLazosSvg() +
+      var circ = '<svg aria-hidden="true" width="794" height="1123" viewBox="0 0 794 1123" style="position:absolute; left:0; top:0;"><defs>' + T.glow + '</defs>' +
+        (clara ? '<rect width="794" height="1123" fill="url(#gl)"/>' : '') +
+        '<g fill="none" stroke="' + T.oro + '"><circle cx="397" cy="400" r="150" opacity="0.5"/><circle cx="397" cy="400" r="215" opacity="0.32"/><circle cx="397" cy="400" r="280" opacity="0.18"/></g><path d="M397 330 L405 392 L467 400 L405 408 L397 470 L389 408 L327 400 L389 392 Z" fill="' + T.oro + '"/></svg>';
+      return navPagina(circ + (clara ? navCopos() : '') + navEstrellasSvg() + navMarcos() + navLazosSvg() +
         '<div style="position:absolute; left:0; right:0; top:96px; display:flex; flex-direction:column; align-items:center; gap:10px;">' + navAnclaSvg(34) +
-          '<div style="font-family:\'Fraunces\', Georgia, serif; font-size:26px; font-weight:500; color:#f6f0e4;">' + esc(empresa) + '</div></div>' +
+          '<div style="font-family:\'Fraunces\', Georgia, serif; font-size:26px; font-weight:500; color:' + T.txt + ';">' + esc(empresa) + '</div></div>' +
         '<div style="position:absolute; left:60px; right:60px; top:560px; display:flex; flex-direction:column; align-items:center;">' +
-          '<div style="font-family:\'Fraunces\', Georgia, serif; font-style:italic; font-weight:500; font-size:' + fs + 'px; line-height:0.95; color:#f6f0e4; text-align:center;">' + esc(grande) + '</div>' +
-          (resto ? '<div style="margin-top:18px; display:flex; align-items:center; gap:22px;">' + navBayasSvg(44, 36, NAV_MARFIL) +
-            '<div style="font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:58px; line-height:1; color:#c8a45a; letter-spacing:0.12em;">' + esc(resto) + '</div>' + navBayasSvg(44, 36, NAV_MARFIL) + '</div>' : '') +
+          '<div style="font-family:\'Fraunces\', Georgia, serif; font-style:italic; font-weight:500; font-size:' + fs + 'px; line-height:0.95; color:' + T.txt + '; text-align:center;">' + esc(grande) + '</div>' +
+          (resto ? '<div style="margin-top:18px; display:flex; align-items:center; gap:22px;">' + navBayasSvg(44, 36, T.bay) +
+            '<div style="font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:58px; line-height:1; color:' + T.oro + '; letter-spacing:0.12em;">' + esc(resto) + '</div>' + navBayasSvg(44, 36, T.bay) + '</div>' : '') +
         '</div>' +
         '<div style="position:absolute; left:0; right:0; bottom:118px; display:flex; flex-direction:column; align-items:center; gap:22px;">' +
           '<div style="width:72px; height:3px; background:#d63a49; border-radius:2px;"></div>' +
-          '<div style="max-width:560px; text-align:center; font-family:\'Fraunces\', Georgia, serif; font-style:italic; font-weight:500; font-size:34px; line-height:1.3; color:#e9d9ae;">Los mejores productos para los momentos más especiales</div></div>', NAV_NOCHE);
+          '<div style="max-width:560px; text-align:center; font-family:\'Fraunces\', Georgia, serif; font-style:italic; font-weight:500; font-size:34px; line-height:1.3; color:' + T.sub + ';">Los mejores productos para los momentos más especiales</div></div>', T.fondo);
     }
     function navTarjeta(p, conPrecios, alto) {
       var s = imgSrc(p.url_foto);
@@ -1822,18 +1867,28 @@
         ? '<img src="' + s + '"' + corsAttr(s) + ' alt="" style="position:absolute; left:0; top:0; width:100%; height:100%; object-fit:cover; display:block;">'
         : '<div style="position:absolute; left:0; top:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center;">' + navBayasSvg(60, 49, '#efe6d2') + '</div>') + '</div>';
       return '<div style="display:flex; flex-direction:column; gap:6px;">' +
-        '<div style="height:28px; box-sizing:border-box; display:flex; align-items:flex-end; padding:0 2px;">' +
-          '<div style="font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:18px; line-height:1.1; color:#101b33;">' + esc(p.nombre) + '</div>' +
+        '<div style="height:36px; box-sizing:border-box; display:flex; align-items:flex-end; padding:0 2px;">' +
+          '<div style="font-family:\'Great Vibes\', \'Fraunces\', Georgia, cursive; font-weight:400; font-size:29px; line-height:1; color:#8e1b28;">' + esc(p.nombre) + '</div>' +
         '</div><div style="position:relative;">' + foto +
           (conPrecios ? '<div style="position:absolute; right:8px; bottom:8px; background:#b3212f; color:#fff; border:1.5px solid #f6f0e4; border-radius:14px; padding:4px 10px; font-family:\'Fraunces\', Georgia, serif; font-weight:700; font-size:15px; line-height:1.1;">' + num(p.precio).toFixed(2) + ' €</div>' : '') +
         '</div></div>';
     }
+    function navFrase(c) {
+      var n = norm(c);
+      var m = [['marisc', 'Para brindar con lo mejor del mar'], ['pescad', 'Del mar a tu mesa en Nochebuena'], ['cordero', 'El asado que reúne a toda la familia'], ['carne', 'Sabores para compartir en familia'],
+        ['ibéric', 'El sabor de las grandes celebraciones'], ['iberic', 'El sabor de las grandes celebraciones'], ['jamon', 'El sabor de las grandes celebraciones'], ['embutid', 'Para picar y brindar'],
+        ['verdura', 'Frescura para cada plato'], ['fruta', 'Frescura para cada plato'], ['postre', 'El broche dulce de la fiesta'], ['dulce', 'El broche dulce de la fiesta'],
+        ['queso', 'Para una tabla de ensueño'], ['ave', 'Clásicos de la mesa navideña'], ['pollo', 'Clásicos de la mesa navideña']];
+      for (var i = 0; i < m.length; i++) if (n.indexOf(m[i][0]) !== -1) return m[i][1];
+      return 'Para las mesas más especiales';
+    }
     function navTituloCat(nombre) {
-      return '<div style="height:46px; display:flex; align-items:center; justify-content:center;">' +
+      return '<div style="height:66px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:5px;">' +
         '<div style="height:40px; padding:0 30px; border-radius:20px; background:#101b33; border:1px solid #c8a45a; display:flex; align-items:center; gap:14px;">' +
         navBayasSvg(22, 18, '#101b33') +
         '<div style="font-family:\'Fraunces\', Georgia, serif; font-style:italic; font-weight:500; font-size:25px; color:#f6f0e4; line-height:1;">' + esc(nombre) + '</div>' +
-        navBayasSvg(22, 18, '#101b33') + '</div></div>';
+        navBayasSvg(22, 18, '#101b33') + '</div>' +
+        '<div style="font-family:\'Fraunces\', Georgia, serif; font-style:italic; font-size:14px; line-height:1; color:#7d6224;">' + esc(navFrase(nombre)) + '</div></div>';
     }
     function navCopos() {
       var f = function (x, y, r, o) { var s = ''; for (var k = 0; k < 3; k++) s += '<line x1="' + x + '" y1="' + (y - r) + '" x2="' + x + '" y2="' + (y + r) + '" transform="rotate(' + (k * 60) + ' ' + x + ' ' + y + ')"/>'; return '<g opacity="' + o + '">' + s + '<circle cx="' + x + '" cy="' + y + '" r="' + (r * 0.18) + '" fill="#c8a45a" stroke="none"/></g>'; };
@@ -1842,7 +1897,7 @@
         f(400, 1058, 7, .4) + '</g></svg>';
     }
     function navPaginasProductos(elegidos, titulo, conPrecios, pie) {
-      var COLS = 3, ALTO = 196, ROW = ALTO + 34 + 14, CAT = 46 + 14, DISP = 850, pags = [], cur = [], usado = 0;
+      var COLS = 3, ALTO = 196, ROW = ALTO + 36 + 6 + 14, CAT = 66 + 14, DISP = 850, pags = [], cur = [], usado = 0;
       var cats = [], mapa = {};
       elegidos.forEach(function (p) { var c = p.categoria || 'Varios'; if (!mapa[c]) { mapa[c] = []; cats.push(c); } mapa[c].push(p); });
       var cierra = function () { if (cur.length) pags.push(cur); cur = []; usado = 0; };
@@ -1871,19 +1926,20 @@
             '<div style="margin-top:auto; text-align:center; font-family:\'Fraunces\', Georgia, serif; font-size:18px; color:#101b33;">' + esc(pie) + '</div></div>', NAV_MARFIL);
       });
     }
-    function navContraportada(tel) {
-      return navPagina(navEstrellasSvg() + navMarcos() + navLazosSvg() +
+    function navContraportada(tel, clara) {
+      var T = navTema(clara);
+      return navPagina((clara ? navCopos() : '') + navEstrellasSvg() + navMarcos() + navLazosSvg() +
         '<div style="position:absolute; left:96px; right:96px; top:0; bottom:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:44px; text-align:center;">' +
-          '<div style="font-family:\'Fraunces\', Georgia, serif; font-style:italic; font-weight:500; font-size:104px; line-height:1; color:#f6f0e4;">Feliz Navidad</div>' +
+          '<div style="font-family:\'Fraunces\', Georgia, serif; font-style:italic; font-weight:500; font-size:104px; line-height:1; color:' + T.txt + ';">Feliz Navidad</div>' +
           '<div style="width:72px; height:3px; background:#d63a49; border-radius:2px;"></div>' +
-          (tel ? '<div style="font-family:\'Fraunces\', Georgia, serif; font-size:40px; font-weight:500; color:#e9d9ae;">Pedidos al ' + esc(tel) + '</div>' : '') +
-        '</div>', NAV_NOCHE);
+          (tel ? '<div style="font-family:\'Fraunces\', Georgia, serif; font-size:40px; font-weight:500; color:' + T.sub + ';">Pedidos al ' + esc(tel) + '</div>' : '') +
+        '</div>', T.fondo);
     }
 
     function crearCatalogoNavidad() {
       var elegidos = _productosCache.filter(function (p) { return _navSel[p.id]; });
       if (!elegidos.length) { toast('Elige al menos un producto para el catálogo.', 'err'); return; }
-      navGuardar();
+      navGuardar(); navGuardarCatalogo();
       var orden = categoriasDe(_productosCache);
       elegidos.sort(function (a, b) {
         var d = orden.indexOf(a.categoria || 'Varios') - orden.indexOf(b.categoria || 'Varios');
@@ -1892,9 +1948,10 @@
       var titulo = $('navTitulo').value.trim() || ('Navidad ' + new Date().getFullYear());
       var precios = $('navPrecios').checked, empresa = _cfg.empresa || 'EL ANCLA';
       var tel = $('navTel').value.trim(), nom = $('navNombre').value.trim(), pie = [nom, tel].filter(Boolean).join(' · ');
-      var pags = [navPortada(titulo, empresa)];
+      var clara = $('navPortada').value !== 'oscura';
+      var pags = [navPortada(titulo, empresa, clara)];
       navPaginasProductos(elegidos, titulo, precios, pie).forEach(function (h) { pags.push(h); });
-      pags.push(navContraportada(tel));
+      pags.push(navContraportada(tel, clara));
       $('modalNavidad').style.display = 'none';
       _clienteActual = ''; _pdfNombre = 'Catalogo_' + titulo.replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ]+/g, '_') + (precios ? '_con_precios' : '') + '.pdf';
       $('contenedorPaginasA4').innerHTML = pags.join('');
@@ -1919,7 +1976,7 @@
     function navEnlace() {
       var ids = Object.keys(_navSel).map(Number);
       if (!ids.length) { toast('Elige al menos un producto para el catálogo.', 'err'); return ''; }
-      navGuardar();
+      navGuardar(); navGuardarCatalogo();
       var orden = categoriasDe(_productosCache);
       var els = _productosCache.filter(function (p) { return _navSel[p.id]; }).sort(function (a, b) {
         var d = orden.indexOf(a.categoria || 'Varios') - orden.indexOf(b.categoria || 'Varios');
@@ -1973,7 +2030,7 @@
         var c = p.categoria || 'Varios';
         if (c !== catAct) {
           if (catAct !== null) h += '</div>';
-          h += '<div class="np-cat-t"><span class="np-lin"></span><span class="np-bay"></span><span class="np-cat-n">' + esc(c) + '</span><span class="np-bay"></span><span class="np-lin"></span></div><div class="np-grid">';
+          h += '<div class="np-cat-t"><span class="np-lin"></span><span class="np-bay"></span><span class="np-cat-n">' + esc(c) + '</span><span class="np-bay"></span><span class="np-lin"></span></div><div class="np-fr">' + esc(navFrase(c)) + '</div><div class="np-grid">';
           catAct = c;
         }
         var s = imgSrc(p.url_foto);
@@ -3458,6 +3515,7 @@
       });
     }
     async function generarPDF() {
+      try { if (document.fonts && document.fonts.load) { await document.fonts.load('29px "Great Vibes"'); await document.fonts.ready; } } catch (e) {}
       var paginas = document.querySelectorAll('.page-a4');
       if (!paginas || paginas.length === 0) throw new Error('No hay documento abierto.');
       var pdf = new jspdf.jsPDF('p', 'mm', 'a4');
