@@ -1695,20 +1695,46 @@
         (NAV_GUIR_ABAJO ? '<img src="' + NAV_GUIR_ABAJO + '" alt="" style="' + base + ' bottom:0;">'
                         : '<img src="' + NAV_GUIR + '" alt="" style="' + base + ' bottom:0; transform:scaleY(-1);">');
     }
-    function navLeerLista() { try { return JSON.parse(localStorage.getItem('elancla_nav_lista') || '[]') || []; } catch (e) { return []; } }
-    function navGuardarCatalogo() {
+    var _navLista = [], _navNube = true;
+    function navLeerLista() { return _navLista; }
+    function navLocal() { try { return JSON.parse(localStorage.getItem('elancla_nav_lista') || '[]') || []; } catch (e) { return []; } }
+    function navGuardarLocal(l) { try { localStorage.setItem('elancla_nav_lista', JSON.stringify(l.slice(0, 30))); } catch (e) {} }
+    function navFila(r) { return { id: r.id, fecha: r.fecha, titulo: r.titulo, ids: r.ids || [], precios: !!r.precios, tel: r.tel || '', nombre: r.nombre || '', portada: r.portada || 'clara' }; }
+    async function cargarNavLista() {
+      try {
+        var data = chk(await _sb.from('catalogos_navidad').select('*').order('fecha', { ascending: false }).limit(30));
+        _navNube = true; _navLista = (data || []).map(navFila);
+        var loc = navLocal();   // pasa a la nube lo que se hubiera guardado solo en este móvil
+        if (loc.length) {
+          var filas = loc.map(function (e) { return { fecha: e.fecha, titulo: e.titulo, ids: e.ids, precios: !!e.precios, tel: e.tel || '', nombre: e.nombre || '', portada: e.portada || 'clara' }; });
+          var ins = chk(await _sb.from('catalogos_navidad').insert(filas).select());
+          _navLista = (ins || []).map(navFila).concat(_navLista); navGuardarLocal([]);
+        }
+      } catch (e) { _navNube = false; _navLista = navLocal(); }
+      renderNavGuardados();
+    }
+    function navFirma(e) { return e.titulo + '|' + e.ids.join(',') + '|' + !!e.precios; }
+    async function navGuardarCatalogo() {
       var ids = Object.keys(_navSel).map(Number).sort(function (a, b) { return a - b; });
       if (!ids.length) return;
-      var e = { id: Date.now(), fecha: new Date().toISOString(), titulo: $('navTitulo').value.trim() || ('Navidad ' + new Date().getFullYear()), ids: ids,
+      var e = { fecha: new Date().toISOString(), titulo: $('navTitulo').value.trim() || ('Navidad ' + new Date().getFullYear()), ids: ids,
         precios: $('navPrecios').checked, tel: $('navTel').value, nombre: $('navNombre').value, portada: $('navPortada').value };
-      var firma = e.titulo + '|' + ids.join(',') + '|' + e.precios, l = navLeerLista().filter(function (x) { return (x.titulo + '|' + x.ids.join(',') + '|' + x.precios) !== firma; });
-      l.unshift(e);
-      try { localStorage.setItem('elancla_nav_lista', JSON.stringify(l.slice(0, 30))); } catch (x) {}
+      var previo = _navLista.filter(function (x) { return navFirma(x) === navFirma(e); })[0];
+      try {
+        if (!_navNube) throw new Error('local');
+        if (previo) { chk(await _sb.from('catalogos_navidad').update(e).eq('id', previo.id)); e.id = previo.id; }
+        else { var r = chk(await _sb.from('catalogos_navidad').insert([e]).select()); e.id = r && r[0] && r[0].id; }
+        _navLista = [e].concat(_navLista.filter(function (x) { return x !== previo; })).slice(0, 30);
+      } catch (x) {
+        _navNube = false; e.id = previo ? previo.id : Date.now();
+        _navLista = [e].concat(_navLista.filter(function (y) { return y !== previo; })).slice(0, 30); navGuardarLocal(_navLista);
+      }
+      renderNavGuardados();
     }
     function renderNavGuardados() {
       var l = navLeerLista(), box = $('navGuardados');
-      if (!l.length) { box.innerHTML = ''; return; }
-      var h = '<div style="font-size:13px; font-weight:700; margin-bottom:6px;">📁 Mis catálogos guardados</div>';
+      if (!l.length) { box.innerHTML = _navNube ? '' : '<div style="font-size:12px; color:var(--danger); margin-bottom:10px;">Los catálogos solo se guardan en este móvil. Para tenerlos en todos tus dispositivos hay que ejecutar el script catalogos-navidad-sql en Supabase.</div>'; return; }
+      var h = '<div style="font-size:13px; font-weight:700; margin-bottom:6px;">' + (_navNube ? '☁️ Mis catálogos guardados' : '📁 Mis catálogos (solo en este móvil)') + '</div>';
       l.forEach(function (e) {
         var f = new Date(e.fecha).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
         h += '<div class="product-item compact" style="margin-bottom:6px;"><div style="flex:1; min-width:0;"><div class="product-name">' + esc(e.titulo) + '</div><div class="product-notes">' + f + ' · ' + e.ids.length + ' productos' + (e.precios ? ' · con precios' : '') + '</div></div>' +
@@ -1724,9 +1750,11 @@
       var perdidos = e.ids.length - Object.keys(_navSel).length;
       toast(perdidos > 0 ? 'Catálogo cargado. ' + perdidos + ' producto(s) ya no existen.' : 'Catálogo cargado. Ya puedes crear el PDF o enviarlo.');
     }
-    function navBorrarGuardado(id) {
+    async function navBorrarGuardado(id) {
       if (!confirm('¿Borrar este catálogo guardado?')) return;
-      try { localStorage.setItem('elancla_nav_lista', JSON.stringify(navLeerLista().filter(function (x) { return x.id !== id; }))); } catch (e) {}
+      try { if (_navNube) chk(await _sb.from('catalogos_navidad').delete().eq('id', id)); } catch (e) { toast('No se pudo borrar: ' + errMsg(e), 'err'); return; }
+      _navLista = _navLista.filter(function (x) { return x.id !== id; });
+      if (!_navNube) navGuardarLocal(_navLista);
       renderNavGuardados();
     }
     function navGuardar() {
@@ -1748,7 +1776,7 @@
       $('navNombre').value = (s && s.nombre) || 'Kike';
       $('navPortada').value = (s && s.portada) || 'clara';
       $('navBuscar').value = '';
-      renderNavLista(); renderNavGuardados();
+      renderNavLista(); renderNavGuardados(); cargarNavLista();
       $('modalNavidad').style.display = 'flex';
     }
     function cerrarCatalogoNavidad() { navGuardar(); $('modalNavidad').style.display = 'none'; }
