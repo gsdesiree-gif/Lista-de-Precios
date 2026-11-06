@@ -1990,13 +1990,14 @@
       $('vistaDocumento').style.display = 'block';
       window.scrollTo(0, 0);
       /* se prepara el PDF de antemano: el móvil solo deja compartir si se pulsa justo al momento */
-      _pdfListo = null;
+      _pdfListo = null; _pdfPromesa = null;
       var tok = _pdfTok = Date.now();
       setTimeout(function () {
         if (tok !== _pdfTok) return;
         _pdfProgreso = function (i, n) { if (tok === _pdfTok) navBotonesPDF('⏳ Preparando ' + i + '/' + n + '…'); };
-        generarPDF().then(function (pdf) { if (tok === _pdfTok) { _pdfListo = { pdf: pdf, nombre: _pdfNombre }; navBotonesPDF(''); } })
-          .catch(function () { if (tok === _pdfTok) navBotonesPDF(''); })
+        _pdfPromesa = generarPDF();
+        _pdfPromesa.then(function (pdf) { if (tok === _pdfTok) { _pdfListo = { pdf: pdf, nombre: _pdfNombre }; navBotonesPDF(''); } })
+          .catch(function () { if (tok === _pdfTok) { navBotonesPDF(''); _pdfPromesa = null; } })
           .then(function () { _pdfProgreso = null; });
       }, 900);
     }
@@ -3452,7 +3453,7 @@
       try { lista = chk(await _sb.from('listas_generadas').select('*').eq('id', id).single()); }
       catch (e) { toast('No se pudo abrir la lista: ' + errMsg(e), 'err'); return; }
       if (!lista) return;
-      _clienteActual = lista.cliente_nombre || ''; _pdfNombre = ''; _pdfListo = null; _pdfTok = 0;
+      _clienteActual = lista.cliente_nombre || ''; _pdfNombre = ''; _pdfListo = null; _pdfPromesa = null; _pdfTok = 0;
       var cfg = _cfg;
       var logoSrc = imgSrc(cfg.logo);
       var logoHeader = (logoSrc && !cfg.es_marca_agua) ? '<img src="' + logoSrc + '" alt="" style="max-height: 65px; max-width: 130px; object-fit: contain;">' : '';
@@ -3560,7 +3561,8 @@
 
     function cerrarVistaDocumento() { setMode(_mode); }
 
-    var _pdfProgreso = null;
+    var _pdfProgreso = null, _pdfPromesa = null;
+    function conTiempo(p, ms, msg) { return Promise.race([p, new Promise(function (_, rej) { setTimeout(function () { rej(new Error(msg)); }, ms); })]); }
     function navBotonesPDF(txt) {
       ['btnDescargarPDF', 'btnCompartirPDF'].forEach(function (id) {
         var b = $(id); if (!b) return;
@@ -3569,16 +3571,27 @@
       });
     }
     async function generarPDF() {
-      try { if (document.fonts && document.fonts.load) { await document.fonts.load('italic 700 26px "Cormorant Garamond"'); await document.fonts.ready; } } catch (e) {}
+      try { if (document.fonts && document.fonts.ready) await conTiempo(document.fonts.ready, 2500, 'fuentes'); } catch (e) {}
       var paginas = document.querySelectorAll('.page-a4');
       if (!paginas || paginas.length === 0) throw new Error('No hay documento abierto.');
+      // espera a que carguen todas las fotos antes de hacer la captura (si no, salen en blanco)
+      var imgs = Array.prototype.slice.call(document.querySelectorAll('.page-a4 img'));
+      await Promise.all(imgs.map(function (im) {
+        if (im.complete) return null;
+        return new Promise(function (r) { im.addEventListener('load', r); im.addEventListener('error', r); setTimeout(r, 8000); });
+      }));
       var pdf = new jspdf.jsPDF('p', 'mm', 'a4');
       for (var i = 0; i < paginas.length; i++) {
         if (i > 0) pdf.addPage();
         if (typeof _pdfProgreso === 'function') _pdfProgreso(i + 1, paginas.length);
         await new Promise(function (r) { setTimeout(r, 30); });
         var rapido = !!_pdfNombre;
-        var canvas = await html2canvas(paginas[i], { scale: rapido ? 1.5 : 2, useCORS: true, scrollY: 0, logging: false });
+        var opc = { scale: rapido ? 1.5 : 2, useCORS: true, scrollY: 0, logging: false }, canvas;
+        try { canvas = await conTiempo(html2canvas(paginas[i], opc), 40000, 'La página ' + (i + 1) + ' tarda demasiado'); }
+        catch (e1) {   // si las fotos dan problemas, se reintenta sin ellas para no quedarse colgado
+          opc.ignoreElements = function (el) { return el.tagName === 'IMG'; };
+          canvas = await conTiempo(html2canvas(paginas[i], opc), 40000, 'No se pudo capturar la página ' + (i + 1));
+        }
         pdf.addImage(canvas.toDataURL('image/jpeg', rapido ? 0.85 : 0.92), 'JPEG', 0, 0, 210, 297);
         canvas.width = canvas.height = 0;
       }
@@ -3590,31 +3603,35 @@
       return 'Lista_Precios_' + cli + '.pdf';
     }
 
+    async function obtenerPDF() {
+      if (_pdfNombre && _pdfListo) return _pdfListo.pdf;
+      if (_pdfNombre && _pdfPromesa) { try { return await _pdfPromesa; } catch (e) {} }
+      return await generarPDF();
+    }
     async function descargarPDF() {
-      var btn = $('btnDescargarPDF'), txt = btn.textContent;
+      var btn = $('btnDescargarPDF'), txt = btn.dataset.t !== undefined ? btn.dataset.t : btn.textContent;
       btn.disabled = true; btn.textContent = 'Generando...';
-      if (_pdfNombre && !_pdfListo) { toast('Estoy preparando el PDF. En unos segundos podrás descargarlo.'); btn.disabled = false; btn.textContent = txt; return; }
-      try { ((_pdfNombre && _pdfListo) ? _pdfListo.pdf : await generarPDF()).save(nombrePDF()); }
+      try { (await obtenerPDF()).save(nombrePDF()); }
       catch (e) { toast('No se pudo crear el PDF: ' + errMsg(e), 'err'); }
       finally { btn.disabled = false; btn.textContent = txt; }
     }
 
     // Abre el menú de compartir del móvil (WhatsApp, correo...) con el PDF adjunto
     async function compartirPDF() {
-      var btn = $('btnCompartirPDF'), txt = btn.textContent;
-      if (_pdfNombre && !_pdfListo) { toast('Estoy preparando el PDF. Vuelve a pulsar Compartir en unos segundos.'); return; }
+      var btn = $('btnCompartirPDF'), txt = btn.dataset.t !== undefined ? btn.dataset.t : btn.textContent, pdf = null;
       btn.disabled = true; btn.textContent = 'Generando...';
       try {
-        var pdf = (_pdfNombre && _pdfListo) ? _pdfListo.pdf : await generarPDF();
+        pdf = await obtenerPDF();
         var file = new File([pdf.output('blob')], nombrePDF(), { type: 'application/pdf' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], title: 'Lista de precios' });
+          await navigator.share({ files: [file], title: _pdfNombre ? 'Catálogo de Navidad' : 'Lista de precios' });
         } else {
           pdf.save(nombrePDF());
           toast('Tu dispositivo no permite compartir directamente; se ha descargado el PDF.');
         }
       } catch (e) {
-        if (!e || e.name !== 'AbortError') toast('No se pudo compartir: ' + errMsg(e), 'err');
+        if (e && e.name === 'NotAllowedError' && pdf) { pdf.save(nombrePDF()); toast('El móvil no dejó abrir el menú de compartir; se ha descargado el PDF. Ya puedes enviarlo desde Archivos.'); }
+        else if (!e || e.name !== 'AbortError') toast('No se pudo compartir: ' + errMsg(e), 'err');
       } finally { btn.disabled = false; btn.textContent = txt; }
     }
 
