@@ -819,7 +819,7 @@
     .hoy-tit { font-weight: 700; font-size: 14px; margin-top: 4px; }
     .hoy-sub { font-size: 12px; color: var(--muted); }
     .c-llamar .hoy-ico { background: #dbeee8; } .c-reparto .hoy-ico { background: #e3eefb; } .c-pedidos .hoy-ico { background: #fbe9d9; }
-    .c-sinpedir .hoy-ico { background: #fdecc8; } .c-clientes .hoy-ico { background: #e8e4f5; }
+    .c-sinpedir .hoy-ico { background: #fdecc8; } .c-tareas .hoy-ico { background: #dcf0e4; } .c-clientes .hoy-ico { background: #e8e4f5; }
     .hoy-aviso, .hoy-vacio { grid-column: 1 / -1; background: #fff7e0; border: 1px solid #e9d28a; border-radius: 16px; padding: 12px 14px; font-size: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
     @media (min-width: 768px) { .hoy-grid { grid-template-columns: repeat(3, 1fr); } }
 
@@ -835,6 +835,7 @@
     .cli-acciones .btn-logout { background: transparent; border: 1px solid var(--border); color: var(--muted); }
     .cli-acciones .btn-accent { background: rgba(58,127,123,.13); background: color-mix(in srgb, var(--accent) 13%, transparent); color: var(--accent); }
     .cli-acciones .btn-wa { background: rgba(63,140,94,.14); color: #2f7a4f; }
+    html[data-tema] .cli-acciones .btn-wa { background: rgba(63,140,94,.14); color: #2f7a4f; }
     .cli-acciones .btn-main { background: var(--accent); color: #fff; box-shadow: 0 6px 14px -8px var(--accent); }
 
     .nav-bar { background: rgba(255,255,255,.94); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-top: 1px solid var(--border); border-radius: 22px 22px 0 0; box-shadow: 0 -10px 30px -18px rgba(45,79,71,.35); }
@@ -844,6 +845,7 @@
     .nav-item.active .ni { background: rgba(58,127,123,.16); background: color-mix(in srgb, var(--accent) 16%, transparent); }
     .nav-item span:last-child { font-size: 10px; }
     .nav-bar { gap: 0; } .nav-item { flex: 1 1 0; min-width: 0; }
+    .nav-item .ni { padding: 3px 6px; font-size: 17px; } .nav-item span:last-child { font-size: 9.5px; letter-spacing: -.1px; }
 
     .product-img { border-radius: 14px; box-shadow: 0 2px 8px rgba(20,40,35,.14); }
     .cat-block { --cc: #8a8f98; border-left: 5px solid var(--cc); }
@@ -880,7 +882,7 @@
     html[data-modo="oscuro"] .aviso-amber { background: #3a3217 !important; border-color: #6b5a1e !important; color: #f3e3a6 !important; }
     html[data-modo="oscuro"] .hoy-aviso, html[data-modo="oscuro"] .hoy-vacio { background: #3a3217; border-color: #6b5a1e; color: #f3e3a6; }
     html[data-modo="oscuro"] .pill-warn { background: #4a3a14; color: #f3c46b; } html[data-modo="oscuro"] .pill-ok { background: #1f3a2b; color: #8fd6a9; } html[data-modo="oscuro"] .pill-bad { background: #4a2020; color: #ff9c9c; }
-    html[data-modo="oscuro"] .c-llamar .hoy-ico, html[data-modo="oscuro"] .c-reparto .hoy-ico, html[data-modo="oscuro"] .c-pedidos .hoy-ico, html[data-modo="oscuro"] .c-sinpedir .hoy-ico, html[data-modo="oscuro"] .c-clientes .hoy-ico { background: #26332f; }
+    html[data-modo="oscuro"] .c-llamar .hoy-ico, html[data-modo="oscuro"] .c-reparto .hoy-ico, html[data-modo="oscuro"] .c-pedidos .hoy-ico, html[data-modo="oscuro"] .c-sinpedir .hoy-ico, html[data-modo="oscuro"] .c-tareas .hoy-ico, html[data-modo="oscuro"] .c-clientes .hoy-ico { background: #26332f; }
     /* Los documentos que se imprimen o comparten siempre en claro */
     html[data-modo="oscuro"] .page-a4 { background: #fff; color: #0f172a; --text: #0f172a; --muted: #64748b; --primary: #2d4f47; --accent: #3a7f7b; --border: #e2e8f0; }
   </style>
@@ -912,6 +914,7 @@
     <div class="web-nav" id="adminWebNav">
       <button class="web-nav-btn active" data-tab="tabHoy" onclick="switchTab('tabHoy')">🏠 Hoy</button>
       <button class="web-nav-btn" data-tab="tabClientes" onclick="switchTab('tabClientes')">👥 Clientes</button>
+      <button class="web-nav-btn" data-tab="tabTareas" onclick="switchTab('tabTareas')">✅ Tareas pendientes</button>
       <button class="web-nav-btn" data-tab="tabCatalogo" onclick="switchTab('tabCatalogo')">📦 Productos</button>
       <button class="web-nav-btn" data-tab="tabCrear" onclick="switchTab('tabCrear')">📝 Crear Lista</button>
       <button class="web-nav-btn" data-tab="tabHistorial" onclick="switchTab('tabHistorial')">📜 Listas</button>
@@ -1027,6 +1030,24 @@
       <div id="hoyTarjetas" class="hoy-grid"></div>
     </div>
 
+    <!-- TAREAS PENDIENTES (captación) -->
+    <div id="tabTareas" class="tab-content">
+      <div class="card">
+        <div class="card-header">✅ Tareas pendientes</div>
+        <div class="toolbar">
+          <input type="search" id="buscarPr" placeholder="🔎 Buscar local..." oninput="renderTareas()" autocomplete="off">
+          <button class="btn btn-sm btn-main" onclick="abrirProspecto(0)" style="white-space:nowrap;">➕ Nuevo local</button>
+        </div>
+        <div class="cat-filter-bar" id="barraPr"></div>
+        <details style="margin:8px 0;"><summary style="cursor:pointer; font-weight:700; font-size:13px; color:var(--muted);">⚙️ Ajustes de captación</summary>
+          <div class="field" style="margin-top:8px;"><label>Zona donde buscas locales (se usa en las búsquedas)</label><input type="text" id="prZona" autocomplete="off" oninput="try{localStorage.setItem('elancla_zona',this.value)}catch(e){}"></div>
+          <div class="field"><label>💬 Mensaje de presentación por WhatsApp</label><textarea id="prMsg" rows="3" style="width:100%;" oninput="try{localStorage.setItem('elancla_msg_prosp',this.value)}catch(e){}"></textarea></div>
+        </details>
+        <div id="contPr" class="count-txt"></div>
+        <div id="listaPr"></div>
+      </div>
+    </div>
+
     <div id="tabClientes" class="tab-content">
       <div class="card">
         <div class="card-header">👥 Clientes</div>
@@ -1094,7 +1115,7 @@
               <button class="btn btn-sm btn-accent" onclick="crearYAnadir()">Crear y añadir a la lista</button>
             </div></details>
           <button class="btn btn-sm btn-logout" onclick="cancelarEdicionLista()">Cancelar edición</button>
-          <span style="float:right; font-size:11px; color:#999;">versión 67</span>
+          <span style="float:right; font-size:11px; color:#999;">versión 68</span>
         </div>
         <div class="field">
           <label>Nombre del Cliente</label>
@@ -1410,6 +1431,39 @@
     </div>
   </div>
 
+  <div id="modalProsp" class="modal-overlay no-print" onclick="if(event.target===this)cerrarProspecto()">
+    <div class="modal-card" style="max-width:560px;">
+      <div id="prTitulo" class="card-header" style="margin-bottom:12px;">🎯 Nuevo local</div>
+      <div class="field"><label>Nombre del local *</label><input type="text" id="prNombre" autocomplete="off" placeholder="Ej: Bar La Esquina"></div>
+      <div class="cli-acciones" style="margin-bottom:12px;">
+        <button class="btn btn-sm btn-accent" onclick="prBuscar('google')">🔎 Google</button>
+        <button class="btn btn-sm btn-accent" onclick="prBuscar('maps')">📍 Maps</button>
+        <button class="btn btn-sm btn-accent" onclick="prBuscar('insta')">📷 Instagram</button>
+        <button class="btn btn-sm btn-accent" onclick="prBuscar('trip')">⭐ TripAdvisor</button>
+      </div>
+      <div class="field"><label>Tipo</label><select id="prTipo"><option>Restaurante</option><option>Bar</option><option>Hotel</option><option>Catering</option><option>Cafetería</option><option>Otro</option></select></div>
+      <div class="field"><label>Población</label><input type="text" id="prPoblacion" autocomplete="off"></div>
+      <div class="field"><label>Dirección</label><input type="text" id="prDireccion" autocomplete="off"></div>
+      <div class="field"><label>Teléfono</label><input type="text" id="prTelefono" inputmode="tel" autocomplete="off"></div>
+      <div class="field"><label>Email</label><input type="text" id="prEmail" inputmode="email" autocomplete="off"></div>
+      <div class="field"><label>Web / Instagram</label><input type="text" id="prWeb" autocomplete="off"></div>
+      <div class="field"><label>Persona de contacto (dueño, jefe de cocina…)</label><input type="text" id="prContacto" autocomplete="off"></div>
+      <div class="field"><label>De dónde sacaste los datos</label><input type="text" id="prFuente" autocomplete="off" placeholder="Ej: Google Maps, web del local, me lo dio un conocido…"></div>
+      <div class="field"><label>Estado</label><select id="prEstado"></select></div>
+      <div class="field"><label>📅 Próxima acción</label>
+        <div style="display:flex; gap:8px;"><input type="text" id="prAccion" autocomplete="off" placeholder="Ej: Llamar al jefe de cocina" style="flex:1;"><input type="date" id="prFecha" style="max-width:150px;"></div></div>
+      <div class="field"><label>📝 Notas</label>
+        <div style="display:flex; gap:8px;"><input type="text" id="prNotaNueva" autocomplete="off" placeholder="Escribe una nota…" style="flex:1;"><button class="btn btn-sm btn-accent" onclick="prAnadirNota()">➕</button></div>
+        <div id="prNotas" style="margin-top:8px;"></div></div>
+      <div style="display:flex; gap:10px; margin-top:8px;">
+        <button class="btn btn-logout" style="flex:1;" onclick="cerrarProspecto()">Cancelar</button>
+        <button id="btnGuardarPr" class="btn btn-success" style="flex:1;" onclick="guardarProspecto()">💾 Guardar</button>
+      </div>
+      <button id="btnConvertirPr" class="btn btn-accent" style="margin-top:10px;" onclick="convertirProspecto()">✅ Convertir en cliente</button>
+      <button id="btnBorrarPr" class="btn btn-danger" style="margin-top:10px;" onclick="borrarProspecto()">🗑️ Borrar</button>
+    </div>
+  </div>
+
   <div id="modalFicha" class="modal-overlay no-print" onclick="if(event.target===this)cerrarFichaCliente()">
     <div class="modal-card" style="max-width:560px;">
       <div style="font-size:11px; font-weight:700; letter-spacing:.12em; color:var(--muted); text-transform:uppercase; margin-bottom:8px;">Ficha de cliente</div>
@@ -1425,6 +1479,7 @@
   <div class="nav-bar no-print" id="adminBottomNav" style="display:none;">
     <button class="nav-item active" data-tab="tabHoy" onclick="switchTab('tabHoy')"><span class="ni">🏠</span><span>Hoy</span></button>
     <button class="nav-item" data-tab="tabClientes" onclick="switchTab('tabClientes')"><span class="ni">👥</span><span>Clientes</span></button>
+    <button class="nav-item" data-tab="tabTareas" onclick="switchTab('tabTareas')"><span class="ni">✅</span><span>Tareas</span></button>
     <button class="nav-item" data-tab="tabCatalogo" onclick="switchTab('tabCatalogo')"><span class="ni">📦</span><span>Productos</span></button>
     <button class="nav-item" data-tab="tabCrear" onclick="switchTab('tabCrear')"><span class="ni">📝</span><span>Crear</span></button>
     <button class="nav-item" data-tab="tabHistorial" onclick="switchTab('tabHistorial')"><span class="ni">📜</span><span>Listas</span></button>
@@ -1623,7 +1678,7 @@
       setMode('admin');
       switchTab('tabHoy');
       await cargarConfiguracion();   // primero: la caja necesita tu % de comisión
-      await Promise.all([cargarProductos(), cargarHistorico(), cargarCaja(), cargarClientes()]);
+      await Promise.all([cargarProductos(), cargarHistorico(), cargarCaja(), cargarClientes(), cargarProspectos()]);
     }
 
     // Modo cliente: solo lee las vistas públicas (sin precios)
@@ -1667,6 +1722,7 @@
       for (var j = 0; j < navs.length; j++) navs[j].classList.toggle('active', navs[j].getAttribute('data-tab') === tabId);
       if (tabId === 'tabClienteView') renderizarGridCliente();
       if (tabId === 'tabHoy') renderHoy();
+      if (tabId === 'tabTareas') renderTareas();
     }
 
     /* ---------- imágenes ---------- */
@@ -3352,7 +3408,7 @@
     }
 
     /* ---------- copia de seguridad ---------- */
-    var TABLAS_COPIA = ['productos', 'clientes', 'precios_cliente', 'listas_generadas', 'pedidos', 'caja_registros', 'catalogos_navidad', 'llamadas_hechas', 'configuracion'];
+    var TABLAS_COPIA = ['productos', 'clientes', 'precios_cliente', 'listas_generadas', 'pedidos', 'caja_registros', 'catalogos_navidad', 'llamadas_hechas', 'prospectos', 'configuracion'];
     var _copiaNube = null;   // fecha (AAAA-MM-DD) de la última copia, guardada en la nube; null = tabla no preparada
     function copiaLocal() { try { return localStorage.getItem('elancla_ultima_copia') || ''; } catch (e) { return ''; } }
     function ultimaCopia() {
@@ -3406,6 +3462,134 @@
       } catch (e) { toast('No se pudo hacer la copia: ' + errMsg(e), 'err'); }
       finally { btns.forEach(function (b) { b.disabled = false; }); }
     }
+    /* ---------- Tareas pendientes: captación de locales ---------- */
+    var _prosp = [], _prospOk = false, _prFiltro = 'HOY', _prId = 0, _prNotasTmp = [];
+    var PR_ESTADOS = [['pendiente', 'Por contactar'], ['contactado', 'Contactado'], ['interesado', 'Interesado'], ['cliente', 'Ya es cliente'], ['descartado', 'Descartado']];
+    var PR_MSG = 'Hola, soy Kike, de El Ancla. Distribuimos producto fresco (marisco, pescado y carnes) para hostelería. ¿Os puedo enviar nuestra lista de precios?';
+    function prEstadoTxt(e) { for (var i = 0; i < PR_ESTADOS.length; i++) if (PR_ESTADOS[i][0] === e) return PR_ESTADOS[i][1]; return 'Por contactar'; }
+    function prZona() { try { return localStorage.getItem('elancla_zona') || 'Sevilla'; } catch (e) { return 'Sevilla'; } }
+    function prAbierto(p) { return p.estado !== 'cliente' && p.estado !== 'descartado'; }
+    function prVence(p) { return prAbierto(p) && p.proxima_fecha && String(p.proxima_fecha).substring(0, 10) <= hoyLocal(); }
+    async function cargarProspectos() {
+      try { _prosp = chk(await _sb.from('prospectos').select('*').order('id', { ascending: false })) || []; _prospOk = true; }
+      catch (e) { _prosp = []; _prospOk = false; }
+      renderTareas(); renderHoy();
+    }
+    function prNotasDe(p) { var n = p && p.notas; if (typeof n === 'string') { try { n = JSON.parse(n); } catch (e) { n = []; } } return Array.isArray(n) ? n : []; }
+    function renderTareas() {
+      var cont = $('listaPr'); if (!cont) return;
+      if ($('prZona') && !$('prZona').value) $('prZona').value = prZona();
+      if ($('prMsg') && !$('prMsg').value) { try { $('prMsg').value = localStorage.getItem('elancla_msg_prosp') || PR_MSG; } catch (e) { $('prMsg').value = PR_MSG; } }
+      if (!_prospOk) { cont.innerHTML = '<div style="color:var(--muted); text-align:center; padding:16px;">Falta preparar la base de datos. Pega el script <strong>prospectos-sql.txt</strong> en el SQL Editor de Supabase.</div>'; $('contPr').textContent = ''; $('barraPr').innerHTML = ''; return; }
+      var q = norm(($('buscarPr').value || '').trim());
+      var cnt = function (f) { return _prosp.filter(function (p) { return f === 'HOY' ? prVence(p) : f === 'TODOS' ? true : p.estado === f; }).length; };
+      var filtros = [['HOY', '📅 Para hoy'], ['TODOS', 'Todos'], ['pendiente', 'Por contactar'], ['contactado', 'Contactados'], ['interesado', 'Interesados'], ['cliente', 'Clientes ✅'], ['descartado', 'Descartados']];
+      $('barraPr').innerHTML = filtros.map(function (f) { return '<button class="cat-filter-btn' + (_prFiltro === f[0] ? ' active' : '') + '" onclick="_prFiltro=\'' + f[0] + '\'; renderTareas()">' + f[1] + ' (' + cnt(f[0]) + ')</button>'; }).join('');
+      var lista = _prosp.filter(function (p) {
+        if (q && norm([p.nombre, p.poblacion, p.contacto].join(' ')).indexOf(q) === -1) return false;
+        return _prFiltro === 'HOY' ? prVence(p) : _prFiltro === 'TODOS' ? true : p.estado === _prFiltro;
+      });
+      if (_prFiltro === 'HOY') lista.sort(function (a, b) { return String(a.proxima_fecha).localeCompare(String(b.proxima_fecha)); });
+      $('contPr').textContent = lista.length + ' local' + (lista.length === 1 ? '' : 'es');
+      if (!lista.length) { cont.innerHTML = '<div style="color:var(--muted); text-align:center; padding:16px;">' + (_prFiltro === 'HOY' ? '🎉 No tienes acciones para hoy.' : 'Nada por aquí todavía.') + '</div>'; return; }
+      var PALP = { pendiente: ['#e8e4f5', '#5a4a9a'], contactado: ['#e3eefb', '#2f66a8'], interesado: ['#fdecc8', '#9a5b0a'], cliente: ['#dcf0e4', '#2d6b45'], descartado: ['#ececec', '#777'] };
+      cont.innerHTML = lista.map(function (p) {
+        var id = Number(p.id), col = PALP[p.estado] || PALP.pendiente, hayTel = !!telWa(p.telefono);
+        var fecha = p.proxima_fecha ? String(p.proxima_fecha).substring(0, 10) : '';
+        var venc = prVence(p), pill = '<span class="pill" style="background:' + col[0] + '; color:' + col[1] + ';">' + esc(prEstadoTxt(p.estado)) + '</span>' +
+          ((p.proxima_accion || fecha) && prAbierto(p) ? '<span class="pill ' + (venc ? 'pill-warn' : 'pill-ok') + '">📅 ' + (fecha ? esc(fechaLarga(fecha)) + ' · ' : '') + esc(p.proxima_accion || 'Seguimiento') + '</span>' : '');
+        var sub = [p.tipo, p.poblacion].filter(Boolean).join(' · ');
+        return '<div class="product-item compact cli-row" style="margin-bottom:8px;"><div class="cli-head"><div class="cli-av" style="background:' + col[0] + '; color:' + col[1] + ';">' + esc(String(p.nombre || '?').trim().charAt(0).toUpperCase()) + '</div><div style="min-width:0; flex:1;"><div class="product-name cli-nombre">' + esc(p.nombre) + '</div>' +
+          (sub ? '<div class="product-notes">' + esc(sub) + '</div>' : '') + (p.telefono ? '<div class="product-notes">📞 ' + esc(p.telefono) + '</div>' : '') + '<div class="pills">' + pill + '</div></div></div>' +
+          '<div class="cli-acciones">' + (hayTel ? '<button class="btn btn-sm btn-accent" onclick="prLlamar(' + id + ')">📞 Llamar</button><button class="btn btn-wa btn-sm" onclick="prWhatsApp(' + id + ')">💬 Mensaje</button>' : '') +
+          '<button class="btn btn-sm btn-logout" onclick="prBuscarId(' + id + ')">🔎 Buscar datos</button><button class="btn btn-main btn-sm" onclick="abrirProspecto(' + id + ')">📝 Abrir ficha</button></div></div>';
+      }).join('');
+    }
+    function irATareas(f) { _prFiltro = f || 'HOY'; switchTab('tabTareas'); }
+    function prUrl(tipo, nombre, pob) {
+      var q = encodeURIComponent((nombre + ' ' + (pob || prZona())).trim());
+      if (tipo === 'maps') return 'https://www.google.com/maps/search/?api=1&query=' + q;
+      if (tipo === 'insta') return 'https://www.google.com/search?q=' + encodeURIComponent('site:instagram.com ' + nombre + ' ' + (pob || prZona()));
+      if (tipo === 'trip') return 'https://www.google.com/search?q=' + encodeURIComponent('site:tripadvisor.es ' + nombre + ' ' + (pob || prZona()));
+      return 'https://www.google.com/search?q=' + encodeURIComponent(nombre + ' ' + (pob || prZona()) + ' teléfono contacto');
+    }
+    function prBuscar(tipo) {
+      var n = $('prNombre').value.trim(); if (!n) { toast('Escribe primero el nombre del local.', 'err'); return; }
+      window.open(prUrl(tipo, n, $('prPoblacion').value.trim()), '_blank');
+    }
+    function prBuscarId(id) { var p = prPorId(id); if (p) window.open(prUrl('maps', p.nombre, p.poblacion), '_blank'); }
+    function prPorId(id) { return _prosp.filter(function (p) { return Number(p.id) === Number(id); })[0] || null; }
+    function prLlamar(id) { var p = prPorId(id); if (!p) return; var n = telWa(p.telefono); if (n) window.location.href = 'tel:+' + n; }
+    async function prWhatsApp(id) {
+      var p = prPorId(id); if (!p) return; var n = telWa(p.telefono); if (!n) return;
+      var m = ($('prMsg') && $('prMsg').value.trim()) || PR_MSG;
+      window.open('https://wa.me/' + n + '?text=' + encodeURIComponent(m.replace(/\{nombre\}/gi, p.nombre || '')), '_blank');
+      if (p.estado === 'pendiente') {
+        try {
+          var notas = prNotasDe(p).concat([{ f: hoyLocal(), t: 'Enviado WhatsApp de presentación' }]);
+          chk(await _sb.from('prospectos').update({ estado: 'contactado', notas: notas }).eq('id', p.id));
+          await cargarProspectos();
+        } catch (e) {}
+      }
+    }
+    function abrirProspecto(id) {
+      var p = id ? prPorId(id) : null; _prId = id || 0;
+      $('prTitulo').textContent = p ? '🎯 ' + p.nombre : '🎯 Nuevo local';
+      $('prNombre').value = p ? p.nombre || '' : ''; $('prTipo').value = p ? (p.tipo || 'Restaurante') : 'Restaurante';
+      $('prPoblacion').value = p ? p.poblacion || '' : prZona(); $('prDireccion').value = p ? p.direccion || '' : '';
+      $('prTelefono').value = p ? p.telefono || '' : ''; $('prEmail').value = p ? p.email || '' : ''; $('prWeb').value = p ? p.web || '' : '';
+      $('prContacto').value = p ? p.contacto || '' : ''; $('prFuente').value = p ? p.fuente || '' : '';
+      $('prEstado').innerHTML = PR_ESTADOS.map(function (e) { return '<option value="' + e[0] + '">' + e[1] + '</option>'; }).join('');
+      $('prEstado').value = p ? (p.estado || 'pendiente') : 'pendiente';
+      $('prAccion').value = p ? p.proxima_accion || '' : ''; $('prFecha').value = p && p.proxima_fecha ? String(p.proxima_fecha).substring(0, 10) : '';
+      _prNotasTmp = p ? prNotasDe(p).slice() : []; $('prNotaNueva').value = ''; pintarNotasPr();
+      $('btnBorrarPr').style.display = p ? '' : 'none';
+      $('btnConvertirPr').style.display = (p && p.estado !== 'cliente') ? '' : 'none';
+      $('modalProsp').style.display = 'flex';
+    }
+    function cerrarProspecto() { $('modalProsp').style.display = 'none'; }
+    function pintarNotasPr() {
+      $('prNotas').innerHTML = _prNotasTmp.slice().reverse().map(function (n, i) {
+        var idx = _prNotasTmp.length - 1 - i;
+        return '<div style="display:flex; gap:8px; padding:6px 0; border-top:1px solid var(--border); font-size:14px;"><div style="flex:1;"><div style="font-size:11px; color:var(--muted);">' + esc(fechaLarga(n.f)) + '</div>' + esc(n.t) + '</div><button class="btn btn-sm btn-danger" onclick="prQuitarNota(' + idx + ')">✕</button></div>';
+      }).join('');
+    }
+    function prAnadirNota() {
+      var v = $('prNotaNueva').value.trim(); if (!v) return;
+      _prNotasTmp.push({ f: hoyLocal(), t: v }); $('prNotaNueva').value = ''; pintarNotasPr();
+    }
+    function prQuitarNota(i) { _prNotasTmp.splice(i, 1); pintarNotasPr(); }
+    async function guardarProspecto() {
+      var nombre = $('prNombre').value.trim(); if (!nombre) { toast('Escribe el nombre del local.', 'err'); return; }
+      if ($('prNotaNueva').value.trim()) prAnadirNota();
+      var d = { nombre: nombre, tipo: $('prTipo').value, poblacion: $('prPoblacion').value.trim(), direccion: $('prDireccion').value.trim(), telefono: $('prTelefono').value.trim(), email: $('prEmail').value.trim(), web: $('prWeb').value.trim(), contacto: $('prContacto').value.trim(), fuente: $('prFuente').value.trim(), estado: $('prEstado').value, proxima_accion: $('prAccion').value.trim(), proxima_fecha: $('prFecha').value || null, notas: _prNotasTmp };
+      var btn = $('btnGuardarPr'); btn.disabled = true;
+      try {
+        if (_prId) chk(await _sb.from('prospectos').update(d).eq('id', _prId)); else chk(await _sb.from('prospectos').insert([d]));
+        cerrarProspecto(); await cargarProspectos(); toast('Guardado.');
+      } catch (e) { toast('No se pudo guardar: ' + errMsg(e), 'err'); }
+      finally { btn.disabled = false; }
+    }
+    async function borrarProspecto() {
+      if (!_prId || !confirm('¿Borrar este local?')) return;
+      try { chk(await _sb.from('prospectos').delete().eq('id', _prId)); cerrarProspecto(); await cargarProspectos(); toast('Borrado.'); }
+      catch (e) { toast('No se pudo borrar: ' + errMsg(e), 'err'); }
+    }
+    async function convertirProspecto() {
+      var p = prPorId(_prId); if (!p) return;
+      if (!_clientesOk) { toast('Aún no está preparada la base de datos de clientes.', 'err'); return; }
+      if (buscarClientePorNombre(p.nombre)) { toast('Ya existe un cliente con ese nombre.', 'err'); return; }
+      try {
+        var c = { nombre: p.nombre, telefono: p.telefono || '', direccion: p.direccion || '' };
+        if (_diasOk) { c.poblacion = p.poblacion || ''; c.email = p.email || ''; c.contacto = p.contacto || ''; }
+        chk(await _sb.from('clientes').insert([c]));
+        var notas = _prNotasTmp.concat([{ f: hoyLocal(), t: '✅ Convertido en cliente' }]);
+        chk(await _sb.from('prospectos').update({ estado: 'cliente', notas: notas, proxima_fecha: null, proxima_accion: '' }).eq('id', p.id));
+        cerrarProspecto(); await cargarClientes(); await cargarProspectos();
+        toast('¡Nuevo cliente creado! Completa su ficha en Clientes.');
+      } catch (e) { toast('No se pudo convertir: ' + errMsg(e), 'err'); }
+    }
+
     /* ---------- pantalla HOY ---------- */
     function irAClientes(tipo) {
       switchTab('tabClientes');
@@ -3435,6 +3619,10 @@
         var sp = _clientes.filter(function (c) { var i = infoSinPedir(c); return i && i.dias >= _diasSinPedir; }).length;
         tarj += card('c-sinpedir', '⏰', sp, 'Sin pedir', 'más de ' + _diasSinPedir + ' días', "irAClientes('SINPEDIR')");
       }
+      if (_prospOk) {
+        var tv = _prosp.filter(prVence).length, pc = _prosp.filter(function (p) { return p.estado === 'pendiente'; }).length;
+        tarj += card('c-tareas', '✅', tv, 'Tareas pendientes', pc ? 'y ' + pc + ' local' + (pc === 1 ? '' : 'es') + ' por contactar' : 'acciones para hoy', "irATareas('HOY')");
+      } else { tarj += card('c-tareas', '✅', '–', 'Tareas pendientes', 'Activar captación', "irATareas('HOY')"); }
       tarj += card('c-clientes', '👥', _clientes.length, 'Clientes', 'ver todos', "irAClientes('TODOS')");
       var u = ultimaCopia(), dc = u ? Math.round((new Date(hoy) - new Date(u)) / 86400000) : 999;
       if (dc >= 7) tarj += '<div class="hoy-aviso">💾 ' + (u ? 'Hace ' + dc + ' días' : 'Todavía') + ' sin copia de seguridad <button class="btn btn-sm btn-accent" onclick="copiaSeguridad()">Hacer copia</button></div>';
