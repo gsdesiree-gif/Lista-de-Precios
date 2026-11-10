@@ -803,7 +803,9 @@
     .np-desc { margin-top:8px; font-size:14px; line-height:1.4; color:#4a5266; }
     .np-wa { display:block; margin-top:14px; text-align:center; background:#3f8c5e; color:#fff; font-weight:700; padding:12px; border-radius:10px; text-decoration:none; }
     .np-x { position:absolute; top:10px; right:10px; z-index:2; width:36px; height:36px; border-radius:50%; border:none; background:rgba(16,27,51,.75); color:#fff; font-size:16px; cursor:pointer; }
-</style>
+    #listaSeleccionProductos .product-name, #listaSeleccionProductos .product-notes { overflow-wrap: anywhere; word-break: break-word; }
+    @media (max-width: 600px) { #listaSeleccionProductos .product-img { width: 44px; height: 44px; } }
+  </style>
 </head>
 <body>
 
@@ -998,7 +1000,7 @@
               <button class="btn btn-sm btn-accent" onclick="crearYAnadir()">Crear y añadir a la lista</button>
             </div></details>
           <button class="btn btn-sm btn-logout" onclick="cancelarEdicionLista()">Cancelar edición</button>
-          <span style="float:right; font-size:11px; color:#999;">versión 61</span>
+          <span style="float:right; font-size:11px; color:#999;">versión 62</span>
         </div>
         <div class="field">
           <label>Nombre del Cliente</label>
@@ -3933,9 +3935,9 @@
           if (fd.getFullYear() !== new Date().getFullYear()) optF.year = '2-digit';
           var f = fd.toLocaleString('es-ES', optF);
           var n = (li.productos_ids || []).length;
-          html += '<div class="product-item compact" style="margin-bottom:6px;">' +
-            '<div style="flex:1; min-width:0;"><div class="product-name" style="white-space:nowrap;">' + esc(f) + '</div><div class="product-notes">' + n + ' producto' + (n === 1 ? '' : 's') + '</div></div>' +
-            '<div style="display:flex; gap:6px; flex-shrink:0;">' +
+          html += '<div class="product-item compact" style="margin-bottom:6px; flex-wrap:wrap; gap:8px;">' +
+            '<div style="flex:1 1 100%; min-width:0;"><div class="product-name" style="white-space:nowrap;">' + esc(f) + ' <span class="muted" style="font-weight:400;">· ' + n + ' producto' + (n === 1 ? '' : 's') + '</span></div></div>' +
+            '<div style="display:flex; gap:6px; flex:1 1 100%; flex-wrap:wrap;">' +
               '<button class="btn btn-accent btn-sm" onclick="verListaDocumento(' + id + ')">Ver</button>' +
               '<button class="btn btn-sm btn-logout" onclick="editarLista(' + id + ')">✏️ Modificar</button>' +
               '<button class="btn btn-sm btn-logout" onclick="duplicarLista(' + id + ')">Repetir</button>' +
