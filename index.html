@@ -990,10 +990,15 @@
               <input type="text" id="nuevoNom" placeholder="Nombre del producto">
               <select id="nuevoCat"></select>
               <input type="number" step="0.01" inputmode="decimal" id="nuevoPre" placeholder="Precio €">
+              <input type="text" id="nuevoNotas" placeholder="Comentario (opcional): formato, calibre, origen…" autocomplete="off">
+              <label style="font-size:12px; font-weight:700; color:var(--muted);">📷 Foto (opcional)</label>
+              <input type="file" id="nuevoArchivoLista" accept="image/*" onchange="procesarImagen(this, 'nuevoFotoLista')">
+              <input type="hidden" id="nuevoFotoLista">
+              <div id="previewNuevoLista"></div>
               <button class="btn btn-sm btn-accent" onclick="crearYAnadir()">Crear y añadir a la lista</button>
             </div></details>
           <button class="btn btn-sm btn-logout" onclick="cancelarEdicionLista()">Cancelar edición</button>
-          <span style="float:right; font-size:11px; color:#999;">versión 60</span>
+          <span style="float:right; font-size:11px; color:#999;">versión 61</span>
         </div>
         <div class="field">
           <label>Nombre del Cliente</label>
@@ -1569,7 +1574,7 @@
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(0, 0, width, height);
           ctx.drawImage(img, 0, 0, width, height);
-          var esProducto = (targetHiddenId === 'prodFotoBase64' || targetHiddenId === 'editProdFotoBase64' || targetHiddenId === 'editExtraFoto');
+          var esProducto = (targetHiddenId === 'prodFotoBase64' || targetHiddenId === 'editProdFotoBase64' || targetHiddenId === 'editExtraFoto' || targetHiddenId === 'nuevoFotoLista');
           function mostrar(valor) {
             if (targetHiddenId === 'editExtraFoto') { _editFotos.push({ url: valor, nota: '' }); renderEditFotos(); input.value = ''; return; }
             $(targetHiddenId).value = valor;
@@ -1577,6 +1582,7 @@
             if (targetHiddenId === 'cfgLogoBase64') $('previewLogoContainer').innerHTML = prev;
             else if (targetHiddenId === 'editProdFotoBase64') $('previewEditFotoContainer').innerHTML = prev;
             else if (targetHiddenId === 'prodFotoBase64') $('previewNuevaFoto').innerHTML = prev;
+            else if (targetHiddenId === 'nuevoFotoLista') $('previewNuevoLista').innerHTML = prev;
           }
           // El logo se queda dentro de los ajustes; las fotos de producto van al almacenamiento rápido
           if (!esProducto) { mostrar(canvas.toDataURL('image/jpeg', 0.8)); return; }
@@ -2738,14 +2744,15 @@
       $('nuevoCat').innerHTML = _categoriasOrden.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('');
     }
     async function crearYAnadir() {
+      if (_subiendo > 0) { toast('Espera a que termine de subir la foto.', 'err'); return; }
       var nombre = $('nuevoNom').value.trim(), precio = parseFloat($('nuevoPre').value);
       if (!nombre || isNaN(precio) || precio < 0) { toast('Escribe el nombre y el precio.', 'err'); return; }
       try {
-        var d = chk(await _sb.from('productos').insert([{ categoria: $('nuevoCat').value, nombre: nombre, precio: precio, notas: '', url_foto: '' }]).select());
+        var d = chk(await _sb.from('productos').insert([{ categoria: $('nuevoCat').value, nombre: nombre, precio: precio, notas: $('nuevoNotas').value.trim(), url_foto: $('nuevoFotoLista').value }]).select());
         await cargarProductos();
         var nuevo = d && d[0];
         if (nuevo) { _sel[nuevo.id] = true; _precios[nuevo.id] = precio.toFixed(2); }
-        $('nuevoNom').value = ''; $('nuevoPre').value = '';
+        $('nuevoNom').value = ''; $('nuevoPre').value = ''; $('nuevoNotas').value = ''; $('nuevoFotoLista').value = ''; $('nuevoArchivoLista').value = ''; $('previewNuevoLista').innerHTML = '';
         renderizarSeleccionCrear(); actualizarContadorSel();
         toast('Producto creado y añadido a la lista.');
       } catch (e) { toast('No se pudo crear: ' + errMsg(e), 'err'); }
