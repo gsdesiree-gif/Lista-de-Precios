@@ -959,14 +959,16 @@
         </div>
         <div id="llamAcc" style="display:none; margin-bottom:10px;">
           <div id="llamProg" style="font-weight:700; margin-bottom:6px;"></div>
-          <div class="toolbar" style="gap:8px;">
-            <input type="time" id="horaLlamada" style="max-width:120px;" onchange="try{localStorage.setItem('elancla_hora_llamada',this.value)}catch(e){}">
-            <button class="btn btn-sm btn-accent" onclick="avisosLlamadas()">🔔 Avisarme cada semana</button>
-          </div>
-          <details style="margin:10px 0 4px;"><summary style="cursor:pointer; font-weight:700; font-size:13px;">💬 Mensaje general de WhatsApp (solo para clientes sin mensaje propio)</summary><div class="field" style="margin-top:8px;">
-            <textarea id="msgLlamada" rows="3" style="width:100%;" oninput="try{localStorage.setItem('elancla_msg_llamada',this.value)}catch(e){}"></textarea>
-            <div style="font-size:12px; color:var(--muted);">Escribe <b>{nombre}</b> donde quieras que salga el nombre del cliente. El mensaje de cada cliente se escribe en su ficha (✏️ Editar).</div></div></details>
-          <div style="font-size:12px; color:var(--muted);">Crea los avisos semanales en el Calendario del iPhone (a la hora indicada), uno por cliente y día de llamada.</div>
+          <details style="margin:6px 0;"><summary style="cursor:pointer; font-weight:700; font-size:13px; color:var(--muted);">⚙️ Ajustes de llamadas</summary>
+            <div class="toolbar" style="gap:8px; margin-top:8px;">
+              <input type="time" id="horaLlamada" style="max-width:120px;" onchange="try{localStorage.setItem('elancla_hora_llamada',this.value)}catch(e){}">
+              <button class="btn btn-sm btn-accent" onclick="avisosLlamadas()">🔔 Avisarme cada semana</button>
+            </div>
+            <div style="font-size:12px; color:var(--muted); margin-bottom:8px;">Crea los avisos semanales en el Calendario del iPhone (a la hora indicada), uno por cliente y día de llamada.</div>
+            <div class="field" style="margin:0;"><label>💬 Mensaje general de WhatsApp (solo para clientes sin mensaje propio)</label>
+              <textarea id="msgLlamada" rows="3" style="width:100%;" oninput="try{localStorage.setItem('elancla_msg_llamada',this.value)}catch(e){}"></textarea>
+              <div style="font-size:12px; color:var(--muted);">Escribe <b>{nombre}</b> donde quieras que salga el nombre. El mensaje de cada cliente se escribe en su ficha (✏️ Editar).</div></div>
+          </details>
         </div>
         <div id="contCli" class="count-txt"></div>
         <div id="listaClientesCard">Cargando clientes...</div>
@@ -3031,6 +3033,8 @@
       toast('Calendario listo: pulsa “Añadir todos”.');
     }
 
+    function masCli(id) { var e = $('masCli' + id); if (e) e.style.display = e.style.display === 'none' ? 'flex' : 'none'; }
+
     function filtrarClientes(tipo, btn) {
       var btns = document.querySelectorAll('#barraCli .cat-filter-btn');
       for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
@@ -3104,15 +3108,21 @@
         var pend = pendienteDe(c.id);
         var pedTxt = pend ? '<div class="product-notes" style="color:var(--accent); font-weight:600;">🛒 Pedido para ' + esc(fechaLarga(String(pend.fecha_entrega).substring(0, 10))) + ' · ' + totalLineas(pend.lineas || []).toFixed(2) + ' €</div>' : '';
         var hayTel = !!telWa(c.telefono);
-        var llamar = hayTel ? '<button class="btn btn-sm btn-logout" onclick="llamarCliente(' + id + ')">📞 Llamar</button>' : '';
+        var llamar = hayTel ? '<button class="btn btn-sm btn-accent" onclick="llamarCliente(' + id + ')">📞 Llamar</button>' : '';
         var wa = hayTel ? '<button class="btn btn-wa btn-sm" onclick="abrirWhatsApp(' + id + (esLl ? ', true' : '') + ')">' + (esLl ? '💬 Enviar mensaje' : '💬 WhatsApp') + '</button>' : '';
         var hecha = esLl && _llamadas[id + '|' + fLl];
         var chkLl = esLl ? '<button class="btn btn-sm ' + (hecha ? 'btn-success' : 'btn-logout') + '" style="margin-bottom:6px;" onclick="marcarLlamada(' + id + ')">' + (hecha ? '✅ Llamado' : '⬜ Marcar como llamado') + '</button>' : '';
+        var tel2 = c.telefono ? '<div class="product-notes">📞 ' + esc(c.telefono) + '</div>' : '';
         html += '<div class="product-item compact cli-row" style="margin-bottom:8px;' + (hecha ? ' background:#eef5f0;' : '') + '">' +
-          '<div style="min-width:0;">' + chkLl + '<div class="product-name">👤 ' + esc(c.nombre) + '</div>' +
-          '<div class="product-notes">' + tel + n + ' lista' + (n === 1 ? '' : 's') + (hn ? ' · 📋 ' + hn + ' producto' + (hn === 1 ? '' : 's') : '') + '</div>' + dir + fisc + dias + pedTxt + falta + '</div>' +
+          '<div style="min-width:0;">' + chkLl + '<div class="product-name">👤 ' + esc(c.nombre) + '</div>' + tel2 + pedTxt + falta + '</div>' +
           '<div class="cli-acciones">' +
-            '<button class="btn btn-accent btn-sm" onclick="abrirPedido(' + id + ')">🛒 Pedido</button>' + '<button class="btn btn-sm btn-logout" onclick="nuevaListaCliente(' + id + ')">Nueva lista</button>' + '<button class="btn btn-sm btn-logout" onclick="abrirModalCliente(' + id + ', true)">👁 Ver cliente</button>' + llamar + wa +
+            (hayTel ? llamar + wa : '') +
+            '<button class="btn btn-accent btn-sm" onclick="abrirPedido(' + id + ')">🛒 Pedido</button>' +
+            '<button class="btn btn-sm btn-logout" onclick="masCli(' + id + ')">⋯ Más</button>' +
+          '</div>' +
+          '<div class="cli-acciones" id="masCli' + id + '" style="display:none;">' +
+            '<button class="btn btn-sm btn-logout" onclick="nuevaListaCliente(' + id + ')">Nueva lista</button>' +
+            '<button class="btn btn-sm btn-logout" onclick="abrirModalCliente(' + id + ', true)">👁 Ver cliente</button>' +
             '<button class="btn btn-sm btn-logout" onclick="abrirModalCliente(' + id + ')">✏️ Editar</button>' +
           '</div></div>';
       }
