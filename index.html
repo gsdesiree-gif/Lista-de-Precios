@@ -1889,6 +1889,118 @@
           '<div style="width:72px; height:3px; background:#d63a49; border-radius:2px;"></div>' +
           '<div style="max-width:560px; text-align:center; font-family:\'Fraunces\', Georgia, serif; font-style:italic; font-weight:500; font-size:34px; line-height:1.3; color:' + T.sub + ';">Los mejores productos para los momentos más especiales</div></div>', T.fondo);
     }
+    /* ---------- PDF del catálogo de Navidad dibujado directamente (sin capturar la pantalla): rápido y fiable ---------- */
+    var _navDatos = null;
+    function navPaginar(elegidos) {
+      var COLS = 3, ALTO = 196, ROW = ALTO + 34 + 6 + 14, CAT = 66 + 8 + 14, DISP = 850, pags = [], cur = [], usado = 0;
+      var cats = [], mapa = {};
+      elegidos.forEach(function (p) { var c = p.categoria || 'Varios'; if (!mapa[c]) { mapa[c] = []; cats.push(c); } mapa[c].push(p); });
+      var cierra = function () { if (cur.length) pags.push(cur); cur = []; usado = 0; };
+      cats.forEach(function (c) {
+        var filas = []; for (var i = 0; i < mapa[c].length; i += COLS) filas.push(mapa[c].slice(i, i + COLS));
+        if (usado + CAT + ROW > DISP) cierra();
+        cur.push({ cat: c }); usado += CAT;
+        filas.forEach(function (f) {
+          if (usado + ROW > DISP) { cierra(); cur.push({ cat: c }); usado += CAT; }
+          cur.push({ fila: f }); usado += ROW;
+        });
+      });
+      cierra();
+      return { pags: pags, COLS: COLS, ALTO: ALTO };
+    }
+    function generarPDFNavidad() {
+      var D = _navDatos, K = 210 / 794, pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+      var rgb = function (h) { h = h.replace('#', ''); return [parseInt(h.substr(0, 2), 16), parseInt(h.substr(2, 2), 16), parseInt(h.substr(4, 2), 16)]; };
+      var mix = function (a, b, t) { a = rgb(a); b = rgb(b); return a.map(function (v, i) { return Math.round(v * t + b[i] * (1 - t)); }); };
+      var fill = function (c) { c = typeof c === 'string' ? rgb(c) : c; pdf.setFillColor(c[0], c[1], c[2]); };
+      var draw = function (c) { c = typeof c === 'string' ? rgb(c) : c; pdf.setDrawColor(c[0], c[1], c[2]); };
+      var txt = function (c) { c = typeof c === 'string' ? rgb(c) : c; pdf.setTextColor(c[0], c[1], c[2]); };
+      var P = function (v) { return v * K; };
+      var fuente = function (estilo, px) { pdf.setFont('times', estilo); pdf.setFontSize(px * 0.75); };
+      var rect = function (x, y, w, h, s) { pdf.rect(P(x), P(y), P(w), P(h), s); };
+      var rrect = function (x, y, w, h, r, s) { pdf.roundedRect(P(x), P(y), P(w), P(h), P(r), P(r), s); };
+      var circ = function (x, y, r, s) { pdf.circle(P(x), P(y), P(r), s); };
+      var poli = function (pts, s) { var d = []; for (var i = 1; i < pts.length; i++) d.push([P(pts[i][0] - pts[i - 1][0]), P(pts[i][1] - pts[i - 1][1])]); pdf.lines(d, P(pts[0][0]), P(pts[0][1]), [1, 1], s, true); };
+      var estrella = function (x, y, r) { poli([[x, y - r], [x + r * .2, y - r * .2], [x + r, y], [x + r * .2, y + r * .2], [x, y + r], [x - r * .2, y + r * .2], [x - r, y], [x - r * .2, y - r * .2]], 'F'); };
+      var bayas = function (x, y, s, fondo) {   // x,y = esquina superior izquierda; s = ancho en px (el dibujo mide 44x36)
+        var f = s / 44; fill('#b3212f'); circ(x + 12 * f, y + 24 * f, 10 * f, 'F'); circ(x + 30 * f, y + 24 * f, 10 * f, 'F'); fill('#c8283a'); circ(x + 21 * f, y + 12 * f, 9 * f, 'F');
+        fill(fondo); circ(x + 9 * f, y + 21 * f, 2 * f, 'F'); circ(x + 27 * f, y + 21 * f, 2 * f, 'F'); circ(x + 18 * f, y + 9 * f, 1.8 * f, 'F');
+      };
+      var copo = function (x, y, r, c) { draw(c); pdf.setLineWidth(0.25); for (var k = 0; k < 3; k++) { var a = k * Math.PI / 3, dx = Math.sin(a) * r, dy = Math.cos(a) * r; pdf.line(P(x - dx), P(y - dy), P(x + dx), P(y + dy)); } };
+      var marcos = function (bg, oro) { draw(oro); pdf.setLineWidth(0.3); rect(36, 36, 722, 1051, 'S'); draw(mix(oro, bg, .4)); rect(48, 48, 698, 1027, 'S'); };
+      var cintas = function () { [96, 654].forEach(function (x) { fill('#b3212f'); poli([[x, 0], [x + 44, 0], [x + 44, 210], [x + 22, 188], [x, 210]], 'F'); }); };
+      var ancla = function (cx, y, oro) {
+        draw(oro); pdf.setLineWidth(0.5); var f = 34 / 34;
+        circ(cx, y + 6, 3.5, 'S'); pdf.line(P(cx), P(y + 9.5), P(cx), P(y + 34)); pdf.line(P(cx - 7), P(y + 15), P(cx + 7), P(y + 15));
+        pdf.line(P(cx - 13), P(y + 25), P(cx - 9), P(y + 31)); pdf.line(P(cx - 9), P(y + 31), P(cx), P(y + 34)); pdf.line(P(cx), P(y + 34), P(cx + 9), P(y + 31)); pdf.line(P(cx + 9), P(y + 31), P(cx + 13), P(y + 25));
+      };
+      var centrado = function (s, y, maxPx) { var w = pdf.getTextWidth(s) / K; if (maxPx && w > maxPx) pdf.setFontSize(pdf.getFontSize() * maxPx / w); pdf.text(s, P(397), P(y), { align: 'center' }); };
+      var clara = D.clara, bg = clara ? '#f6f0e4' : '#101b33', oro = clara ? '#a98642' : '#c8a45a', tx = clara ? '#101b33' : '#f6f0e4', sub = clara ? '#6b5420' : '#e9d9ae', bgF = clara ? '#f6f0e4' : '#101b33';
+      var fondo = function (c) { fill(c); pdf.rect(0, 0, 210, 297, 'F'); };
+      var estrellasTodas = function () { fill(oro); [[120, 330, 24], [660, 380, 17], [610, 300, 11], [170, 820, 12], [650, 860, 20], [110, 700, 8]].forEach(function (e) { estrella(e[0], e[1], e[2]); }); [[230, 260], [560, 330], [90, 560], [710, 560], [300, 900], [520, 940]].forEach(function (c) { circ(c[0], c[1], 2, 'F'); }); };
+
+      // ---- portada
+      fondo(bg);
+      if (clara) { [[120, 330], [660, 300], [700, 640], [90, 860], [680, 930], [110, 520]].forEach(function (c) { copo(c[0], c[1], 11, mix('#c8a45a', bg, .55)); }); }
+      draw(mix(oro, bg, .5)); pdf.setLineWidth(0.25); circ(397, 400, 150, 'S'); draw(mix(oro, bg, .32)); circ(397, 400, 215, 'S'); draw(mix(oro, bg, .18)); circ(397, 400, 280, 'S');
+      fill(oro); estrella(397, 400, 70); estrellasTodas(); marcos(bg, oro); cintas();
+      ancla(397, 96, oro); fuente('normal', 26); txt(tx); pdf.text(String(D.empresa), P(397), P(160), { align: 'center' });
+      var pal = D.titulo.trim().split(/\s+/), grande = pal.shift() || 'Navidad', resto = pal.join(' ');
+      fuente('italic', 168); txt(tx); centrado(grande, 700, 620);
+      if (resto) { fuente('bold', 58); txt(oro); pdf.text(resto, P(397), P(783), { align: 'center', charSpace: 2.2 }); var wr = pdf.getTextWidth(resto) / K / 2 + 36; bayas(397 - wr - 44, 752, 44, bgF); bayas(397 + wr, 752, 44, bgF); }
+      fill('#d63a49'); rrect(361, 889, 72, 3, 1.5, 'F');
+      fuente('italic', 34); txt(sub); var sl = pdf.splitTextToSize('Los mejores productos para los momentos más especiales', P(560)); pdf.text(sl, P(397), P(950), { align: 'center', lineHeightFactor: 1.3 });
+
+      // ---- productos
+      var pg = navPaginar(D.elegidos), colw = (642 - 32) / 3;
+      pg.pags.forEach(function (bloques) {
+        pdf.addPage(); fondo('#f6f0e4');
+        [[62, 230], [738, 300], [60, 480], [740, 560], [64, 760], [736, 820], [66, 980], [730, 960], [400, 1058]].forEach(function (c) { copo(c[0], c[1], 10, mix('#c8a45a', '#f6f0e4', .5)); });
+        fill('#c8a45a'); [[690, 100, 15], [655, 70, 7], [725, 140, 5], [70, 120, 9], [60, 1000, 12], [735, 1010, 16], [700, 1045, 6]].forEach(function (e) { estrella(e[0], e[1], e[2]); });
+        marcos('#f6f0e4', '#c8a45a');
+        fill('#101b33'); rrect(76, 72, 642, 48, 6, 'F'); fill('#b3212f'); rect(76, 117, 642, 3, 'F');
+        fuente('bold', 25); txt('#f6f0e4'); pdf.text('Nuestra selección', P(96), P(103));
+        fuente('italic', 21); txt('#c8a45a'); pdf.text(D.titulo, P(698), P(102), { align: 'right' });
+        var y = 134;
+        bloques.forEach(function (b) {
+          if (b.cat) {
+            fuente('italic', 25); var w = pdf.getTextWidth(b.cat) / K, pw = w + 60 + 2 * 22 + 28, px = 397 - pw / 2;
+            fill('#101b33'); draw('#c8a45a'); pdf.setLineWidth(0.25); rrect(px, y, pw, 40, 20, 'FD');
+            bayas(px + 28, y + 11, 22, '#101b33'); bayas(px + pw - 28 - 22, y + 11, 22, '#101b33');
+            txt('#f6f0e4'); pdf.text(b.cat, P(397), P(y + 27), { align: 'center' });
+            fuente('italic', 14); txt('#7d6224'); pdf.text(navFrase(b.cat), P(397), P(y + 58), { align: 'center' });
+            y += 66 + 8 + 14;
+          } else {
+            b.fila.forEach(function (p, i) {
+              var x = 76 + i * (colw + 16), ny = String(p.nombre);
+              fuente('bolditalic', navTamNombre(ny)); txt('#8e1b28');
+              var lineas = pdf.splitTextToSize(ny, P(colw - 4)); if (lineas.length > 2) lineas = lineas.slice(0, 2);
+              var n2 = lineas.length, base = y + (n2 > 1 ? 14 : 28); pdf.text(lineas, P(x + 2), P(base), { lineHeightFactor: 1.0 });
+              var fy = y + 34 + 6;
+              if (p._mini && /^data:image\/jpeg/.test(p._mini)) { try { pdf.addImage(p._mini, 'JPEG', P(x), P(fy), P(colw), P(pg.ALTO)); } catch (e) { fill('#efe6d2'); rect(x, fy, colw, pg.ALTO, 'F'); } }
+              else { fill('#efe6d2'); rect(x, fy, colw, pg.ALTO, 'F'); bayas(x + colw / 2 - 30, fy + pg.ALTO / 2 - 25, 60, '#efe6d2'); }
+              draw('#c8a45a'); pdf.setLineWidth(0.25); rrect(x, fy, colw, pg.ALTO, 8, 'S');
+              if (D.precios) {
+                var pr = num(p.precio).toFixed(2) + ' €'; fuente('bold', 15); var tw = pdf.getTextWidth(pr) / K + 20, tx0 = x + colw - 8 - tw, ty0 = fy + pg.ALTO - 8 - 24;
+                fill('#b3212f'); draw('#f6f0e4'); pdf.setLineWidth(0.3); rrect(tx0, ty0, tw, 24, 12, 'FD'); txt('#ffffff'); pdf.text(pr, P(tx0 + tw / 2), P(ty0 + 17), { align: 'center' });
+              }
+            });
+            y += 34 + 6 + pg.ALTO + 14;
+          }
+        });
+        fuente('normal', 18); txt('#101b33'); pdf.text(D.pie, P(397), P(1050), { align: 'center' });
+      });
+
+      // ---- contraportada
+      pdf.addPage(); fondo(bg);
+      if (clara) { [[120, 330], [660, 300], [700, 640], [90, 860], [680, 930], [110, 520]].forEach(function (c) { copo(c[0], c[1], 11, mix('#c8a45a', bg, .55)); }); }
+      estrellasTodas(); marcos(bg, oro); cintas();
+      fuente('italic', 104); txt(tx); centrado('Feliz Navidad', 520, 600);
+      fill('#d63a49'); rrect(361, 580, 72, 3, 1.5, 'F');
+      if (D.tel) { fuente('normal', 40); txt(sub); centrado('Pedidos al ' + D.tel, 665, 600); }
+      return Promise.resolve(pdf);
+    }
+
     function navTamNombre(n) { var l = String(n).length; return l <= 16 ? 26 : (l <= 21 ? 22 : 16); }
     function navTarjeta(p, conPrecios, alto) {
       var s = p._mini ? esc(p._mini) : imgSrc(p.url_foto);
@@ -1997,7 +2109,7 @@
           var im = new Image(), hecho = false, fin = function (v) { if (!hecho) { hecho = true; mapa[s] = v; res(); } };
           setTimeout(function () { fin(''); }, 3000);
           im.onload = function () {
-            try { var k = w > 300 ? 1.5 : 3, c = document.createElement('canvas'); c.width = Math.round(w * k); c.height = Math.round(h * k);
+            try { var k = w > 300 ? 1 : 3, c = document.createElement('canvas'); c.width = Math.round(w * k); c.height = Math.round(h * k);
               c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); fin(c.toDataURL('image/png')); } catch (e) { fin(''); }
           };
           im.onerror = function () { fin(''); };
@@ -2037,6 +2149,7 @@
       pags.push(navContraportada(tel, clara));
       try { pags = await navRasterSvgs(pags); } catch (e) {}
       $('modalNavidad').style.display = 'none';
+      _navDatos = { elegidos: elegidos, titulo: titulo, precios: precios, pie: pie, tel: tel, clara: clara, empresa: empresa };
       _clienteActual = ''; _pdfNombre = 'Catalogo_' + titulo.replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ]+/g, '_') + (precios ? '_con_precios' : '') + '.pdf';
       $('contenedorPaginasA4').innerHTML = pags.join('');
       $('mainContainer').style.display = 'none';
@@ -3617,6 +3730,8 @@
       });
     }
     async function generarPDF() {
+      if (_pdfNombre && _navDatos) { window._pdfSeg = 0; return generarPDFNavidad(); }
+      var t0 = Date.now();
       try { if (document.fonts && document.fonts.ready) await conTiempo(document.fonts.ready, 1500, 'fuentes'); } catch (e) {}
       var paginas = document.querySelectorAll('.page-a4');
       if (!paginas || paginas.length === 0) throw new Error('No hay documento abierto.');
@@ -3632,14 +3747,15 @@
         if (typeof _pdfProgreso === 'function') _pdfProgreso(i + 1, paginas.length);
         await new Promise(function (r) { setTimeout(r, 30); });
         var rapido = !!_pdfNombre;
-        var opc = { scale: rapido ? 1.5 : 2, useCORS: true, scrollY: 0, logging: false }, canvas;
+        var opc = { scale: rapido ? 1.25 : 2, useCORS: true, scrollY: 0, logging: false, imageTimeout: 4000 }, canvas;
         try { canvas = await conTiempo(html2canvas(paginas[i], opc), 15000, 'La página ' + (i + 1) + ' tarda demasiado'); }
         catch (e1) {   // si las fotos dan problemas, se reintenta sin ellas para no quedarse colgado
           opc.ignoreElements = function (el) { var n = String(el.tagName).toLowerCase(); return n === 'img' || n === 'svg'; };
           canvas = await conTiempo(html2canvas(paginas[i], opc), 20000, 'No se pudo capturar la página ' + (i + 1));
         }
-        pdf.addImage(canvas.toDataURL('image/jpeg', rapido ? 0.85 : 0.92), 'JPEG', 0, 0, 210, 297);
+        pdf.addImage(canvas.toDataURL('image/jpeg', rapido ? 0.8 : 0.92), 'JPEG', 0, 0, 210, 297);
         canvas.width = canvas.height = 0;
+        window._pdfSeg = Math.round((Date.now() - t0) / 100) / 10;
       }
       return pdf;
     }
@@ -3658,7 +3774,7 @@
         if (tok !== _pdfTok) return;
         _pdfProgreso = function (i, n) { if (tok === _pdfTok) navBotonesPDF('⏳ Preparando ' + i + '/' + n + '…'); };
         var pr = generarPDF(); _pdfPromesa = pr;
-        pr.then(function (pdf) { if (tok === _pdfTok) { _pdfListo = { pdf: pdf, nombre: _pdfNombre }; navBotonesPDF(''); } })
+        pr.then(function (pdf) { if (tok === _pdfTok) { _pdfListo = { pdf: pdf, nombre: _pdfNombre }; navBotonesPDF(''); if (_pdfNombre) toast('✅ PDF listo (' + window._pdfSeg + ' s)'); } })
           .catch(function () { if (tok === _pdfTok) { navBotonesPDF(''); _pdfPromesa = null; } })
           .then(function () { _pdfProgreso = null; });
       }, 600);
