@@ -2655,7 +2655,7 @@
         var nombre = 'Ficha_' + (c.nombre || 'Cliente').replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ]+/g, '_') + '.pdf';
         var file = new File([pdf.output('blob')], nombre, { type: 'application/pdf' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          try { await navigator.share({ files: [file], title: 'Ficha de ' + c.nombre }); }
+          try { await navigator.share({ files: [file] }); }
           catch (e) { if (!e || e.name !== 'AbortError') throw e; }
         } else {
           pdf.save(nombre);
