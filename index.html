@@ -1107,7 +1107,8 @@
   <div id="editorialLightbox" class="editorial-lightbox" onclick="cerrarFotoGrande()">
     <div class="editorial-lightbox-content" onclick="event.stopPropagation()">
       <button class="editorial-lightbox-close" onclick="cerrarFotoGrande()">&times;</button>
-      <img id="lightboxImg" class="editorial-lightbox-img" src="" alt="">
+      <div id="lightboxGal" class="np-gal"></div>
+      <div id="lightboxHint" class="np-hint" style="display:none">← desliza para ver más fotos →</div>
       <div class="editorial-lightbox-info">
         <div id="lightboxCat" class="editorial-cat"></div>
         <div id="lightboxTitle" class="editorial-title" style="font-size:18px;"></div>
@@ -1687,7 +1688,7 @@
         var data = chk(rq);
         _productosCache = data || [];
         _catalogo = _productosCache.map(function (p) {
-          return { id: p.id, categoria: p.categoria, nombre: p.nombre, notas: p.notas, url_foto: p.url_foto };
+          return { id: p.id, categoria: p.categoria, nombre: p.nombre, notas: p.notas, url_foto: p.url_foto, fotos_extra: p.fotos_extra };
         });
         renderizarListaProductos();
         renderizarSeleccionCrear();
@@ -2517,9 +2518,16 @@
       var prod = null;
       for (var i = 0; i < _catalogo.length; i++) if (_catalogo[i].id === id) { prod = _catalogo[i]; break; }
       if (!prod) return;
-      var src = imgSrc(prod.url_foto);
-      $('lightboxImg').style.display = src ? '' : 'none';
-      $('lightboxImg').src = src ? prod.url_foto : '';
+      var fl = [], s0 = imgSrc(prod.url_foto);
+      if (s0) fl.push({ s: s0, nota: '' });
+      fotosExtraDe(prod).forEach(function (f) { fl.push({ s: imgSrc(f.url), nota: f.nota }); });
+      var g = $('lightboxGal'), gh = '';
+      fl.forEach(function (f, k) {
+        gh += '<div class="np-sl"><img class="editorial-lightbox-img" src="' + f.s + '" alt="">' + (fl.length > 1 ? '<span class="np-cnt">' + (k + 1) + ' / ' + fl.length + '</span>' : '') +
+          (f.nota ? '<div class="np-cap">' + esc(f.nota) + '</div>' : '') + '</div>';
+      });
+      g.innerHTML = gh; g.scrollLeft = 0; g.style.display = fl.length ? '' : 'none';
+      $('lightboxHint').style.display = fl.length > 1 ? '' : 'none';
       $('lightboxCat').textContent = prod.categoria || 'Varios';
       $('lightboxTitle').textContent = prod.nombre || '';
       $('lightboxDesc').textContent = prod.notas || '';
@@ -3112,7 +3120,7 @@
         var wa = hayTel ? '<button class="btn btn-wa btn-sm" onclick="abrirWhatsApp(' + id + (esLl ? ', true' : '') + ')">' + (esLl ? '💬 Enviar mensaje' : '💬 WhatsApp') + '</button>' : '';
         var hecha = esLl && _llamadas[id + '|' + fLl];
         var chkLl = esLl ? '<button class="btn btn-sm ' + (hecha ? 'btn-success' : 'btn-logout') + '" style="margin-bottom:6px;" onclick="marcarLlamada(' + id + ')">' + (hecha ? '✅ Llamado' : '⬜ Marcar como llamado') + '</button>' : '';
-        var tel2 = c.telefono ? '<div class="product-notes">📞 ' + esc(c.telefono) + '</div>' : '';
+        var tel2 = (c.telefono ? '<div class="product-notes">📞 ' + esc(c.telefono) + '</div>' : '') + (lugar ? '<div class="product-notes">📍 ' + esc(lugar) + '</div>' : '');
         html += '<div class="product-item compact cli-row" style="margin-bottom:8px;' + (hecha ? ' background:#eef5f0;' : '') + '">' +
           '<div style="min-width:0;">' + chkLl + '<div class="product-name">👤 ' + esc(c.nombre) + '</div>' + tel2 + pedTxt + falta + '</div>' +
           '<div class="cli-acciones">' +
