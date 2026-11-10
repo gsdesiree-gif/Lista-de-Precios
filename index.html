@@ -982,9 +982,18 @@
         <div id="avisoEdicion" style="display:none; background:#fff7e0; border:1px solid #e9d28a; border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:14px;">
           <div id="avisoEdicionTxt" style="font-weight:700; margin-bottom:6px;"></div>
           <div style="font-size:13px; margin-bottom:8px;">Abajo está la lista. <b>Cambia el precio</b> de lo que quieras, <b>desmarca</b> lo que quieras quitar y, para <b>añadir un producto</b>, búscalo aquí. Al final pulsa <b>Guardar cambios</b>.</div>
-          <input type="search" id="buscarAnadir" placeholder="➕ Añadir producto: escribe el nombre…" oninput="anadirBuscar()" autocomplete="off" style="width:100%; margin-bottom:6px;">
+          <input type="text" id="buscarAnadir" name="q_producto_lista" placeholder="➕ Añadir producto: escribe aquí…" oninput="anadirBuscar()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" style="width:100%; margin-bottom:6px;">
+          <div id="catsAnadir" style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px;"></div>
           <div id="resAnadir" style="margin-bottom:8px;"></div>
+          <details style="margin-bottom:8px;"><summary style="cursor:pointer; font-weight:700; font-size:13px;">🆕 ¿No está en tu catálogo? Crear producto nuevo</summary>
+            <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
+              <input type="text" id="nuevoNom" placeholder="Nombre del producto">
+              <select id="nuevoCat"></select>
+              <input type="number" step="0.01" inputmode="decimal" id="nuevoPre" placeholder="Precio €">
+              <button class="btn btn-sm btn-accent" onclick="crearYAnadir()">Crear y añadir a la lista</button>
+            </div></details>
           <button class="btn btn-sm btn-logout" onclick="cancelarEdicionLista()">Cancelar edición</button>
+          <span style="float:right; font-size:11px; color:#999;">versión 60</span>
         </div>
         <div class="field">
           <label>Nombre del Cliente</label>
@@ -2703,7 +2712,7 @@
       _soloSel = true; actualizarSoloSelUI();
       var f = new Date(l.fecha).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
       $('avisoEdicionTxt').textContent = '✏️ Editando la lista de ' + (l.cliente_nombre || '') + ' (' + f + ')';
-      $('avisoEdicion').style.display = 'block'; $('barraFiltroCrear').style.display = 'none'; $('etiqFiltroCrear').style.display = 'none'; $('toolbarCrear').style.display = 'none'; $('buscarAnadir').value = ''; $('resAnadir').innerHTML = '';
+      $('avisoEdicion').style.display = 'block'; $('barraFiltroCrear').style.display = 'none'; $('etiqFiltroCrear').style.display = 'none'; $('toolbarCrear').style.display = 'none'; $('buscarAnadir').value = ''; $('resAnadir').innerHTML = ''; pintarCatsAnadir();
       $('tituloCrear').textContent = '✏️ Modificar lista de precios';
       $('btnGenerarLista').textContent = '💾 Guardar cambios';
       cerrarVistaDocumento();
@@ -2717,6 +2726,29 @@
       r.innerHTML = res.length ? res.map(function (p) {
         return '<button class="btn btn-sm btn-accent" style="display:block; width:100%; text-align:left; margin-bottom:4px;" onclick="anadirProducto(' + Number(p.id) + ')">➕ ' + esc(p.nombre) + ' · ' + num(p.precio).toFixed(2) + ' €</button>';
       }).join('') : '<div style="font-size:13px; color:var(--muted);">Ningún producto nuevo coincide.</div>';
+    }
+    function anadirPorCategoria(cat) {
+      var res = _productosCache.filter(function (p) { return !_sel[p.id] && (p.categoria || 'Varios') === cat; });
+      $('resAnadir').innerHTML = res.length ? res.map(function (p) {
+        return '<button class="btn btn-sm btn-accent" style="display:block; width:100%; text-align:left; margin-bottom:4px;" onclick="anadirProducto(' + Number(p.id) + ')">➕ ' + esc(p.nombre) + ' · ' + num(p.precio).toFixed(2) + ' €</button>';
+      }).join('') : '<div style="font-size:13px; color:var(--muted);">Ya están todos los de ' + esc(cat) + ' en la lista.</div>';
+    }
+    function pintarCatsAnadir() {
+      $('catsAnadir').innerHTML = _categoriasOrden.map(function (c, i) { return '<button class="btn btn-sm btn-logout" onclick="anadirPorCategoria(_categoriasOrden[' + i + '])">' + esc(c) + '</button>'; }).join('');
+      $('nuevoCat').innerHTML = _categoriasOrden.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('');
+    }
+    async function crearYAnadir() {
+      var nombre = $('nuevoNom').value.trim(), precio = parseFloat($('nuevoPre').value);
+      if (!nombre || isNaN(precio) || precio < 0) { toast('Escribe el nombre y el precio.', 'err'); return; }
+      try {
+        var d = chk(await _sb.from('productos').insert([{ categoria: $('nuevoCat').value, nombre: nombre, precio: precio, notas: '', url_foto: '' }]).select());
+        await cargarProductos();
+        var nuevo = d && d[0];
+        if (nuevo) { _sel[nuevo.id] = true; _precios[nuevo.id] = precio.toFixed(2); }
+        $('nuevoNom').value = ''; $('nuevoPre').value = '';
+        renderizarSeleccionCrear(); actualizarContadorSel();
+        toast('Producto creado y añadido a la lista.');
+      } catch (e) { toast('No se pudo crear: ' + errMsg(e), 'err'); }
     }
     function anadirProducto(id) {
       var p = buscarEnCache(id); if (!p) return;
