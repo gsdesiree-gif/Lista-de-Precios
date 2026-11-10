@@ -963,6 +963,9 @@
             <input type="time" id="horaLlamada" style="max-width:120px;" onchange="try{localStorage.setItem('elancla_hora_llamada',this.value)}catch(e){}">
             <button class="btn btn-sm btn-accent" onclick="avisosLlamadas()">🔔 Avisarme cada semana</button>
           </div>
+          <div class="field" style="margin:10px 0 4px;"><label>💬 Mensaje general de WhatsApp (para los clientes sin mensaje propio)</label>
+            <textarea id="msgLlamada" rows="3" style="width:100%;" oninput="try{localStorage.setItem('elancla_msg_llamada',this.value)}catch(e){}"></textarea>
+            <div style="font-size:12px; color:var(--muted);">Escribe <b>{nombre}</b> donde quieras que salga el nombre del cliente.</div></div>
           <div style="font-size:12px; color:var(--muted);">Crea los avisos semanales en el Calendario del iPhone (a la hora indicada), uno por cliente y día de llamada.</div>
         </div>
         <div id="contCli" class="count-txt"></div>
@@ -1246,6 +1249,10 @@
         </div>
         <div class="field"><label>🚚 Días de reparto</label><div class="dias-fila" id="diasReparto"></div></div>
         <div class="field"><label>📞 Días de llamada (tomar pedido)</label><div class="dias-fila" id="diasLlamada"></div></div>
+        <div class="field"><label>💬 Mensaje de WhatsApp para este cliente</label>
+          <textarea id="cliMsg" rows="3" style="width:100%;" placeholder="Ej: Hola Juan, ¿te hace falta algo de marisco esta semana?"></textarea>
+          <div id="avisoMsg" style="display:none; font-size:12px; color:var(--danger);">Para guardar este mensaje ejecuta el script <strong>mensajes-sql.txt</strong> en Supabase.</div>
+          <div style="font-size:12px; color:var(--muted);">Opcional. Si lo dejas vacío se usa el mensaje general de la lista de llamadas. Puedes escribir <b>{nombre}</b> para que ponga el nombre.</div></div>
       </div>
       <div id="avisoDias" style="display:none; font-size:12px; color:var(--muted); margin-bottom:10px;">Para guardar días de reparto, llamada, forma de pago y más datos de la ficha, pega el script <strong>clientes-extra.sql</strong> en el SQL Editor de Supabase.</div>
       <div id="bloqueProductosCli" style="display:none;">
@@ -2917,6 +2924,7 @@
         _clientesOk = true;
         try { chk(await _sb.from('clientes').select('dias_reparto,dias_llamada,forma_pago,razon_social,cif,email,contacto,poblacion,cp').limit(1)); _diasOk = true; }
         catch (e2) { _diasOk = false; }
+        try { chk(await _sb.from('clientes').select('msg_whatsapp').limit(1)); _msgOk = true; } catch (e3) { _msgOk = false; }
       } catch (e) {
         _clientes = []; _clientesOk = false;
         if (!_avisoClientes) { _avisoClientes = true; toast('Falta preparar la base de datos para clientes (script clientes.sql en Supabase).', 'err'); }
@@ -2947,6 +2955,7 @@
     var DIAS_COD = ['lun', 'mar', 'mie', 'jue', 'vie', 'sab', 'dom'];
     var DIAS_CORTO = { lun: 'Lun', mar: 'Mar', mie: 'Mié', jue: 'Jue', vie: 'Vie', sab: 'Sáb', dom: 'Dom' };
     var DIAS_LARGO = { lun: 'Lunes', mar: 'Martes', mie: 'Miércoles', jue: 'Jueves', vie: 'Viernes', sab: 'Sábado', dom: 'Domingo' };
+    var _msgOk = false;
     var _diasOk = false;           // false = aún no se ha ejecutado clientes-extra.sql
     var _filtroCli = 'TODOS';      // TODOS | LLAMAR | REPARTIR
     var _modalDias = { rep: [], lla: [] };
@@ -3062,6 +3071,7 @@
         lista = lista.slice().sort(function (a, b) { return (_llamadas[a.id + '|' + fLl] ? 1 : 0) - (_llamadas[b.id + '|' + fLl] ? 1 : 0); });
         var hechas = lista.filter(function (c) { return _llamadas[c.id + '|' + fLl]; }).length;
         $('llamProg').textContent = lista.length ? (hechas === lista.length ? '✅ ¡Todas llamadas! (' + hechas + ')' : '📞 Llamados ' + hechas + ' de ' + lista.length + ' · faltan ' + (lista.length - hechas)) : '';
+        try { if (!$('msgLlamada').value) $('msgLlamada').value = localStorage.getItem('elancla_msg_llamada') || MSG_LLAMADA; } catch (e) { $('msgLlamada').value = MSG_LLAMADA; }
         try { if (!$('horaLlamada').value) $('horaLlamada').value = localStorage.getItem('elancla_hora_llamada') || '10:00'; } catch (e) { $('horaLlamada').value = '10:00'; }
       }
       var etiqueta = (_filtroCli === 'LLAMAR') ? ' para llamar el ' + DIAS_LARGO[_diaVer].toLowerCase()
@@ -3095,7 +3105,7 @@
         var pedTxt = pend ? '<div class="product-notes" style="color:var(--accent); font-weight:600;">🛒 Pedido para ' + esc(fechaLarga(String(pend.fecha_entrega).substring(0, 10))) + ' · ' + totalLineas(pend.lineas || []).toFixed(2) + ' €</div>' : '';
         var hayTel = !!telWa(c.telefono);
         var llamar = hayTel ? '<button class="btn btn-sm btn-logout" onclick="llamarCliente(' + id + ')">📞 Llamar</button>' : '';
-        var wa = hayTel ? '<button class="btn btn-wa btn-sm" onclick="abrirWhatsApp(' + id + ')">💬 WhatsApp</button>' : '';
+        var wa = hayTel ? '<button class="btn btn-wa btn-sm" onclick="abrirWhatsApp(' + id + (esLl ? ', true' : '') + ')">' + (esLl ? '💬 Enviar mensaje' : '💬 WhatsApp') + '</button>' : '';
         var hecha = esLl && _llamadas[id + '|' + fLl];
         var chkLl = esLl ? '<button class="btn btn-sm ' + (hecha ? 'btn-success' : 'btn-logout') + '" style="margin-bottom:6px;" onclick="marcarLlamada(' + id + ')">' + (hecha ? '✅ Llamado' : '⬜ Marcar como llamado') + '</button>' : '';
         html += '<div class="product-item compact cli-row" style="margin-bottom:8px;' + (hecha ? ' opacity:.6;' : '') + '">' +
@@ -3551,10 +3561,19 @@
       window.location.href = 'tel:+' + telWa(c.telefono);
     }
 
-    function abrirWhatsApp(id) {
+    var MSG_LLAMADA = 'Hola {nombre}, buenos días. Soy Kike, de El Ancla. ¿Necesitáis algo para esta semana?';
+    function abrirWhatsApp(id, conMensaje) {
       var c = buscarCliente(id);
       if (!c || !telWa(c.telefono)) return;
-      window.open('https://wa.me/' + telWa(c.telefono), '_blank');
+      var url = 'https://wa.me/' + telWa(c.telefono);
+      if (conMensaje) {
+        var m = String(c.msg_whatsapp || '').trim() || ($('msgLlamada') && $('msgLlamada').value.trim()) || MSG_LLAMADA;
+        url += '?text=' + encodeURIComponent(m.replace(/\{nombre\}/gi, String(c.nombre || '').trim()));
+        window.open(url, '_blank');
+        if (!_llamadas[id + '|' + fechaDelDia(_diaVer)]) marcarLlamada(id);
+        return;
+      }
+      window.open(url, '_blank');
     }
 
     function nuevaListaCliente(id) {
@@ -3600,6 +3619,8 @@
       $('bloqueFicha').style.display = _diasOk ? '' : 'none';
       $('bloqueDias').style.display = _diasOk ? '' : 'none';
       $('avisoDias').style.display = _diasOk ? 'none' : '';
+      $('cliMsg').value = c ? (c.msg_whatsapp || '') : '';
+      $('cliMsg').disabled = !_msgOk; $('avisoMsg').style.display = _msgOk ? 'none' : '';
       pintarDias('diasReparto', _modalDias.rep, 'rep');
       pintarDias('diasLlamada', _modalDias.lla, 'lla');
       _cliModalId = c ? c.id : 0;
@@ -3624,6 +3645,7 @@
         datos.razon_social = $('cliRazon').value.trim(); datos.cif = $('cliCif').value.trim().toUpperCase();
         datos.poblacion = $('cliPoblacion').value.trim(); datos.cp = $('cliCp').value.trim();
       }
+      if (_msgOk) datos.msg_whatsapp = $('cliMsg').value.trim();
       if (!datos.nombre) { toast('Escribe el nombre del cliente.', 'err'); return; }
       var dup = buscarClientePorNombre(datos.nombre);
       if (dup && dup.id !== id) { toast('Ya existe un cliente con ese nombre.', 'err'); return; }
