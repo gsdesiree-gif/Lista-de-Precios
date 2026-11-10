@@ -1094,7 +1094,7 @@
               <button class="btn btn-sm btn-accent" onclick="crearYAnadir()">Crear y añadir a la lista</button>
             </div></details>
           <button class="btn btn-sm btn-logout" onclick="cancelarEdicionLista()">Cancelar edición</button>
-          <span style="float:right; font-size:11px; color:#999;">versión 66</span>
+          <span style="float:right; font-size:11px; color:#999;">versión 67</span>
         </div>
         <div class="field">
           <label>Nombre del Cliente</label>
@@ -3354,14 +3354,18 @@
     /* ---------- copia de seguridad ---------- */
     var TABLAS_COPIA = ['productos', 'clientes', 'precios_cliente', 'listas_generadas', 'pedidos', 'caja_registros', 'catalogos_navidad', 'llamadas_hechas', 'configuracion'];
     var _copiaNube = null;   // fecha (AAAA-MM-DD) de la última copia, guardada en la nube; null = tabla no preparada
+    function copiaLocal() { try { return localStorage.getItem('elancla_ultima_copia') || ''; } catch (e) { return ''; } }
     function ultimaCopia() {
-      if (_copiaNube !== null) return _copiaNube;
-      try { return localStorage.getItem('elancla_ultima_copia') || ''; } catch (e) { return ''; }
+      var l = copiaLocal(), n = _copiaNube || '';
+      return l > n ? l : n;   // vale la más reciente: la de la nube o la hecha en este dispositivo
     }
     async function cargarUltimaCopia() {
       try {
         var r = chk(await _sb.from('copias_seguridad').select('fecha').order('fecha', { ascending: false }).limit(1)) || [];
         _copiaNube = r.length ? fechaLocalDe(r[0].fecha) : '';
+        // Si en este dispositivo hay una copia más reciente que la de la nube, se anota en la nube
+        var l = copiaLocal();
+        if (l && l > _copiaNube) { try { chk(await _sb.from('copias_seguridad').insert([{ fecha: l + 'T12:00:00' }])); _copiaNube = l; } catch (e2) {} }
       } catch (e) { _copiaNube = null; }
       renderAvisoCopia();
     }
