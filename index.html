@@ -1891,7 +1891,7 @@
     }
     function navTamNombre(n) { var l = String(n).length; return l <= 16 ? 26 : (l <= 21 ? 22 : 16); }
     function navTarjeta(p, conPrecios, alto) {
-      var s = imgSrc(p.url_foto);
+      var s = p._mini ? esc(p._mini) : imgSrc(p.url_foto);
       var foto = '<div style="width:100%; height:' + alto + 'px; position:relative; background:#efe6d2; overflow:hidden; border:1px solid #c8a45a; border-radius:8px; box-sizing:border-box;">' + (s
         ? '<img src="' + s + '"' + corsAttr(s) + ' alt="" style="position:absolute; left:0; top:0; width:100%; height:100%; object-fit:cover; display:block;">'
         : '<div style="position:absolute; left:0; top:0; right:0; bottom:0; display:flex; align-items:center; justify-content:center;">' + navBayasSvg(60, 49, '#efe6d2') + '</div>') + '</div>';
@@ -1965,7 +1965,55 @@
         '</div>', T.fondo);
     }
 
-    function crearCatalogoNavidad() {
+    // Reduce cada foto a un cuadrado pequeño: el PDF se genera mucho más rápido y sin problemas de permisos
+    var _navMini = {};
+    function navMiniatura(url) {
+      return new Promise(function (res) {
+        var u = String(url || '');
+        if (!/^(data:image\/(png|jpe?g|webp|gif);base64,|https:\/\/)/i.test(u)) return res('');
+        if (_navMini[u]) return res(_navMini[u]);
+        var hecho = false, fin = function (v) { if (!hecho) { hecho = true; if (v && v !== u) _navMini[u] = v; res(v); } };
+        setTimeout(function () { fin(u); }, 7000);
+        var im = new Image(); im.crossOrigin = 'anonymous';
+        im.onload = function () {
+          try {
+            var S = Math.min(im.naturalWidth, im.naturalHeight), c = document.createElement('canvas'); c.width = c.height = 360;
+            c.getContext('2d').drawImage(im, (im.naturalWidth - S) / 2, (im.naturalHeight - S) / 2, S, S, 0, 0, 360, 360);
+            fin(c.toDataURL('image/jpeg', 0.82));
+          } catch (e) { fin(u); }
+        };
+        im.onerror = function () { fin(u); };
+        im.src = u;
+      });
+    }
+    // Los dibujos SVG se convierten antes en imágenes PNG: algunos móviles se quedan colgados al capturar SVG en línea
+    function navRasterSvgs(htmls) {
+      var re = /<svg\b[\s\S]*?<\/svg>/g, mapa = {}, lista = [];
+      htmls.forEach(function (h) { (h.match(re) || []).forEach(function (s) { if (!(s in mapa)) { mapa[s] = ''; lista.push(s); } }); });
+      var dim = function (s, a) { var m = s.match(new RegExp('\\b' + a + '="(\\d+(?:\\.\\d+)?)"')); return m ? parseFloat(m[1]) : 100; };
+      return Promise.all(lista.map(function (s) {
+        return new Promise(function (res) {
+          var w = dim(s, 'width'), h = dim(s, 'height'), x = (s.indexOf('xmlns=') === -1 ? s.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"') : s).replace(/^(<svg[^>]*?)\sstyle="[^"]*"/, '$1');
+          var im = new Image(), hecho = false, fin = function (v) { if (!hecho) { hecho = true; mapa[s] = v; res(); } };
+          setTimeout(function () { fin(''); }, 3000);
+          im.onload = function () {
+            try { var k = w > 300 ? 1.5 : 3, c = document.createElement('canvas'); c.width = Math.round(w * k); c.height = Math.round(h * k);
+              c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); fin(c.toDataURL('image/png')); } catch (e) { fin(''); }
+          };
+          im.onerror = function () { fin(''); };
+          im.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(x);
+        });
+      })).then(function () {
+        return htmls.map(function (h) {
+          return h.replace(re, function (s) {
+            var d = mapa[s]; if (!d) return '';
+            var st = (s.match(/\bstyle="([^"]*)"/) || [])[1] || '';
+            return '<img src="' + d + '" alt="" width="' + dim(s, 'width') + '" height="' + dim(s, 'height') + '" style="' + st + ' display:block;">';
+          });
+        });
+      });
+    }
+    async function crearCatalogoNavidad() {
       var elegidos = _productosCache.filter(function (p) { return _navSel[p.id]; });
       if (!elegidos.length) { toast('Elige al menos un producto para el catálogo.', 'err'); return; }
       navGuardar(); navGuardarCatalogo();
@@ -1978,9 +2026,16 @@
       var precios = $('navPrecios').checked, empresa = _cfg.empresa || 'EL ANCLA';
       var tel = $('navTel').value.trim(), nom = $('navNombre').value.trim(), pie = [nom, tel].filter(Boolean).join(' · ');
       var clara = $('navPortada').value === 'clara';
+      var btnC = document.querySelector('#modalNavidad button[onclick="crearCatalogoNavidad()"]');
+      if (btnC) { btnC.disabled = true; btnC.textContent = '⏳ Preparando fotos…'; }
+      elegidos = await Promise.all(elegidos.map(function (p) {
+        return navMiniatura(p.url_foto).then(function (m) { return Object.assign({}, p, { _mini: m }); });
+      }));
+      if (btnC) { btnC.disabled = false; btnC.textContent = '📄 Crear PDF'; }
       var pags = [navPortada(titulo, empresa, clara)];
       navPaginasProductos(elegidos, titulo, precios, pie).forEach(function (h) { pags.push(h); });
       pags.push(navContraportada(tel, clara));
+      try { pags = await navRasterSvgs(pags); } catch (e) {}
       $('modalNavidad').style.display = 'none';
       _clienteActual = ''; _pdfNombre = 'Catalogo_' + titulo.replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ]+/g, '_') + (precios ? '_con_precios' : '') + '.pdf';
       $('contenedorPaginasA4').innerHTML = pags.join('');
@@ -1989,17 +2044,7 @@
       $('adminBottomNav').style.display = 'none';
       $('vistaDocumento').style.display = 'block';
       window.scrollTo(0, 0);
-      /* se prepara el PDF de antemano: el móvil solo deja compartir si se pulsa justo al momento */
-      _pdfListo = null; _pdfPromesa = null;
-      var tok = _pdfTok = Date.now();
-      setTimeout(function () {
-        if (tok !== _pdfTok) return;
-        _pdfProgreso = function (i, n) { if (tok === _pdfTok) navBotonesPDF('⏳ Preparando ' + i + '/' + n + '…'); };
-        _pdfPromesa = generarPDF();
-        _pdfPromesa.then(function (pdf) { if (tok === _pdfTok) { _pdfListo = { pdf: pdf, nombre: _pdfNombre }; navBotonesPDF(''); } })
-          .catch(function () { if (tok === _pdfTok) { navBotonesPDF(''); _pdfPromesa = null; } })
-          .then(function () { _pdfProgreso = null; });
-      }, 900);
+      prepararPDF();
     }
 
     /* ---------- catálogo de Navidad interactivo (enlace para WhatsApp) ---------- */
@@ -3246,7 +3291,7 @@
         pie();
         var nombre = 'Reparto_' + f + '.pdf', file = new File([pdf.output('blob')], nombre, { type: 'application/pdf' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          try { await navigator.share({ files: [file], title: 'Hoja de reparto' }); } catch (e) { if (!e || e.name !== 'AbortError') throw e; }
+          try { await navigator.share({ files: [file] }); } catch (e) { if (!e || e.name !== 'AbortError') throw e; }
         } else { pdf.save(nombre); toast('Hoja de reparto descargada. Ábrela para imprimirla.'); }
       } catch (e) { toast('No se pudo crear la hoja: ' + errMsg(e), 'err'); }
       finally { btn.disabled = false; btn.textContent = txt; }
@@ -3557,6 +3602,7 @@
       $('adminBottomNav').style.display = 'none';
       $('vistaDocumento').style.display = 'block';
       window.scrollTo(0, 0);
+      prepararPDF();
     }
 
     function cerrarVistaDocumento() { setMode(_mode); }
@@ -3571,7 +3617,7 @@
       });
     }
     async function generarPDF() {
-      try { if (document.fonts && document.fonts.ready) await conTiempo(document.fonts.ready, 2500, 'fuentes'); } catch (e) {}
+      try { if (document.fonts && document.fonts.ready) await conTiempo(document.fonts.ready, 1500, 'fuentes'); } catch (e) {}
       var paginas = document.querySelectorAll('.page-a4');
       if (!paginas || paginas.length === 0) throw new Error('No hay documento abierto.');
       // espera a que carguen todas las fotos antes de hacer la captura (si no, salen en blanco)
@@ -3587,10 +3633,10 @@
         await new Promise(function (r) { setTimeout(r, 30); });
         var rapido = !!_pdfNombre;
         var opc = { scale: rapido ? 1.5 : 2, useCORS: true, scrollY: 0, logging: false }, canvas;
-        try { canvas = await conTiempo(html2canvas(paginas[i], opc), 40000, 'La página ' + (i + 1) + ' tarda demasiado'); }
+        try { canvas = await conTiempo(html2canvas(paginas[i], opc), 15000, 'La página ' + (i + 1) + ' tarda demasiado'); }
         catch (e1) {   // si las fotos dan problemas, se reintenta sin ellas para no quedarse colgado
-          opc.ignoreElements = function (el) { return el.tagName === 'IMG'; };
-          canvas = await conTiempo(html2canvas(paginas[i], opc), 40000, 'No se pudo capturar la página ' + (i + 1));
+          opc.ignoreElements = function (el) { var n = String(el.tagName).toLowerCase(); return n === 'img' || n === 'svg'; };
+          canvas = await conTiempo(html2canvas(paginas[i], opc), 20000, 'No se pudo capturar la página ' + (i + 1));
         }
         pdf.addImage(canvas.toDataURL('image/jpeg', rapido ? 0.85 : 0.92), 'JPEG', 0, 0, 210, 297);
         canvas.width = canvas.height = 0;
@@ -3603,9 +3649,23 @@
       return 'Lista_Precios_' + cli + '.pdf';
     }
 
+    /* El PDF se prepara nada más abrir el documento: así Compartir/Descargar responden al instante
+       (el móvil solo deja abrir el menú de compartir si se pulsa justo al momento). */
+    function prepararPDF() {
+      _pdfListo = null; _pdfPromesa = null;
+      var tok = _pdfTok = Date.now();
+      setTimeout(function () {
+        if (tok !== _pdfTok) return;
+        _pdfProgreso = function (i, n) { if (tok === _pdfTok) navBotonesPDF('⏳ Preparando ' + i + '/' + n + '…'); };
+        var pr = generarPDF(); _pdfPromesa = pr;
+        pr.then(function (pdf) { if (tok === _pdfTok) { _pdfListo = { pdf: pdf, nombre: _pdfNombre }; navBotonesPDF(''); } })
+          .catch(function () { if (tok === _pdfTok) { navBotonesPDF(''); _pdfPromesa = null; } })
+          .then(function () { _pdfProgreso = null; });
+      }, 600);
+    }
     async function obtenerPDF() {
-      if (_pdfNombre && _pdfListo) return _pdfListo.pdf;
-      if (_pdfNombre && _pdfPromesa) { try { return await _pdfPromesa; } catch (e) {} }
+      if (_pdfListo) return _pdfListo.pdf;
+      if (_pdfPromesa) { try { return await _pdfPromesa; } catch (e) {} }
       return await generarPDF();
     }
     async function descargarPDF() {
@@ -3624,7 +3684,7 @@
         pdf = await obtenerPDF();
         var file = new File([pdf.output('blob')], nombrePDF(), { type: 'application/pdf' });
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], title: _pdfNombre ? 'Catálogo de Navidad' : 'Lista de precios' });
+          await navigator.share({ files: [file] });
         } else {
           pdf.save(nombrePDF());
           toast('Tu dispositivo no permite compartir directamente; se ha descargado el PDF.');
