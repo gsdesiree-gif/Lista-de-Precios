@@ -1275,6 +1275,18 @@
     </div>
   </div>
 
+  <div id="modalFicha" class="modal-overlay no-print" onclick="if(event.target===this)cerrarFichaCliente()">
+    <div class="modal-card" style="max-width:560px;">
+      <div style="font-size:11px; font-weight:700; letter-spacing:.12em; color:var(--muted); text-transform:uppercase; margin-bottom:8px;">Ficha de cliente</div>
+      <div id="fichaCont"></div>
+      <div style="display:flex; gap:10px; margin-top:16px; flex-wrap:wrap;">
+        <button class="btn btn-accent" style="flex:1;" onclick="var i=_fichaId; cerrarFichaCliente(); abrirModalCliente(i);">✏️ Editar</button>
+        <button id="btnImprimirFicha2" class="btn btn-logout" style="flex:1;" onclick="imprimirFicha(_fichaId)">🖨️ Imprimir</button>
+        <button class="btn btn-logout" style="flex:1;" onclick="cerrarFichaCliente()">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
   <div class="nav-bar no-print" id="adminBottomNav" style="display:none;">
     <button class="nav-item active" data-tab="tabClientes" onclick="switchTab('tabClientes')"><span class="ni">👥</span><span>Clientes</span></button>
     <button class="nav-item" data-tab="tabCatalogo" onclick="switchTab('tabCatalogo')"><span class="ni">📦</span><span>Productos</span></button>
@@ -3042,6 +3054,39 @@
       toast('Calendario listo: pulsa “Añadir todos”.');
     }
 
+    var _fichaId = 0;
+    function abrirFichaCliente(id) {
+      var c = buscarCliente(id); if (!c) return;
+      _fichaId = id; _cliModalId = id;
+      var fila = function (ico, tit, val) { return val ? '<div style="display:flex; gap:10px; padding:9px 0; border-top:1px solid var(--border,#e5e7eb);"><div style="width:26px; text-align:center;">' + ico + '</div><div style="min-width:0; flex:1;"><div style="font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase;">' + tit + '</div><div style="font-size:15px; word-break:break-word;">' + val + '</div></div></div>' : ''; };
+      var hayTel = !!telWa(c.telefono), dir = [c.direccion, [c.cp, c.poblacion].filter(Boolean).join(' ')].filter(function (x) { return x && String(x).trim(); }).join(', ');
+      var h = '<div style="font-family:Fraunces,Georgia,serif; font-size:24px; font-weight:700; line-height:1.15;">👤 ' + esc(c.nombre) + '</div>';
+      if (c.forma_pago) h += '<div style="margin-top:6px;"><span style="background:#eef5f0; color:#2d4f47; font-size:12px; font-weight:700; padding:3px 10px; border-radius:10px;">💳 ' + esc(c.forma_pago) + '</span></div>';
+      h += '<div class="cli-acciones" style="margin:12px 0 6px;">' +
+        (hayTel ? '<button class="btn btn-sm btn-accent" onclick="llamarCliente(' + id + ')">📞 Llamar</button><button class="btn btn-sm btn-wa" onclick="abrirWhatsApp(' + id + ')">💬 WhatsApp</button>' : '') +
+        (dir ? '<button class="btn btn-sm btn-accent" onclick="irACliente(' + id + ')">📍 Cómo llegar</button>' : '') +
+        '<button class="btn btn-sm btn-accent" onclick="cerrarFichaCliente(); abrirPedido(' + id + ')">🛒 Pedido</button></div>';
+      h += fila('📞', 'Teléfono', c.telefono ? esc(c.telefono) : '') + fila('🙋', 'Persona de contacto', esc(c.contacto || '')) +
+        fila('✉️', 'Email', c.email ? '<a href="mailto:' + esc(c.email) + '">' + esc(c.email) + '</a>' : '') +
+        fila('📍', 'Dirección', esc(dir)) +
+        fila('🚚', 'Días de reparto', esc(diasTxt(c.dias_reparto))) + fila('📞', 'Días de llamada', esc(diasTxt(c.dias_llamada))) +
+        fila('🧾', 'Datos fiscales', esc([c.razon_social, c.cif].filter(Boolean).join(' · '))) +
+        fila('📝', 'Notas', esc(c.notas || ''));
+      var pend = pendienteDe(c.id);
+      if (pend) h += fila('🛒', 'Pedido pendiente', esc('Para ' + fechaLarga(String(pend.fecha_entrega).substring(0, 10)) + ' · ' + totalLineas(pend.lineas || []).toFixed(2) + ' €'));
+      var hab = habitualesDe(c.id);
+      if (hab.length) {
+        h += '<details style="border-top:1px solid var(--border,#e5e7eb); padding-top:9px; margin-top:2px;"><summary style="cursor:pointer; font-weight:700;">📋 Productos habituales (' + hab.length + ')</summary><div style="margin-top:8px;">';
+        hab.forEach(function (x) {
+          var pr = (x.precio !== null && x.precio !== undefined) ? Number(x.precio) : num(x.p.precio);
+          h += '<div style="display:flex; justify-content:space-between; gap:10px; padding:5px 0; font-size:14px;"><span>' + esc(x.p.nombre) + '</span><span style="font-weight:700;">' + pr.toFixed(2) + ' €</span></div>';
+        });
+        h += '</div></details>';
+      }
+      $('fichaCont').innerHTML = h;
+      $('modalFicha').style.display = 'flex';
+    }
+    function cerrarFichaCliente() { $('modalFicha').style.display = 'none'; }
     function irACliente(id) {
       var c = buscarCliente(id); if (!c) return;
       var dir = [c.direccion, c.cp, c.poblacion].filter(function (x) { return x && String(x).trim(); }).join(', ');
@@ -3132,19 +3177,22 @@
         var wa = hayTel ? '<button class="btn btn-wa btn-sm" onclick="abrirWhatsApp(' + id + (esLl ? ', true' : '') + ')">' + (esLl ? '💬 Enviar mensaje' : '💬 WhatsApp') + '</button>' : '';
         var hecha = esLl && _llamadas[id + '|' + fLl];
         var chkLl = esLl ? '<button class="btn btn-sm ' + (hecha ? 'btn-success' : 'btn-logout') + '" style="margin-bottom:6px;" onclick="marcarLlamada(' + id + ')">' + (hecha ? '✅ Llamado' : '⬜ Marcar como llamado') + '</button>' : '';
+        var pin = (c.direccion && String(c.direccion).trim()) ? '<button class="btn btn-sm btn-accent" title="Cómo llegar" onclick="irACliente(' + id + ')">📍</button>' : '';
+        var comoLlegar = (c.direccion && String(c.direccion).trim()) ? '<button class="btn btn-sm btn-accent" onclick="irACliente(' + id + ')">📍 Cómo llegar</button>' : '';
         var tel2 = (c.telefono ? '<div class="product-notes">📞 ' + esc(c.telefono) + '</div>' : '') + (lugar ? '<div class="product-notes">📍 ' + esc(lugar) + '</div>' : '');
         html += '<div class="product-item compact cli-row" style="margin-bottom:8px;' + (hecha ? ' background:#eef5f0;' : '') + '">' +
           '<div style="min-width:0;">' + chkLl + '<div class="product-name">👤 ' + esc(c.nombre) + '</div>' + tel2 + pedTxt + falta + '</div>' +
           '<div class="cli-acciones">' +
-            (hayTel ? llamar + wa : '') +
-            (c.direccion && String(c.direccion).trim() ? '<button class="btn btn-sm btn-accent" onclick="irACliente(' + id + ')">📍 Cómo llegar</button>' : '') +
-            '<button class="btn btn-accent btn-sm" onclick="abrirPedido(' + id + ')">🛒 Pedido</button>' +
+            (esLl ? (hayTel ? llamar + wa : '') + comoLlegar + '<button class="btn btn-accent btn-sm" onclick="abrirPedido(' + id + ')">🛒 Pedido</button>' :
+              '<button class="btn btn-sm btn-logout" onclick="abrirFichaCliente(' + id + ')">👁 Ver cliente</button>' +
+              '<button class="btn btn-accent btn-sm" onclick="abrirPedido(' + id + ')">🛒 Pedido</button>' + pin) +
             '<button class="btn btn-sm btn-logout" onclick="masCli(' + id + ')">⋯ Más</button>' +
           '</div>' +
           '<div class="cli-acciones" id="masCli' + id + '" style="display:none;">' +
+            (!esLl && hayTel ? llamar + wa : '') +
+            (esLl ? '<button class="btn btn-sm btn-logout" onclick="abrirFichaCliente(' + id + ')">👁 Ver cliente</button>' : '') +
             '<button class="btn btn-sm btn-logout" onclick="nuevaListaCliente(' + id + ')">Nueva lista</button>' +
-            '<button class="btn btn-sm btn-logout" onclick="abrirModalCliente(' + id + ', true)">👁 Ver cliente</button>' +
-            '<button class="btn btn-sm btn-logout" onclick="abrirModalCliente(' + id + ')">✏️ Editar</button>' +
+            '<button class="btn btn-sm btn-logout" onclick="abrirModalCliente(' + id + ')">✏️ Editar cliente</button>' +
           '</div></div>';
       }
       cont.innerHTML = html;
