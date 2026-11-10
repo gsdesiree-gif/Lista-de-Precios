@@ -954,6 +954,15 @@
           <button class="cat-filter-btn active" onclick="filtrarClientes('TODOS', this)">Todos</button>
           <button class="cat-filter-btn" onclick="filtrarClientes('LLAMAR', this)">📞 Llamar</button>
           <button class="cat-filter-btn" onclick="filtrarClientes('REPARTIR', this)">🚚 Repartir</button>
+          <button class="cat-filter-btn" onclick="filtrarClientes('SINPEDIR', this)">⏰ Sin pedir</button>
+        </div>
+        <div id="avisoCopia" style="display:none; background:#fff7e0; border:1px solid #e9d28a; border-radius:10px; padding:10px 12px; margin-bottom:10px; font-size:14px;">
+          <span id="avisoCopiaTxt"></span> <button class="btn btn-sm btn-accent" onclick="copiaSeguridad()">💾 Hacer copia ahora</button>
+        </div>
+        <div id="sinPedirWrap" class="toolbar" style="display:none;">
+          <label style="font-size:13px; font-weight:700;">Sin pedir desde hace más de</label>
+          <input type="number" id="diasSinPedir" min="1" max="365" style="max-width:80px;" onchange="cambiarDiasSinPedir(this.value)">
+          <span style="font-size:13px;">días</span>
         </div>
         <div id="selDiaWrap" class="toolbar" style="display:none;">
           <label for="selDiaCli" style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase;">Día:</label>
@@ -1000,7 +1009,7 @@
               <button class="btn btn-sm btn-accent" onclick="crearYAnadir()">Crear y añadir a la lista</button>
             </div></details>
           <button class="btn btn-sm btn-logout" onclick="cancelarEdicionLista()">Cancelar edición</button>
-          <span style="float:right; font-size:11px; color:#999;">versión 62</span>
+          <span style="float:right; font-size:11px; color:#999;">versión 63</span>
         </div>
         <div class="field">
           <label>Nombre del Cliente</label>
@@ -1115,6 +1124,12 @@
           <label for="cfgMarcaAgua" style="margin:0; text-transform:none; font-size:14px; cursor:pointer;">Usar logo como <strong>Marca de Agua centrada</strong>.</label>
         </div>
         <button id="btnGuardarCfg" onclick="guardarConfiguracion()" class="btn btn-accent" style="margin-top:16px;">💾 Guardar Ajustes</button>
+        <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--border,#e5e7eb);">
+          <div class="card-header" style="margin-bottom:8px;">💾 Copia de seguridad</div>
+          <div style="font-size:13px; color:var(--muted); margin-bottom:8px;">Descarga un archivo con todos tus clientes, productos, listas, pedidos y caja. Guárdalo en un sitio seguro (iCloud, correo…). Las fotos siguen en Supabase; la copia guarda sus enlaces.</div>
+          <button data-copia="1" class="btn btn-accent" onclick="copiaSeguridad()">💾 Descargar copia de seguridad</button>
+          <div id="copiaUltima" style="font-size:12px; color:var(--muted); margin-top:6px;"></div>
+        </div>
       </div>
 
       <div class="card">
@@ -1220,7 +1235,18 @@
       <div id="pedLineas"></div>
       <div class="field" style="margin-top:12px;"><label>➕ Añadir otro producto</label>
         <input type="search" id="pedBuscar" placeholder="Buscar producto..." oninput="pintarBuscaPedido()">
-        <div id="pedResultados"></div></div>
+        <div id="pedResultados"></div>
+        <details style="margin-top:8px;"><summary style="cursor:pointer; font-weight:700; font-size:13px;">🆕 ¿No está en tu catálogo? Crear producto nuevo</summary>
+          <div style="margin-top:8px; display:flex; flex-direction:column; gap:6px;">
+            <input type="text" id="pedNuevoNom" placeholder="Nombre del producto" autocomplete="off">
+            <select id="pedNuevoCat"></select>
+            <input type="number" step="0.01" inputmode="decimal" id="pedNuevoPre" placeholder="Precio € (para este cliente)">
+            <input type="text" id="pedNuevoNotas" placeholder="Comentario (opcional)" autocomplete="off">
+            <label style="font-size:12px; font-weight:700; color:var(--muted);">📷 Foto (opcional)</label>
+            <input type="file" id="pedNuevoArchivo" accept="image/*" onchange="procesarImagen(this, 'pedNuevoFoto')">
+            <input type="hidden" id="pedNuevoFoto"><div id="previewPedNuevo"></div>
+            <button class="btn btn-sm btn-accent" onclick="pedCrearProducto()">Crear y añadir al pedido</button>
+          </div></details></div>
       <div class="field"><label>Nota</label><input type="text" id="pedNota" placeholder="Ej: Entregar por la puerta de atrás"></div>
       <div id="pedTotal" style="font-weight:700; text-align:right; margin:8px 0;"></div>
       <div style="display: flex; gap: 10px;">
@@ -1576,7 +1602,7 @@
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(0, 0, width, height);
           ctx.drawImage(img, 0, 0, width, height);
-          var esProducto = (targetHiddenId === 'prodFotoBase64' || targetHiddenId === 'editProdFotoBase64' || targetHiddenId === 'editExtraFoto' || targetHiddenId === 'nuevoFotoLista');
+          var esProducto = (targetHiddenId === 'prodFotoBase64' || targetHiddenId === 'editProdFotoBase64' || targetHiddenId === 'editExtraFoto' || targetHiddenId === 'nuevoFotoLista' || targetHiddenId === 'pedNuevoFoto');
           function mostrar(valor) {
             if (targetHiddenId === 'editExtraFoto') { _editFotos.push({ url: valor, nota: '' }); renderEditFotos(); input.value = ''; return; }
             $(targetHiddenId).value = valor;
@@ -1585,6 +1611,7 @@
             else if (targetHiddenId === 'editProdFotoBase64') $('previewEditFotoContainer').innerHTML = prev;
             else if (targetHiddenId === 'prodFotoBase64') $('previewNuevaFoto').innerHTML = prev;
             else if (targetHiddenId === 'nuevoFotoLista') $('previewNuevoLista').innerHTML = prev;
+            else if (targetHiddenId === 'pedNuevoFoto') $('previewPedNuevo').innerHTML = prev;
           }
           // El logo se queda dentro de los ajustes; las fotos de producto van al almacenamiento rápido
           if (!esProducto) { mostrar(canvas.toDataURL('image/jpeg', 0.8)); return; }
@@ -3214,6 +3241,63 @@
       if (!dir) { toast('Escribe primero la calle.', 'err'); return; }
       window.open('https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(dir.trim()), '_blank');
     }
+    var _diasSinPedir = 21;
+    try { _diasSinPedir = parseInt(localStorage.getItem('elancla_dias_sin_pedir'), 10) || 21; } catch (e) {}
+    function cambiarDiasSinPedir(v) {
+      v = parseInt(v, 10); if (!(v > 0)) return;
+      _diasSinPedir = v; try { localStorage.setItem('elancla_dias_sin_pedir', String(v)); } catch (e) {}
+      renderizarClientes();
+    }
+    // Días desde el último pedido del cliente (null si aún no hay datos de pedidos)
+    function infoSinPedir(c) {
+      if (!_pedidosOk) return null;
+      var hoy = hoyLocal(), u = '';
+      for (var i = 0; i < _pedidos.length; i++) {
+        if (_pedidos[i].cliente_id === c.id) { var f = String(_pedidos[i].fecha_entrega).substring(0, 10); if (f > u) u = f; }
+      }
+      if (!u) return null;   // nunca ha pedido (cliente nuevo): no se marca
+      if (u >= hoy) return { dias: 0, ultima: u };
+      return { dias: Math.round((new Date(hoy) - new Date(u)) / 86400000), ultima: u };
+    }
+
+    /* ---------- copia de seguridad ---------- */
+    var TABLAS_COPIA = ['productos', 'clientes', 'precios_cliente', 'listas_generadas', 'pedidos', 'caja_registros', 'catalogos_navidad', 'llamadas_hechas', 'configuracion'];
+    function ultimaCopia() { try { return localStorage.getItem('elancla_ultima_copia') || ''; } catch (e) { return ''; } }
+    function renderAvisoCopia() {
+      var u = ultimaCopia(), el = $('avisoCopia'); if (!el) return;
+      var d = u ? Math.round((new Date(hoyLocal()) - new Date(u)) / 86400000) : 999;
+      el.style.display = d >= 7 ? 'block' : 'none';
+      $('avisoCopiaTxt').textContent = u ? '💾 Hace ' + d + ' días que no haces copia de seguridad.' : '💾 Aún no has hecho ninguna copia de seguridad en este dispositivo.';
+      var s = $('copiaUltima'); if (s) s.textContent = u ? 'Última copia en este dispositivo: ' + fechaLarga(u) : 'Todavía no has hecho ninguna copia en este dispositivo.';
+    }
+    async function copiaSeguridad() {
+      var btns = document.querySelectorAll('[data-copia]');
+      btns.forEach(function (b) { b.disabled = true; });
+      toast('Preparando copia…');
+      try {
+        var out = { app: 'EL ANCLA', fecha: new Date().toISOString(), tablas: {} }, falla = [];
+        for (var k = 0; k < TABLAS_COPIA.length; k++) {
+          var tb = TABLAS_COPIA[k], filas = [], desde = 0, ok = true;
+          while (true) {
+            var r = await _sb.from(tb).select('*').range(desde, desde + 999);
+            if (r.error) { ok = false; break; }
+            var d = r.data || []; filas = filas.concat(d);
+            if (d.length < 1000) break;
+            desde += 1000;
+          }
+          if (ok) out.tablas[tb] = filas; else falla.push(tb);
+        }
+        var blob = new Blob([JSON.stringify(out)], { type: 'application/json' }), url = URL.createObjectURL(blob);
+        var a = document.createElement('a'); a.href = url; a.download = 'Copia_El_Ancla_' + hoyLocal() + '.json';
+        document.body.appendChild(a); a.click();
+        setTimeout(function () { a.remove(); URL.revokeObjectURL(url); }, 5000);
+        try { localStorage.setItem('elancla_ultima_copia', hoyLocal()); } catch (e) {}
+        renderAvisoCopia();
+        var n = Object.keys(out.tablas).reduce(function (s, x) { return s + out.tablas[x].length; }, 0);
+        toast('Copia descargada (' + n + ' registros).' + (falla.length ? ' No se pudo copiar: ' + falla.join(', ') : ''), falla.length ? 'err' : 'ok');
+      } catch (e) { toast('No se pudo hacer la copia: ' + errMsg(e), 'err'); }
+      finally { btns.forEach(function (b) { b.disabled = false; }); }
+    }
     function masCli(id) { var e = $('masCli' + id); if (e) e.style.display = e.style.display === 'none' ? 'flex' : 'none'; }
 
     function filtrarClientes(tipo, btn) {
@@ -3241,15 +3325,21 @@
       var nLla = base.filter(function (c) { return tieneDia(c.dias_llamada, _diaVer); }).length;
       var nRep = base.filter(function (c) { return tieneDia(c.dias_reparto, _diaVer); }).length;
       var bs = document.querySelectorAll('#barraCli .cat-filter-btn');
-      if (bs.length === 3) {
+      if (bs.length >= 3) {
+        bs[3].textContent = '⏰ Sin pedir (' + base.filter(function (c) { var i = infoSinPedir(c); return i && i.dias >= _diasSinPedir; }).length + ')';
         bs[1].textContent = '📞 Llamar' + (_diasOk ? ' (' + nLla + ')' : '');
         bs[2].textContent = '🚚 Repartir' + (_diasOk ? ' (' + nRep + ')' : '');
       }
-      $('selDiaWrap').style.display = (_filtroCli === 'TODOS' || !_diasOk) ? 'none' : 'flex';
+      $('selDiaWrap').style.display = (_filtroCli === 'TODOS' || _filtroCli === 'SINPEDIR' || !_diasOk) ? 'none' : 'flex';
+      $('sinPedirWrap').style.display = _filtroCli === 'SINPEDIR' ? 'flex' : 'none';
+      if (_filtroCli === 'SINPEDIR') $('diasSinPedir').value = _diasSinPedir;
+      renderAvisoCopia();
 
       var lista = base;
       if (_filtroCli === 'LLAMAR') lista = base.filter(function (c) { return tieneDia(c.dias_llamada, _diaVer); });
       if (_filtroCli === 'REPARTIR') lista = base.filter(function (c) { return tieneDia(c.dias_reparto, _diaVer); });
+      var sinP = (_filtroCli === 'SINPEDIR');
+      if (sinP) lista = base.filter(function (c) { var i = infoSinPedir(c); return i && i.dias >= _diasSinPedir; }).sort(function (a, b) { return infoSinPedir(b).dias - infoSinPedir(a).dias; });
       var esLl = (_filtroCli === 'LLAMAR' && _diasOk), fLl = fechaDelDia(_diaVer);
       $('llamAcc').style.display = esLl ? 'block' : 'none';
       if (esLl) {
@@ -3261,8 +3351,9 @@
       }
       var etiqueta = (_filtroCli === 'LLAMAR') ? ' para llamar el ' + DIAS_LARGO[_diaVer].toLowerCase()
                    : (_filtroCli === 'REPARTIR') ? ' para repartir el ' + DIAS_LARGO[_diaVer].toLowerCase() : '';
+      if (sinP) etiqueta = ' sin pedir desde hace ' + _diasSinPedir + ' días o más';
       $('contCli').textContent = lista.length + (_filtroCli === 'TODOS' ? ' de ' + _clientes.length + ' clientes' : ' cliente' + (lista.length === 1 ? '' : 's') + etiqueta);
-      if (_filtroCli !== 'TODOS' && !_diasOk) {
+      if (_filtroCli !== 'TODOS' && _filtroCli !== 'SINPEDIR' && !_diasOk) {
         cont.innerHTML = '<div style="color:var(--muted); text-align:center; padding:16px;">Para usar los días de reparto y llamada, pega el script <strong>clientes-extra.sql</strong> en el SQL Editor de Supabase.</div>';
         return;
       }
@@ -3288,25 +3379,28 @@
         var dias = ((dr || dl) ? '<div class="product-notes">' + (dr ? '🚚 ' + esc(dr) : '') + (dr && dl ? ' · ' : '') + (dl ? '📞 llamar ' + esc(dl) : '') + '</div>' : '') + pago;
         var pend = pendienteDe(c.id);
         var pedTxt = pend ? '<div class="product-notes" style="color:var(--accent); font-weight:600;">🛒 Pedido para ' + esc(fechaLarga(String(pend.fecha_entrega).substring(0, 10))) + ' · ' + totalLineas(pend.lineas || []).toFixed(2) + ' €</div>' : '';
+        var isp = infoSinPedir(c);
+        var spTxt = (isp && isp.dias >= _diasSinPedir) ? '<div class="product-notes" style="color:#b45309; font-weight:700;">⏰ Hace ' + isp.dias + ' días sin pedir · último pedido ' + esc(fechaLarga(isp.ultima)) + '</div>' : '';
+        var acc = esLl || sinP;
         var hayTel = !!telWa(c.telefono);
         var llamar = hayTel ? '<button class="btn btn-sm btn-accent" onclick="llamarCliente(' + id + ')">📞 Llamar</button>' : '';
-        var wa = hayTel ? '<button class="btn btn-wa btn-sm" onclick="abrirWhatsApp(' + id + (esLl ? ', true' : '') + ')">' + (esLl ? '💬 Enviar mensaje' : '💬 WhatsApp') + '</button>' : '';
+        var wa = hayTel ? '<button class="btn btn-wa btn-sm" onclick="abrirWhatsApp(' + id + (esLl ? ', true' : (sinP ? ', true, true' : '')) + ')">' + (acc ? '💬 Enviar mensaje' : '💬 WhatsApp') + '</button>' : '';
         var hecha = esLl && _llamadas[id + '|' + fLl];
         var chkLl = esLl ? '<button class="btn btn-sm ' + (hecha ? 'btn-success' : 'btn-logout') + '" style="margin-bottom:6px;" onclick="marcarLlamada(' + id + ')">' + (hecha ? '✅ Llamado' : '⬜ Marcar como llamado') + '</button>' : '';
         var pin = (c.direccion && String(c.direccion).trim()) ? '<button class="btn btn-sm btn-accent" title="Cómo llegar" onclick="irACliente(' + id + ')">📍</button>' : '';
         var comoLlegar = (c.direccion && String(c.direccion).trim()) ? '<button class="btn btn-sm btn-accent" onclick="irACliente(' + id + ')">📍 Cómo llegar</button>' : '';
         var tel2 = (c.telefono ? '<div class="product-notes">📞 ' + esc(c.telefono) + '</div>' : '') + (lugar ? '<div class="product-notes">📍 ' + esc(lugar) + '</div>' : '');
         html += '<div class="product-item compact cli-row" style="margin-bottom:8px;' + (hecha ? ' background:#eef5f0;' : '') + '">' +
-          '<div style="min-width:0;">' + chkLl + '<div class="product-name">👤 ' + esc(c.nombre) + '</div>' + tel2 + pedTxt + falta + '</div>' +
+          '<div style="min-width:0;">' + chkLl + '<div class="product-name">👤 ' + esc(c.nombre) + '</div>' + tel2 + spTxt + pedTxt + falta + '</div>' +
           '<div class="cli-acciones">' +
-            (esLl ? (hayTel ? llamar + wa : '') + comoLlegar + '<button class="btn btn-accent btn-sm" onclick="abrirPedido(' + id + ')">🛒 Pedido</button>' :
+            (acc ? (hayTel ? llamar + wa : '') + comoLlegar + '<button class="btn btn-accent btn-sm" onclick="abrirPedido(' + id + ')">🛒 Pedido</button>' :
               '<button class="btn btn-sm btn-logout" onclick="abrirFichaCliente(' + id + ')">👁 Ver cliente</button>' +
               '<button class="btn btn-accent btn-sm" onclick="abrirPedido(' + id + ')">🛒 Pedido</button>' + pin) +
             '<button class="btn btn-sm btn-logout" onclick="masCli(' + id + ')">⋯ Más</button>' +
           '</div>' +
           '<div class="cli-acciones" id="masCli' + id + '" style="display:none;">' +
-            (!esLl && hayTel ? llamar + wa : '') +
-            (esLl ? '<button class="btn btn-sm btn-logout" onclick="abrirFichaCliente(' + id + ')">👁 Ver cliente</button>' : '') +
+            (!acc && hayTel ? llamar + wa : '') +
+            (acc ? '<button class="btn btn-sm btn-logout" onclick="abrirFichaCliente(' + id + ')">👁 Ver cliente</button>' : '') +
             '<button class="btn btn-sm btn-logout" onclick="nuevaListaCliente(' + id + ')">Nueva lista</button>' +
             '<button class="btn btn-sm btn-logout" onclick="abrirModalCliente(' + id + ')">✏️ Editar cliente</button>' +
           '</div></div>';
@@ -3547,6 +3641,7 @@
       $('pedFecha').value = ex ? String(ex.fecha_entrega).substring(0, 10) : fechaEntregaSugerida(c);
       $('pedNota').value = ex ? (ex.nota || '') : '';
       $('pedBuscar').value = ''; $('pedResultados').innerHTML = '';
+      $('pedNuevoCat').innerHTML = _categoriasOrden.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('');
       $('pedPegar').value = ''; $('pedPegarRes').innerHTML = ''; $('pedPegarBox').style.display = 'none';
       $('btnBorrarPedido').style.display = ex ? '' : 'none';
       var ult = ultimoPedidoDe(cid, ex ? ex.id : 0);
@@ -3601,6 +3696,21 @@
         html += '<button class="btn btn-sm btn-logout" style="width:100%; text-align:left; margin-top:4px;" onclick="pedAnadir(' + Number(p.id) + ')">➕ ' + esc(p.nombre) + ' <span style="color:var(--muted)">· ' + esc(p.categoria || 'Varios') + '</span>' + '</button>';
       }
       $('pedResultados').innerHTML = html || '<div style="color:var(--muted); font-size:13px; padding:4px;">No hay más productos con ese nombre.</div>';
+    }
+    async function pedCrearProducto() {
+      if (_subiendo > 0) { toast('Espera a que termine de subir la foto.', 'err'); return; }
+      var nombre = $('pedNuevoNom').value.trim(), precio = parseFloat($('pedNuevoPre').value);
+      if (!nombre || isNaN(precio) || precio < 0) { toast('Escribe el nombre y el precio.', 'err'); return; }
+      try {
+        var cat = $('pedNuevoCat').value || 'Varios';
+        var d = chk(await _sb.from('productos').insert([{ categoria: cat, nombre: nombre, precio: precio, notas: $('pedNuevoNotas').value.trim(), url_foto: $('pedNuevoFoto').value }]).select());
+        await cargarProductos();
+        var nuevo = d && d[0];
+        if (nuevo) _pedLineas[nuevo.id] = { id: nuevo.id, nombre: nombre, categoria: cat, cantidad: 1, precio: precio, unidad: 'kg' };
+        $('pedNuevoNom').value = ''; $('pedNuevoPre').value = ''; $('pedNuevoNotas').value = ''; $('pedNuevoFoto').value = ''; $('pedNuevoArchivo').value = ''; $('previewPedNuevo').innerHTML = '';
+        pintarPedido();
+        toast('Producto creado y añadido al pedido.');
+      } catch (e) { toast('No se pudo crear: ' + errMsg(e), 'err'); }
     }
     function pedAnadir(pid) {
       var p = buscarEnCache(pid);
@@ -3757,7 +3867,7 @@
     }
 
     var MSG_LLAMADA = 'Hola {nombre}, buenos días. Soy Kike, de El Ancla. ¿Necesitáis algo para esta semana?';
-    function abrirWhatsApp(id, conMensaje) {
+    function abrirWhatsApp(id, conMensaje, noMarcar) {
       var c = buscarCliente(id);
       if (!c || !telWa(c.telefono)) return;
       var url = 'https://wa.me/' + telWa(c.telefono);
@@ -3765,7 +3875,7 @@
         var m = String(c.msg_whatsapp || '').trim() || ($('msgLlamada') && $('msgLlamada').value.trim()) || MSG_LLAMADA;
         url += '?text=' + encodeURIComponent(m.replace(/\{nombre\}/gi, String(c.nombre || '').trim()));
         window.open(url, '_blank');
-        if (!_llamadas[id + '|' + fechaDelDia(_diaVer)]) marcarLlamada(id);
+        if (!noMarcar && !_llamadas[id + '|' + fechaDelDia(_diaVer)]) marcarLlamada(id);
         return;
       }
       window.open(url, '_blank');
