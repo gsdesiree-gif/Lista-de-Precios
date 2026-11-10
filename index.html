@@ -632,6 +632,8 @@
     .sticky-action { bottom: calc(76px + env(safe-area-inset-bottom)); }
     .login-screen { min-height: 100vh; min-height: 100dvh; }
     .modal-overlay { padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)); overscroll-behavior: contain; }
+    .btn-x-cerrar { position: sticky; top: 0; float: right; z-index: 20; width: 36px; height: 36px; margin: -4px -4px 0 8px; border-radius: 50%; border: none; background: rgba(0,0,0,.08); color: #444; font-size: 17px; line-height: 36px; padding: 0; cursor: pointer; }
+    html[data-modo="oscuro"] .btn-x-cerrar { background: rgba(255,255,255,.14); color: #eee; }
     .modal-card { max-height: 90vh; max-height: 90dvh; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
     input[type="date"] { min-height: 46px; -webkit-appearance: none; appearance: none; text-align: left; }
     @media (max-width: 767px) {
@@ -1115,7 +1117,7 @@
               <button class="btn btn-sm btn-accent" onclick="crearYAnadir()">Crear y añadir a la lista</button>
             </div></details>
           <button class="btn btn-sm btn-logout" onclick="cancelarEdicionLista()">Cancelar edición</button>
-          <span style="float:right; font-size:11px; color:#999;">versión 69</span>
+          <span style="float:right; font-size:11px; color:#999;">versión 70</span>
         </div>
         <div class="field">
           <label>Nombre del Cliente</label>
@@ -1442,7 +1444,7 @@
         <button class="btn btn-sm btn-accent" onclick="prBuscar('trip')">⭐ TripAdvisor</button>
       </div>
       <div class="field"><label>📋 Pegar lo que has copiado de Google</label>
-        <textarea id="prPegar" rows="3" autocomplete="off" placeholder="Copia el texto de la ficha del local en Google (teléfono, dirección, web…) y pégalo aquí"></textarea>
+        <textarea id="prPegar" rows="3" autocomplete="off" style="width:100%; box-sizing:border-box; font:inherit; font-size:15px; padding:10px 12px; border:1.5px solid var(--border); border-radius:12px; background:var(--card); color:var(--text); resize:vertical;" placeholder="Copia el texto de la ficha del local en Google (teléfono, dirección, web…) y pégalo aquí"></textarea>
         <button class="btn btn-sm btn-accent" style="margin-top:6px;" onclick="prRellenar()">✨ Rellenar campos con lo pegado</button></div>
       <div class="field"><label>Tipo</label><select id="prTipo"><option>Restaurante</option><option>Bar</option><option>Hotel</option><option>Catering</option><option>Cafetería</option><option>Otro</option></select></div>
       <div class="field"><label>Población</label><input type="text" id="prPoblacion" autocomplete="off"></div>
@@ -3516,6 +3518,15 @@
       if (tipo === 'trip') return 'https://www.google.com/search?q=' + encodeURIComponent('site:tripadvisor.es ' + nombre + ' ' + (pob || prZona()));
       return 'https://www.google.com/search?q=' + encodeURIComponent(nombre + ' ' + (pob || prZona()) + ' teléfono contacto');
     }
+    function ponerBotonesCerrar() {
+      var m = { modalEditarProducto: cerrarModalEditar, modalNavidad: cerrarCatalogoNavidad, modalPedido: cerrarPedido, modalReparto: cerrarReparto, modalCliente: cerrarModalCliente, modalProsp: cerrarProspecto, modalFicha: cerrarFichaCliente };
+      Object.keys(m).forEach(function (id) {
+        var ov = $(id); if (!ov) return; var card = ov.querySelector('.modal-card'); if (!card || card.querySelector('.btn-x-cerrar')) return;
+        var b = document.createElement('button'); b.type = 'button'; b.className = 'btn-x-cerrar'; b.setAttribute('aria-label', 'Cerrar'); b.textContent = '✕';
+        b.onclick = function () { m[id](); }; card.insertBefore(b, card.firstChild);
+      });
+    }
+    ponerBotonesCerrar();
     function prTokens(s) {
       return String(s || '').split(/[\s,;]+/).filter(Boolean).map(function (x) {
         var ig = /instagram\.com\/([\w.]+)/i.exec(x);
@@ -3538,10 +3549,15 @@
       var em = /[\w.+-]+@[\w-]+(\.[\w-]+)+/.exec(tx); poner('prEmail', em ? em[0] : '', 'email');
       var tel = /(?:\+34[\s.-]?)?[6-9]\d{2}[\s.-]?\d{2,3}[\s.-]?\d{2,3}[\s.-]?\d{0,2}/.exec(tx.replace(/\d{4}\s*[A-Za-zÁ-ú]{3,}/g, ' '));
       if (tel) { var d = tel[0].replace(/[^\d+]/g, ''); if (d.replace('+34', '').length === 9) poner('prTelefono', tel[0].trim(), 'teléfono'); }
-      var dir = null; tx.split(/\n/).forEach(function (l) {
-        l = l.replace(/^\s*(Dirección|Direccion|Address)\s*:?\s*/i, '').trim();
-        if (!dir && /^(C\/|C\.|Calle|Cl\.|Av\.?|Avda\.?|Avenida|Plaza|Pza\.?|Paseo|Camino|Ctra\.?|Carretera|Ronda|Travesía|Glorieta)\b/i.test(l) && l.length < 120) dir = l;
-      });
+      var dir = null, ls = tx.split(/\n/).map(function (l) { return l.trim(); }), VIA = /^(C\/|C\.|C\s|Calle|Cl\.|Av\.?|Avda\.?|Avenida|Plaza|Pza\.?|Pl\.|Paseo|Pº|P\.º|Camino|Cmno\.?|Ctra\.?|Carretera|Ronda|Travesía|Glorieta|Barriada|Urb\.?|Polígono|Pol\.)/i;
+      for (var k = 0; k < ls.length && !dir; k++) {
+        var m = /^(Dirección|Direccion|Address|Ubicación)\s*:?\s*(.*)$/i.exec(ls[k]);
+        if (m) { var v = m[2] || ls[k + 1] || ''; if (v && v.length < 160) dir = v; }
+      }
+      for (var k2 = 0; k2 < ls.length && !dir; k2++) {
+        var l2 = ls[k2];
+        if (l2.length < 160 && (VIA.test(l2) || (/\b\d{5}\b/.test(l2) && /,/.test(l2) && !/@|https?:/.test(l2)))) dir = l2;
+      }
       poner('prDireccion', dir, 'dirección');
       var tk = prTokens(tx.replace(/[()]/g, ' ')).filter(function (k) { return !/google\.|goo\.gl|gstatic|tripadvisor|facebook\.com\/sharer/i.test(k.u) && !/@/.test(k.l.replace(/^@/, '')); });
       var ws = tk.filter(function (k) { return !/^[\w.+-]+@/.test(k.l) && !/^\d/.test(k.l); }).map(function (k) { return k.l; });
