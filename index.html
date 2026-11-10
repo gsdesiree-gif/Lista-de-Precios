@@ -1009,7 +1009,7 @@
               <button class="btn btn-sm btn-accent" onclick="crearYAnadir()">Crear y añadir a la lista</button>
             </div></details>
           <button class="btn btn-sm btn-logout" onclick="cancelarEdicionLista()">Cancelar edición</button>
-          <span style="float:right; font-size:11px; color:#999;">versión 63</span>
+          <span style="float:right; font-size:11px; color:#999;">versión 64</span>
         </div>
         <div class="field">
           <label>Nombre del Cliente</label>
@@ -3098,6 +3098,7 @@
       await cargarHabituales();
       await cargarPedidos();
       await cargarLlamadas();
+      await cargarUltimaCopia();
       poblarClientes();
       renderizarClientes();
       if (_historico.length) renderizarHistorico();
@@ -3262,13 +3263,25 @@
 
     /* ---------- copia de seguridad ---------- */
     var TABLAS_COPIA = ['productos', 'clientes', 'precios_cliente', 'listas_generadas', 'pedidos', 'caja_registros', 'catalogos_navidad', 'llamadas_hechas', 'configuracion'];
-    function ultimaCopia() { try { return localStorage.getItem('elancla_ultima_copia') || ''; } catch (e) { return ''; } }
+    var _copiaNube = null;   // fecha (AAAA-MM-DD) de la última copia, guardada en la nube; null = tabla no preparada
+    function ultimaCopia() {
+      if (_copiaNube !== null) return _copiaNube;
+      try { return localStorage.getItem('elancla_ultima_copia') || ''; } catch (e) { return ''; }
+    }
+    async function cargarUltimaCopia() {
+      try {
+        var r = chk(await _sb.from('copias_seguridad').select('fecha').order('fecha', { ascending: false }).limit(1)) || [];
+        _copiaNube = r.length ? fechaLocalDe(r[0].fecha) : '';
+      } catch (e) { _copiaNube = null; }
+      renderAvisoCopia();
+    }
+    function fechaLocalDe(iso) { var d = new Date(iso); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
     function renderAvisoCopia() {
       var u = ultimaCopia(), el = $('avisoCopia'); if (!el) return;
       var d = u ? Math.round((new Date(hoyLocal()) - new Date(u)) / 86400000) : 999;
       el.style.display = d >= 7 ? 'block' : 'none';
-      $('avisoCopiaTxt').textContent = u ? '💾 Hace ' + d + ' días que no haces copia de seguridad.' : '💾 Aún no has hecho ninguna copia de seguridad en este dispositivo.';
-      var s = $('copiaUltima'); if (s) s.textContent = u ? 'Última copia en este dispositivo: ' + fechaLarga(u) : 'Todavía no has hecho ninguna copia en este dispositivo.';
+      $('avisoCopiaTxt').textContent = u ? '💾 Hace ' + d + ' días que no haces copia de seguridad.' : '💾 Aún no has hecho ninguna copia de seguridad.';
+      var s = $('copiaUltima'); if (s) s.textContent = u ? 'Última copia: ' + fechaLarga(u) + (_copiaNube === null ? ' (solo en este dispositivo)' : '') : 'Todavía no has hecho ninguna copia.';
     }
     async function copiaSeguridad() {
       var btns = document.querySelectorAll('[data-copia]');
@@ -3292,6 +3305,7 @@
         document.body.appendChild(a); a.click();
         setTimeout(function () { a.remove(); URL.revokeObjectURL(url); }, 5000);
         try { localStorage.setItem('elancla_ultima_copia', hoyLocal()); } catch (e) {}
+        if (_copiaNube !== null) { try { chk(await _sb.from('copias_seguridad').insert([{}])); _copiaNube = hoyLocal(); } catch (e) { toast('La copia se descargó, pero no se pudo anotar la fecha en la nube.', 'err'); } }
         renderAvisoCopia();
         var n = Object.keys(out.tablas).reduce(function (s, x) { return s + out.tablas[x].length; }, 0);
         toast('Copia descargada (' + n + ' registros).' + (falla.length ? ' No se pudo copiar: ' + falla.join(', ') : ''), falla.length ? 'err' : 'ok');
