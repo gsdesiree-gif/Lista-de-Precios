@@ -1224,7 +1224,6 @@
       <input type="hidden" id="cliId">
       <div class="field"><label>Nombre</label><input type="text" id="cliNombre" placeholder="Ej: Restaurante El Faro"></div>
       <div class="field"><label>Teléfono / WhatsApp</label><input type="text" id="cliTelefono" inputmode="tel" placeholder="Ej: 600 000 000"></div>
-      <div class="field"><label>Dirección</label><input type="text" id="cliDireccion" placeholder="Opcional"></div>
       <div id="bloqueFicha">
         <details class="cat-block" id="detFicha" style="margin-bottom:12px;">
           <summary>🧾 Datos de contacto y fiscales</summary>
@@ -1233,6 +1232,8 @@
             <div class="field"><label>Email</label><input type="email" id="cliEmail" inputmode="email" placeholder="Opcional"></div>
             <div class="field"><label>Razón social</label><input type="text" id="cliRazon" placeholder="Ej: Hostelería El Faro S.L."></div>
             <div class="field"><label>CIF / NIF</label><input type="text" id="cliCif" autocapitalize="characters" placeholder="Ej: B12345678"></div>
+            <div class="field"><label>Calle y número</label><input type="text" id="cliDireccion" placeholder="Ej: C/ Mar 12, local 2 (opcional)"></div>
+            <button type="button" class="btn btn-sm btn-accent" style="margin-bottom:10px;" onclick="irADireccionModal()">📍 Probar en Google Maps</button>
             <div class="field"><label>Población</label><input type="text" id="cliPoblacion"></div>
             <div class="field"><label>Código postal</label><input type="text" id="cliCp" inputmode="numeric"></div>
           </div>
@@ -3041,6 +3042,17 @@
       toast('Calendario listo: pulsa “Añadir todos”.');
     }
 
+    function irACliente(id) {
+      var c = buscarCliente(id); if (!c) return;
+      var dir = [c.direccion, c.cp, c.poblacion].filter(function (x) { return x && String(x).trim(); }).join(', ');
+      if (!dir) { toast('Este cliente no tiene dirección.', 'err'); return; }
+      window.open('https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(dir), '_blank');
+    }
+    function irADireccionModal() {
+      var dir = [$('cliDireccion').value, $('cliCp').value, $('cliPoblacion').value].filter(function (x) { return x && x.trim(); }).join(', ');
+      if (!dir) { toast('Escribe primero la calle.', 'err'); return; }
+      window.open('https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(dir.trim()), '_blank');
+    }
     function masCli(id) { var e = $('masCli' + id); if (e) e.style.display = e.style.display === 'none' ? 'flex' : 'none'; }
 
     function filtrarClientes(tipo, btn) {
@@ -3125,6 +3137,7 @@
           '<div style="min-width:0;">' + chkLl + '<div class="product-name">👤 ' + esc(c.nombre) + '</div>' + tel2 + pedTxt + falta + '</div>' +
           '<div class="cli-acciones">' +
             (hayTel ? llamar + wa : '') +
+            (c.direccion && String(c.direccion).trim() ? '<button class="btn btn-sm btn-accent" onclick="irACliente(' + id + ')">📍 Cómo llegar</button>' : '') +
             '<button class="btn btn-accent btn-sm" onclick="abrirPedido(' + id + ')">🛒 Pedido</button>' +
             '<button class="btn btn-sm btn-logout" onclick="masCli(' + id + ')">⋯ Más</button>' +
           '</div>' +
@@ -3633,6 +3646,7 @@
       $('cliPago').value = c ? (c.forma_pago || '') : '';
       var campos = { cliContacto: 'contacto', cliEmail: 'email', cliRazon: 'razon_social', cliCif: 'cif', cliPoblacion: 'poblacion', cliCp: 'cp' }, hayDatos = false;
       for (var idc in campos) { var v = c ? (c[campos[idc]] || '') : ''; $(idc).value = v; if (v) hayDatos = true; }
+      if (c && c.direccion) hayDatos = true;
       $('detFicha').open = hayDatos;
       $('bloqueFicha').style.display = _diasOk ? '' : 'none';
       $('bloqueDias').style.display = _diasOk ? '' : 'none';
