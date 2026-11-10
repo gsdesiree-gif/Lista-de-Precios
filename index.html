@@ -1115,7 +1115,7 @@
               <button class="btn btn-sm btn-accent" onclick="crearYAnadir()">Crear y añadir a la lista</button>
             </div></details>
           <button class="btn btn-sm btn-logout" onclick="cancelarEdicionLista()">Cancelar edición</button>
-          <span style="float:right; font-size:11px; color:#999;">versión 68</span>
+          <span style="float:right; font-size:11px; color:#999;">versión 69</span>
         </div>
         <div class="field">
           <label>Nombre del Cliente</label>
@@ -1441,12 +1441,15 @@
         <button class="btn btn-sm btn-accent" onclick="prBuscar('insta')">📷 Instagram</button>
         <button class="btn btn-sm btn-accent" onclick="prBuscar('trip')">⭐ TripAdvisor</button>
       </div>
+      <div class="field"><label>📋 Pegar lo que has copiado de Google</label>
+        <textarea id="prPegar" rows="3" autocomplete="off" placeholder="Copia el texto de la ficha del local en Google (teléfono, dirección, web…) y pégalo aquí"></textarea>
+        <button class="btn btn-sm btn-accent" style="margin-top:6px;" onclick="prRellenar()">✨ Rellenar campos con lo pegado</button></div>
       <div class="field"><label>Tipo</label><select id="prTipo"><option>Restaurante</option><option>Bar</option><option>Hotel</option><option>Catering</option><option>Cafetería</option><option>Otro</option></select></div>
       <div class="field"><label>Población</label><input type="text" id="prPoblacion" autocomplete="off"></div>
       <div class="field"><label>Dirección</label><input type="text" id="prDireccion" autocomplete="off"></div>
       <div class="field"><label>Teléfono</label><input type="text" id="prTelefono" inputmode="tel" autocomplete="off"></div>
       <div class="field"><label>Email</label><input type="text" id="prEmail" inputmode="email" autocomplete="off"></div>
-      <div class="field"><label>Web / Instagram</label><input type="text" id="prWeb" autocomplete="off"></div>
+      <div class="field"><label>Web / Instagram (puedes poner los dos, separados por espacio)</label><input type="text" id="prWeb" autocomplete="off" oninput="prEnlaces()" placeholder="Ej: www.bar.com @bar_sevilla"><div id="prEnlaces" class="cli-acciones" style="margin-top:6px;"></div></div>
       <div class="field"><label>Persona de contacto (dueño, jefe de cocina…)</label><input type="text" id="prContacto" autocomplete="off"></div>
       <div class="field"><label>De dónde sacaste los datos</label><input type="text" id="prFuente" autocomplete="off" placeholder="Ej: Google Maps, web del local, me lo dio un conocido…"></div>
       <div class="field"><label>Estado</label><select id="prEstado"></select></div>
@@ -3501,7 +3504,7 @@
         var sub = [p.tipo, p.poblacion].filter(Boolean).join(' · ');
         return '<div class="product-item compact cli-row" style="margin-bottom:8px;"><div class="cli-head"><div class="cli-av" style="background:' + col[0] + '; color:' + col[1] + ';">' + esc(String(p.nombre || '?').trim().charAt(0).toUpperCase()) + '</div><div style="min-width:0; flex:1;"><div class="product-name cli-nombre">' + esc(p.nombre) + '</div>' +
           (sub ? '<div class="product-notes">' + esc(sub) + '</div>' : '') + (p.telefono ? '<div class="product-notes">📞 ' + esc(p.telefono) + '</div>' : '') + '<div class="pills">' + pill + '</div></div></div>' +
-          '<div class="cli-acciones">' + (hayTel ? '<button class="btn btn-sm btn-accent" onclick="prLlamar(' + id + ')">📞 Llamar</button><button class="btn btn-wa btn-sm" onclick="prWhatsApp(' + id + ')">💬 Mensaje</button>' : '') +
+          '<div class="cli-acciones">' + prTokens(p.web).map(function (k) { return '<a class="btn btn-sm btn-logout" target="_blank" rel="noopener" href="' + esc(k.u) + '">' + (k.t === 'insta' ? '📷 Instagram' : '🌐 Web') + '</a>'; }).join('') + (hayTel ? '<button class="btn btn-sm btn-accent" onclick="prLlamar(' + id + ')">📞 Llamar</button><button class="btn btn-wa btn-sm" onclick="prWhatsApp(' + id + ')">💬 Mensaje</button>' : '') +
           '<button class="btn btn-sm btn-logout" onclick="prBuscarId(' + id + ')">🔎 Buscar datos</button><button class="btn btn-main btn-sm" onclick="abrirProspecto(' + id + ')">📝 Abrir ficha</button></div></div>';
       }).join('');
     }
@@ -3512,6 +3515,40 @@
       if (tipo === 'insta') return 'https://www.google.com/search?q=' + encodeURIComponent('site:instagram.com ' + nombre + ' ' + (pob || prZona()));
       if (tipo === 'trip') return 'https://www.google.com/search?q=' + encodeURIComponent('site:tripadvisor.es ' + nombre + ' ' + (pob || prZona()));
       return 'https://www.google.com/search?q=' + encodeURIComponent(nombre + ' ' + (pob || prZona()) + ' teléfono contacto');
+    }
+    function prTokens(s) {
+      return String(s || '').split(/[\s,;]+/).filter(Boolean).map(function (x) {
+        var ig = /instagram\.com\/([\w.]+)/i.exec(x);
+        if (ig) return { t: 'insta', u: 'https://www.instagram.com/' + ig[1].replace(/\/$/, '') + '/', l: '@' + ig[1] };
+        if (/^@[\w.]{2,}$/.test(x)) return { t: 'insta', u: 'https://www.instagram.com/' + x.slice(1) + '/', l: x };
+        if (/^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(x)) return { t: 'web', u: /^https?:/i.test(x) ? x : 'https://' + x, l: x.replace(/^https?:\/\//i, '').replace(/\/$/, '') };
+        return null;
+      }).filter(Boolean);
+    }
+    function prEnlaces() {
+      var el = $('prEnlaces'); if (!el) return;
+      el.innerHTML = prTokens($('prWeb').value).map(function (k) {
+        return '<a class="btn btn-sm btn-logout" target="_blank" rel="noopener" href="' + esc(k.u) + '">' + (k.t === 'insta' ? '📷 ' : '🌐 ') + esc(k.l) + '</a>';
+      }).join('');
+    }
+    function prRellenar() {
+      var tx = $('prPegar').value; if (!tx.trim()) { toast('Pega primero el texto copiado.', 'err'); return; }
+      var hecho = [];
+      function poner(id, v, nombre) { if (v && !$(id).value.trim()) { $(id).value = v; hecho.push(nombre); } }
+      var em = /[\w.+-]+@[\w-]+(\.[\w-]+)+/.exec(tx); poner('prEmail', em ? em[0] : '', 'email');
+      var tel = /(?:\+34[\s.-]?)?[6-9]\d{2}[\s.-]?\d{2,3}[\s.-]?\d{2,3}[\s.-]?\d{0,2}/.exec(tx.replace(/\d{4}\s*[A-Za-zÁ-ú]{3,}/g, ' '));
+      if (tel) { var d = tel[0].replace(/[^\d+]/g, ''); if (d.replace('+34', '').length === 9) poner('prTelefono', tel[0].trim(), 'teléfono'); }
+      var dir = null; tx.split(/\n/).forEach(function (l) {
+        l = l.replace(/^\s*(Dirección|Direccion|Address)\s*:?\s*/i, '').trim();
+        if (!dir && /^(C\/|C\.|Calle|Cl\.|Av\.?|Avda\.?|Avenida|Plaza|Pza\.?|Paseo|Camino|Ctra\.?|Carretera|Ronda|Travesía|Glorieta)\b/i.test(l) && l.length < 120) dir = l;
+      });
+      poner('prDireccion', dir, 'dirección');
+      var tk = prTokens(tx.replace(/[()]/g, ' ')).filter(function (k) { return !/google\.|goo\.gl|gstatic|tripadvisor|facebook\.com\/sharer/i.test(k.u) && !/@/.test(k.l.replace(/^@/, '')); });
+      var ws = tk.filter(function (k) { return !/^[\w.+-]+@/.test(k.l) && !/^\d/.test(k.l); }).map(function (k) { return k.l; });
+      var web = $('prWeb').value.trim(), nuevos = ws.filter(function (w) { return web.toLowerCase().indexOf(w.toLowerCase()) < 0; }).slice(0, 2);
+      if (nuevos.length) { $('prWeb').value = (web + ' ' + nuevos.join(' ')).trim(); hecho.push('web/Instagram'); prEnlaces(); }
+      if (hecho.length && !$('prFuente').value.trim()) $('prFuente').value = 'Google';
+      toast(hecho.length ? 'Rellenado: ' + hecho.join(', ') + '. Revísalo.' : 'No he encontrado datos nuevos en ese texto.', hecho.length ? undefined : 'err');
     }
     function prBuscar(tipo) {
       var n = $('prNombre').value.trim(); if (!n) { toast('Escribe primero el nombre del local.', 'err'); return; }
@@ -3537,7 +3574,7 @@
       $('prTitulo').textContent = p ? '🎯 ' + p.nombre : '🎯 Nuevo local';
       $('prNombre').value = p ? p.nombre || '' : ''; $('prTipo').value = p ? (p.tipo || 'Restaurante') : 'Restaurante';
       $('prPoblacion').value = p ? p.poblacion || '' : prZona(); $('prDireccion').value = p ? p.direccion || '' : '';
-      $('prTelefono').value = p ? p.telefono || '' : ''; $('prEmail').value = p ? p.email || '' : ''; $('prWeb').value = p ? p.web || '' : '';
+      $('prTelefono').value = p ? p.telefono || '' : ''; $('prEmail').value = p ? p.email || '' : ''; $('prWeb').value = p ? p.web || '' : ''; $('prPegar').value = ''; prEnlaces();
       $('prContacto').value = p ? p.contacto || '' : ''; $('prFuente').value = p ? p.fuente || '' : '';
       $('prEstado').innerHTML = PR_ESTADOS.map(function (e) { return '<option value="' + e[0] + '">' + e[1] + '</option>'; }).join('');
       $('prEstado').value = p ? (p.estado || 'pendiente') : 'pendiente';
