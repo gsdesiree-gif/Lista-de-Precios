@@ -978,7 +978,12 @@
     <!-- CREAR LISTA -->
     <div id="tabCrear" class="tab-content">
       <div class="card">
-        <div class="card-header">🚀 Nueva Lista de Precios</div>
+        <div class="card-header" id="tituloCrear">🚀 Nueva Lista de Precios</div>
+        <div id="avisoEdicion" style="display:none; background:#fff7e0; border:1px solid #e9d28a; border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:14px;">
+          <div id="avisoEdicionTxt" style="font-weight:700; margin-bottom:6px;"></div>
+          <div style="font-size:13px; margin-bottom:8px;">Cambia precios, quita productos o añade nuevos (quita el filtro “solo seleccionados” para verlos todos) y pulsa <b>Guardar cambios</b>. La lista se actualiza, no se crea otra.</div>
+          <button class="btn btn-sm btn-logout" onclick="cancelarEdicionLista()">Cancelar edición</button>
+        </div>
         <div class="field">
           <label>Nombre del Cliente</label>
           <input type="text" id="clienteNombre" placeholder="Ej: Restaurante El Faro" list="clientesLista" autocomplete="off" oninput="clienteCambiado()">
@@ -1302,6 +1307,7 @@
       <div>
         <button onclick="window.print()" class="btn btn-sm" style="background:var(--primary); color:#ffffff;">🖨️ Imprimir</button>
         <button id="btnCompartirPDF" onclick="compartirPDF()" class="btn btn-wa btn-sm">📤 Compartir</button>
+        <button id="btnEditarLista" onclick="editarListaActual()" class="btn btn-sm" style="background:#fff7e0; color:#0f172a; border:1px solid #e9d28a;">✏️ Modificar</button>
         <button id="btnDescargarPDF" onclick="descargarPDF()" class="btn btn-accent btn-sm">📄 Descargar PDF</button>
       </div>
     </div>
@@ -2197,6 +2203,7 @@
       try { pags = await navRasterSvgs(pags); } catch (e) {}
       $('modalNavidad').style.display = 'none';
       _navDatos = { elegidos: elegidos, titulo: titulo, precios: precios, pie: pie, tel: tel, clara: clara, empresa: empresa };
+      _listaDocId = 0; if ($('btnEditarLista')) $('btnEditarLista').style.display = 'none';
       _clienteActual = ''; _pdfNombre = 'Catalogo_' + titulo.replace(/[^a-zA-Z0-9áéíóúñÁÉÍÓÚÑ]+/g, '_') + (precios ? '_con_precios' : '') + '.pdf';
       $('contenedorPaginasA4').innerHTML = pags.join('');
       $('mainContainer').style.display = 'none';
@@ -2570,7 +2577,7 @@
 
     function actualizarContadorSel() {
       var n = Object.keys(_sel).length;
-      $('btnGenerarLista').textContent = '💾 Generar lista' + (n ? ' (' + n + ' producto' + (n === 1 ? '' : 's') + ')' : ' de precios');
+      $('btnGenerarLista').textContent = (_editLista ? '💾 Guardar cambios' : '💾 Generar lista') + (n ? ' (' + n + ' producto' + (n === 1 ? '' : 's') + ')' : (_editLista ? '' : ' de precios'));
     }
     function actualizarSoloSelUI() { $('btnSoloSel').classList.toggle('active', _soloSel); }
     function toggleSoloSel() { _soloSel = !_soloSel; _soloAuto = false; actualizarSoloSelUI(); renderizarSeleccionCrear(); }
@@ -2648,6 +2655,7 @@
 
     // Repetir una lista anterior: carga sus productos y precios en "Crear lista"
     function duplicarLista(id) {
+      if (_editLista) salirEdicionLista();
       var l = null;
       for (var i = 0; i < _historico.length; i++) if (_historico[i].id === id) { l = _historico[i]; break; }
       if (!l) return;
@@ -2668,6 +2676,50 @@
       actualizarContadorSel();
       clienteCambiado();
       toast('Lista cargada con sus precios. Ajusta lo que necesites y genera la nueva.' + (omitidos ? ' (' + omitidos + ' producto(s) ya no existen)' : ''));
+    }
+
+    // Modificar una lista ya hecha: se carga en "Crear lista" y al guardar se ACTUALIZA la misma lista
+    var _editLista = null, _listaDocId = 0;
+    async function editarLista(id) {
+      var l = null;
+      for (var i = 0; i < _historico.length; i++) if (_historico[i].id === id) { l = _historico[i]; break; }
+      if (!l) { try { l = chk(await _sb.from('listas_generadas').select('*').eq('id', id).single()); } catch (e) { toast('No se pudo abrir la lista: ' + errMsg(e), 'err'); return; } }
+      if (!l) return;
+      _sel = {}; _precios = {}; _autoIds = {}; _autoSelIds = {}; _preciosCli = {};
+      var raw = l.productos_ids || [], copia = {}, extras = [];
+      for (var j = 0; j < raw.length; j++) {
+        var it = (typeof raw[j] === 'object' && raw[j] !== null) ? raw[j] : { id: raw[j] };
+        var p = buscarEnCache(it.id);
+        if (!p) { if (it.nombre) extras.push(it); continue; }   // producto que ya no existe: se conserva tal cual
+        _sel[p.id] = true; copia[p.id] = it;
+        _precios[p.id] = (it.precio !== undefined && it.precio !== null) ? num(it.precio).toFixed(2) : num(p.precio).toFixed(2);
+      }
+      _editLista = { id: id, extras: extras, copia: copia, fecha: l.fecha };
+      $('clienteNombre').value = l.cliente_nombre || '';
+      _clienteSel = buscarClientePorNombre(l.cliente_nombre || '');
+      $('buscarCrear').value = '';
+      _soloSel = true; actualizarSoloSelUI();
+      var f = new Date(l.fecha).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+      $('avisoEdicionTxt').textContent = '✏️ Editando la lista de ' + (l.cliente_nombre || '') + ' (' + f + ')';
+      $('avisoEdicion').style.display = 'block';
+      $('tituloCrear').textContent = '✏️ Modificar lista de precios';
+      $('btnGenerarLista').textContent = '💾 Guardar cambios';
+      cerrarVistaDocumento();
+      switchTab('tabCrear');
+      renderizarSeleccionCrear(); actualizarContadorSel(); actualizarEstadoCliente();
+    }
+    function editarListaActual() { if (_listaDocId) editarLista(_listaDocId); }
+    function salirEdicionLista() {
+      _editLista = null;
+      $('avisoEdicion').style.display = 'none';
+      $('tituloCrear').textContent = '🚀 Nueva Lista de Precios';
+      $('btnGenerarLista').textContent = '💾 Generar lista de precios';
+    }
+    function cancelarEdicionLista() {
+      salirEdicionLista();
+      $('clienteNombre').value = ''; _clienteSel = null; _preciosCli = {}; _autoIds = {}; _autoSelIds = {};
+      _sel = {}; _precios = {}; _soloSel = false; $('buscarCrear').value = '';
+      actualizarSoloSelUI(); actualizarContadorSel(); renderizarSeleccionCrear(); actualizarEstadoCliente();
     }
 
     function buscarClientePorNombre(nombre) {
@@ -2904,8 +2956,11 @@
         if (!_sel[p.id]) continue;
         var precio = (_precios[p.id] !== undefined) ? num(_precios[p.id]) : num(p.precio);
         // Guardamos una COPIA de los datos: si luego cambias o borras el producto, esta lista no cambia
-        items.push({ id: p.id, nombre: p.nombre, categoria: p.categoria || 'Varios', notas: p.notas || '', precio: precio });
+        var orig = _editLista && _editLista.copia[p.id];
+        items.push(orig ? { id: p.id, nombre: pick(orig.nombre, p.nombre), categoria: pick(orig.categoria, p.categoria) || 'Varios', notas: pick(orig.notas, p.notas) || '', precio: precio }
+                        : { id: p.id, nombre: p.nombre, categoria: p.categoria || 'Varios', notas: p.notas || '', precio: precio });
       }
+      if (_editLista) _editLista.extras.forEach(function (x) { items.push(x); });
       if (items.length === 0) { toast('Selecciona al menos un producto.', 'err'); return; }
       var btn = $('btnGenerarLista');
       btn.disabled = true;
@@ -2921,7 +2976,9 @@
         }
         var fila = { cliente_nombre: cliente, productos_ids: items };
         if (cli) fila.cliente_id = cli.id;
-        var data = chk(await _sb.from('listas_generadas').insert([fila]).select());
+        var data, editada = false;
+        if (_editLista) { data = chk(await _sb.from('listas_generadas').update(fila).eq('id', _editLista.id).select()); editada = true; }
+        else data = chk(await _sb.from('listas_generadas').insert([fila]).select());
         var aviso = '';
         if (cli) {
           try { aviso = (await guardarPreciosCliente(cli.id, items)) || ''; }
@@ -2934,7 +2991,8 @@
         actualizarSoloSelUI(); actualizarContadorSel();
         renderizarSeleccionCrear();
         cargarHistorico();
-        toast(aviso || 'Lista guardada.', aviso ? 'err' : 'ok');
+        if (editada) salirEdicionLista();
+        toast(aviso || (editada ? 'Cambios guardados en la lista.' : 'Lista guardada.'), aviso ? 'err' : 'ok');
         if (data && data[0]) verListaDocumento(data[0].id);
       } catch (e) { toast('No se guardó la lista: ' + errMsg(e), 'err'); }
       finally { btn.disabled = false; }
@@ -3823,6 +3881,7 @@
             '<div style="flex:1; min-width:0;"><div class="product-name" style="white-space:nowrap;">' + esc(f) + '</div><div class="product-notes">' + n + ' producto' + (n === 1 ? '' : 's') + '</div></div>' +
             '<div style="display:flex; gap:6px; flex-shrink:0;">' +
               '<button class="btn btn-accent btn-sm" onclick="verListaDocumento(' + id + ')">Ver</button>' +
+              '<button class="btn btn-sm btn-logout" onclick="editarLista(' + id + ')">✏️ Modificar</button>' +
               '<button class="btn btn-sm btn-logout" onclick="duplicarLista(' + id + ')">Repetir</button>' +
               '<button class="btn btn-danger btn-sm" onclick="borrarLista(' + id + ')">🗑️</button>' +
             '</div></div>';
@@ -3848,6 +3907,7 @@
       try { lista = chk(await _sb.from('listas_generadas').select('*').eq('id', id).single()); }
       catch (e) { toast('No se pudo abrir la lista: ' + errMsg(e), 'err'); return; }
       if (!lista) return;
+      _listaDocId = lista.id; $('btnEditarLista').style.display = '';
       _clienteActual = lista.cliente_nombre || ''; _pdfNombre = ''; _pdfListo = null; _pdfPromesa = null; _pdfTok = 0;
       var cfg = _cfg;
       var logoSrc = imgSrc(cfg.logo);
