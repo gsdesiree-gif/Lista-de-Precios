@@ -981,7 +981,9 @@
         <div class="card-header" id="tituloCrear">🚀 Nueva Lista de Precios</div>
         <div id="avisoEdicion" style="display:none; background:#fff7e0; border:1px solid #e9d28a; border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:14px;">
           <div id="avisoEdicionTxt" style="font-weight:700; margin-bottom:6px;"></div>
-          <div style="font-size:13px; margin-bottom:8px;">Cambia precios, quita productos o añade nuevos (quita el filtro “solo seleccionados” para verlos todos) y pulsa <b>Guardar cambios</b>. La lista se actualiza, no se crea otra.</div>
+          <div style="font-size:13px; margin-bottom:8px;">Abajo está la lista. <b>Cambia el precio</b> de lo que quieras, <b>desmarca</b> lo que quieras quitar y, para <b>añadir un producto</b>, búscalo aquí. Al final pulsa <b>Guardar cambios</b>.</div>
+          <input type="search" id="buscarAnadir" placeholder="➕ Añadir producto: escribe el nombre…" oninput="anadirBuscar()" autocomplete="off" style="width:100%; margin-bottom:6px;">
+          <div id="resAnadir" style="margin-bottom:8px;"></div>
           <button class="btn btn-sm btn-logout" onclick="cancelarEdicionLista()">Cancelar edición</button>
         </div>
         <div class="field">
@@ -991,10 +993,10 @@
           <div id="clienteEstado" style="font-size:12px; font-weight:600; margin-top:6px; min-height:16px;"></div>
         </div>
 
-        <div style="font-size: 12px; font-weight: 700; color: var(--muted); margin: 18px 0 8px 0; text-transform: uppercase;">
+        <div id="etiqFiltroCrear" style="font-size: 12px; font-weight: 700; color: var(--muted); margin: 18px 0 8px 0; text-transform: uppercase;">
           Filtrar categoría:
         </div>
-        <div class="cat-filter-bar">
+        <div class="cat-filter-bar" id="barraFiltroCrear">
           <button class="cat-filter-btn active" onclick="filtrarPestanaCrear('TODAS', this)">Todas</button>
           <button class="cat-filter-btn" onclick="filtrarPestanaCrear('Marisco', this)">🦐 Marisco</button>
           <button class="cat-filter-btn" onclick="filtrarPestanaCrear('Pescados', this)">🐟 Pescados</button>
@@ -1004,7 +1006,7 @@
           <button class="cat-filter-btn" onclick="filtrarPestanaCrear('Varios', this)">📦 Varios</button>
         </div>
 
-        <div class="toolbar">
+        <div class="toolbar" id="toolbarCrear">
           <input type="search" id="buscarCrear" placeholder="🔎 Buscar producto..." oninput="renderizarSeleccionCrear()">
           <button id="btnSoloSel" class="btn btn-sm btn-logout btn-toggle" onclick="toggleSoloSel()" style="white-space:nowrap;">✔ Solo marcados</button>
         </div>
@@ -2701,17 +2703,32 @@
       _soloSel = true; actualizarSoloSelUI();
       var f = new Date(l.fecha).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
       $('avisoEdicionTxt').textContent = '✏️ Editando la lista de ' + (l.cliente_nombre || '') + ' (' + f + ')';
-      $('avisoEdicion').style.display = 'block';
+      $('avisoEdicion').style.display = 'block'; $('barraFiltroCrear').style.display = 'none'; $('etiqFiltroCrear').style.display = 'none'; $('toolbarCrear').style.display = 'none'; $('buscarAnadir').value = ''; $('resAnadir').innerHTML = '';
       $('tituloCrear').textContent = '✏️ Modificar lista de precios';
       $('btnGenerarLista').textContent = '💾 Guardar cambios';
       cerrarVistaDocumento();
       switchTab('tabCrear');
       renderizarSeleccionCrear(); actualizarContadorSel(); actualizarEstadoCliente();
     }
+    function anadirBuscar() {
+      var q = norm($('buscarAnadir').value.trim()), r = $('resAnadir');
+      if (!q) { r.innerHTML = ''; return; }
+      var res = _productosCache.filter(function (p) { return !_sel[p.id] && norm(p.nombre).indexOf(q) !== -1; }).slice(0, 8);
+      r.innerHTML = res.length ? res.map(function (p) {
+        return '<button class="btn btn-sm btn-accent" style="display:block; width:100%; text-align:left; margin-bottom:4px;" onclick="anadirProducto(' + Number(p.id) + ')">➕ ' + esc(p.nombre) + ' · ' + num(p.precio).toFixed(2) + ' €</button>';
+      }).join('') : '<div style="font-size:13px; color:var(--muted);">Ningún producto nuevo coincide.</div>';
+    }
+    function anadirProducto(id) {
+      var p = buscarEnCache(id); if (!p) return;
+      _sel[id] = true; if (_precios[id] === undefined) _precios[id] = num(p.precio).toFixed(2);
+      $('buscarAnadir').value = ''; $('resAnadir').innerHTML = '';
+      renderizarSeleccionCrear(); actualizarContadorSel();
+      toast('Añadido: ' + p.nombre + '. Ajusta su precio abajo.');
+    }
     function editarListaActual() { if (_listaDocId) editarLista(_listaDocId); }
     function salirEdicionLista() {
       _editLista = null;
-      $('avisoEdicion').style.display = 'none';
+      $('avisoEdicion').style.display = 'none'; $('barraFiltroCrear').style.display = ''; $('etiqFiltroCrear').style.display = ''; $('toolbarCrear').style.display = '';
       $('tituloCrear').textContent = '🚀 Nueva Lista de Precios';
       $('btnGenerarLista').textContent = '💾 Generar lista de precios';
     }
