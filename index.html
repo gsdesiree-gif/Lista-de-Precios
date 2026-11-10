@@ -16,7 +16,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Cormorant+Garamond:ital,wght@1,600;1,700&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&display=swap" rel="stylesheet">
-  <script>try { document.documentElement.setAttribute('data-tema', localStorage.getItem('elancla_tema') === 'marino' ? 'marino' : 'fresco'); } catch (e) { document.documentElement.setAttribute('data-tema', 'fresco'); }</script>
+  <script>try { var _m = localStorage.getItem('elancla_modo') || 'claro'; document.documentElement.setAttribute('data-modo', (_m === 'oscuro' || (_m === 'auto' && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches)) ? 'oscuro' : 'claro'); } catch (e) {}
+  try { document.documentElement.setAttribute('data-tema', localStorage.getItem('elancla_tema') === 'marino' ? 'marino' : 'fresco'); } catch (e) { document.documentElement.setAttribute('data-tema', 'fresco'); }</script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -805,6 +806,83 @@
     .np-x { position:absolute; top:10px; right:10px; z-index:2; width:36px; height:36px; border-radius:50%; border:none; background:rgba(16,27,51,.75); color:#fff; font-size:16px; cursor:pointer; }
     #listaSeleccionProductos .product-name, #listaSeleccionProductos .product-notes { overflow-wrap: anywhere; word-break: break-word; }
     @media (max-width: 600px) { #listaSeleccionProductos .product-img { width: 44px; height: 44px; } }
+  
+    /* ===== Rediseño v65: Hoy, tarjetas, botones, barra, categorías ===== */
+    .hoy-cab { padding: 6px 4px 14px; }
+    .hoy-saludo { font-family: 'Fraunces', Georgia, serif; font-size: 28px; font-weight: 700; color: var(--primary); line-height: 1.1; }
+    .hoy-fecha { font-size: 14px; color: var(--muted); margin-top: 2px; }
+    .hoy-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .hoy-card { text-align: left; border: 1px solid transparent; border-radius: 20px; padding: 16px; background: var(--card); box-shadow: 0 1px 2px rgba(14,77,63,.06), 0 12px 28px -16px rgba(45,79,71,.28); cursor: pointer; font-family: inherit; color: var(--text); display: flex; flex-direction: column; gap: 2px; }
+    .hoy-card:active { transform: scale(.98); }
+    .hoy-ico { font-size: 22px; width: 42px; height: 42px; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 6px; }
+    .hoy-num { font-family: 'Fraunces', Georgia, serif; font-size: 40px; font-weight: 700; line-height: 1; color: var(--primary); }
+    .hoy-tit { font-weight: 700; font-size: 14px; margin-top: 4px; }
+    .hoy-sub { font-size: 12px; color: var(--muted); }
+    .c-llamar .hoy-ico { background: #dbeee8; } .c-reparto .hoy-ico { background: #e3eefb; } .c-pedidos .hoy-ico { background: #fbe9d9; }
+    .c-sinpedir .hoy-ico { background: #fdecc8; } .c-clientes .hoy-ico { background: #e8e4f5; }
+    .hoy-aviso, .hoy-vacio { grid-column: 1 / -1; background: #fff7e0; border: 1px solid #e9d28a; border-radius: 16px; padding: 12px 14px; font-size: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    @media (min-width: 768px) { .hoy-grid { grid-template-columns: repeat(3, 1fr); } }
+
+    .cli-head { display: flex; gap: 12px; align-items: flex-start; min-width: 0; }
+    .cli-av { width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-family: 'Fraunces', Georgia, serif; font-weight: 700; font-size: 20px; }
+    .cli-nombre { font-size: 16px !important; font-weight: 700; color: var(--text); }
+    .cli-row .product-notes { color: var(--muted); }
+    .pills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .pill { font-size: 11.5px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+    .pill-warn { background: #fdecc8; color: #9a5b0a; } .pill-ok { background: #dcf0e4; color: #2d6b45; } .pill-bad { background: #fbe0e0; color: #a12b2b; }
+
+    .cli-acciones .btn-sm { border-radius: 12px; }
+    .cli-acciones .btn-logout { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+    .cli-acciones .btn-accent { background: rgba(58,127,123,.13); background: color-mix(in srgb, var(--accent) 13%, transparent); color: var(--accent); }
+    .cli-acciones .btn-wa { background: rgba(63,140,94,.14); color: #2f7a4f; }
+    .cli-acciones .btn-main { background: var(--accent); color: #fff; box-shadow: 0 6px 14px -8px var(--accent); }
+
+    .nav-bar { background: rgba(255,255,255,.94); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-top: 1px solid var(--border); border-radius: 22px 22px 0 0; box-shadow: 0 -10px 30px -18px rgba(45,79,71,.35); }
+    .nav-item { transition: color .15s; }
+    .nav-item .ni { padding: 3px 10px; border-radius: 999px; transition: background .15s; font-size: 18px; }
+    .nav-item.active { color: var(--accent); }
+    .nav-item.active .ni { background: rgba(58,127,123,.16); background: color-mix(in srgb, var(--accent) 16%, transparent); }
+    .nav-item span:last-child { font-size: 10px; }
+    .nav-bar { gap: 0; } .nav-item { flex: 1 1 0; min-width: 0; }
+
+    .product-img { border-radius: 14px; box-shadow: 0 2px 8px rgba(20,40,35,.14); }
+    .cat-block { --cc: #8a8f98; border-left: 5px solid var(--cc); }
+    .cat-block[data-cat="Marisco"], .cat-block[data-k="Marisco"] { --cc: #e8836b; }
+    .cat-block[data-cat="Pescados"], .cat-block[data-k="Pescados"] { --cc: #4a90b8; }
+    .cat-block[data-cat="Carnes"], .cat-block[data-k="Carnes"] { --cc: #b5495b; }
+    .cat-block[data-cat="Verduras"], .cat-block[data-k="Verduras"] { --cc: #5aa469; }
+    .cat-block[data-cat="Precocinados"], .cat-block[data-k="Precocinados"] { --cc: #d9a441; }
+    .cat-block[data-cat="Varios"], .cat-block[data-k="Varios"] { --cc: #8a8f98; }
+    .cat-block[data-cat] > summary, .cat-block[data-k="Marisco"] > summary, .cat-block[data-k="Pescados"] > summary, .cat-block[data-k="Carnes"] > summary, .cat-block[data-k="Verduras"] > summary, .cat-block[data-k="Precocinados"] > summary, .cat-block[data-k="Varios"] > summary { background: color-mix(in srgb, var(--cc) 10%, transparent); }
+
+    /* ===== Modo oscuro ===== */
+    html[data-modo="oscuro"] { color-scheme: dark; --bg: #0f1514; --card: #18211f; --text: #e8f0ec; --muted: #9bada5; --border: #2a3935; --primary: #8fc9b8; --accent: #5fb3ac; --success: #6fc08d; --danger: #ff8b8b; }
+    html[data-modo="oscuro"] body { background: var(--bg); color: var(--text); }
+    html[data-modo="oscuro"] .top-bar, html[data-tema="fresco"][data-modo="oscuro"] .top-bar { background: var(--card); border-color: var(--border); }
+    html[data-modo="oscuro"] .nav-bar { background: rgba(24,33,31,.94); }
+    html[data-modo="oscuro"] .card, html[data-modo="oscuro"] .product-item, html[data-modo="oscuro"] .cat-block, html[data-modo="oscuro"] .modal-card, html[data-modo="oscuro"] .hoy-card, html[data-modo="oscuro"] .cat-filter-btn, html[data-modo="oscuro"] .web-nav-btn { background: var(--card); color: var(--text); border-color: var(--border); }
+    html[data-modo="oscuro"] .cat-filter-btn.active, html[data-modo="oscuro"] .web-nav-btn.active { background: var(--accent); color: #08201d; }
+    html[data-modo="oscuro"] input[type="text"], html[data-modo="oscuro"] input[type="number"], html[data-modo="oscuro"] input[type="date"], html[data-modo="oscuro"] input[type="search"], html[data-modo="oscuro"] input[type="email"], html[data-modo="oscuro"] input[type="time"], html[data-modo="oscuro"] select, html[data-modo="oscuro"] textarea { background: #101816; color: var(--text); border-color: var(--border); }
+    html[data-modo="oscuro"] .btn { color: #08201d; }
+    html[data-modo="oscuro"] .btn-accent { background: var(--accent); color: #08201d; }
+    html[data-modo="oscuro"] .btn-success, html[data-modo="oscuro"] .btn-wa { color: #fff; }
+    html[data-modo="oscuro"] .btn-logout { background: #26332f; color: var(--muted); }
+    html[data-modo="oscuro"] .btn-danger { background: rgba(239,68,68,.16); color: #ff9c9c; }
+    html[data-modo="oscuro"] .cli-acciones .btn-accent { background: rgba(95,179,172,.18); color: var(--accent); }
+    html[data-modo="oscuro"] .cli-acciones .btn-main { background: var(--accent); color: #08201d; }
+    html[data-modo="oscuro"] .cli-acciones .btn-wa { background: rgba(111,192,141,.18); color: #8fd6a9; }
+    html[data-modo="oscuro"] .cli-acciones .btn-logout { background: transparent; }
+    html[data-modo="oscuro"] .product-name, html[data-modo="oscuro"] .cli-nombre, html[data-modo="oscuro"] .card-header, html[data-modo="oscuro"] .brand-title, html[data-modo="oscuro"] .hoy-saludo, html[data-modo="oscuro"] .hoy-num { color: var(--text); }
+    html[data-modo="oscuro"] .cat-block > summary { color: var(--text); }
+    html[data-modo="oscuro"] .product-img, html[data-tema="fresco"][data-modo="oscuro"] .product-img { background: #22302c; }
+    html[data-modo="oscuro"] [style*="#fff7e0"], html[data-modo="oscuro"] [style*="#fef3c7"], html[data-modo="oscuro"] [style*="#fffaf0"] { background: #3a3217 !important; border-color: #6b5a1e !important; color: #f3e3a6 !important; }
+    html[data-modo="oscuro"] [style*="#eef5f0"] { background: #1f3029 !important; }
+    html[data-modo="oscuro"] .aviso-amber { background: #3a3217 !important; border-color: #6b5a1e !important; color: #f3e3a6 !important; }
+    html[data-modo="oscuro"] .hoy-aviso, html[data-modo="oscuro"] .hoy-vacio { background: #3a3217; border-color: #6b5a1e; color: #f3e3a6; }
+    html[data-modo="oscuro"] .pill-warn { background: #4a3a14; color: #f3c46b; } html[data-modo="oscuro"] .pill-ok { background: #1f3a2b; color: #8fd6a9; } html[data-modo="oscuro"] .pill-bad { background: #4a2020; color: #ff9c9c; }
+    html[data-modo="oscuro"] .c-llamar .hoy-ico, html[data-modo="oscuro"] .c-reparto .hoy-ico, html[data-modo="oscuro"] .c-pedidos .hoy-ico, html[data-modo="oscuro"] .c-sinpedir .hoy-ico, html[data-modo="oscuro"] .c-clientes .hoy-ico { background: #26332f; }
+    /* Los documentos que se imprimen o comparten siempre en claro */
+    html[data-modo="oscuro"] .page-a4 { background: #fff; color: #0f172a; --text: #0f172a; --muted: #64748b; --primary: #2d4f47; --accent: #3a7f7b; --border: #e2e8f0; }
   </style>
 </head>
 <body>
@@ -832,10 +910,11 @@
   <div class="top-bar no-print" id="topBar" style="display:none;">
     <div class="brand-title" id="brandTitle">EL ANCLA</div>
     <div class="web-nav" id="adminWebNav">
-      <button class="web-nav-btn active" data-tab="tabClientes" onclick="switchTab('tabClientes')">👥 Clientes</button>
+      <button class="web-nav-btn active" data-tab="tabHoy" onclick="switchTab('tabHoy')">🏠 Hoy</button>
+      <button class="web-nav-btn" data-tab="tabClientes" onclick="switchTab('tabClientes')">👥 Clientes</button>
       <button class="web-nav-btn" data-tab="tabCatalogo" onclick="switchTab('tabCatalogo')">📦 Productos</button>
       <button class="web-nav-btn" data-tab="tabCrear" onclick="switchTab('tabCrear')">📝 Crear Lista</button>
-      <button class="web-nav-btn" data-tab="tabHistorial" onclick="switchTab('tabHistorial')">📜 Histórico</button>
+      <button class="web-nav-btn" data-tab="tabHistorial" onclick="switchTab('tabHistorial')">📜 Listas</button>
       <button class="web-nav-btn" data-tab="tabCaja" onclick="switchTab('tabCaja')">💰 Caja &amp; Comisión</button>
       <button class="web-nav-btn" data-tab="tabClienteView" onclick="switchTab('tabClienteView')">🌐 Vista Cliente</button>
       <button class="web-nav-btn" data-tab="tabAjustes" onclick="switchTab('tabAjustes')">⚙️ Empresa</button>
@@ -942,7 +1021,13 @@
     </div>
 
     <!-- CLIENTES -->
-    <div id="tabClientes" class="tab-content active">
+    <!-- HOY -->
+    <div id="tabHoy" class="tab-content active">
+      <div class="hoy-cab"><div class="hoy-saludo" id="hoySaludo"></div><div class="hoy-fecha" id="hoyFecha"></div></div>
+      <div id="hoyTarjetas" class="hoy-grid"></div>
+    </div>
+
+    <div id="tabClientes" class="tab-content">
       <div class="card">
         <div class="card-header">👥 Clientes</div>
         <div class="toolbar">
@@ -956,7 +1041,7 @@
           <button class="cat-filter-btn" onclick="filtrarClientes('REPARTIR', this)">🚚 Repartir</button>
           <button class="cat-filter-btn" onclick="filtrarClientes('SINPEDIR', this)">⏰ Sin pedir</button>
         </div>
-        <div id="avisoCopia" style="display:none; background:#fff7e0; border:1px solid #e9d28a; border-radius:10px; padding:10px 12px; margin-bottom:10px; font-size:14px;">
+        <div id="avisoCopia" class="aviso-amber" style="display:none; background:#fff7e0; border:1px solid #e9d28a; border-radius:10px; padding:10px 12px; margin-bottom:10px; font-size:14px;">
           <span id="avisoCopiaTxt"></span> <button class="btn btn-sm btn-accent" onclick="copiaSeguridad()">💾 Hacer copia ahora</button>
         </div>
         <div id="sinPedirWrap" class="toolbar" style="display:none;">
@@ -990,7 +1075,7 @@
     <div id="tabCrear" class="tab-content">
       <div class="card">
         <div class="card-header" id="tituloCrear">🚀 Nueva Lista de Precios</div>
-        <div id="avisoEdicion" style="display:none; background:#fff7e0; border:1px solid #e9d28a; border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:14px;">
+        <div id="avisoEdicion" class="aviso-amber" style="display:none; background:#fff7e0; border:1px solid #e9d28a; border-radius:10px; padding:10px 12px; margin-bottom:12px; font-size:14px;">
           <div id="avisoEdicionTxt" style="font-weight:700; margin-bottom:6px;"></div>
           <div style="font-size:13px; margin-bottom:8px;">Abajo está la lista. <b>Cambia el precio</b> de lo que quieras, <b>desmarca</b> lo que quieras quitar y, para <b>añadir un producto</b>, búscalo aquí. Al final pulsa <b>Guardar cambios</b>.</div>
           <input type="text" id="buscarAnadir" name="q_producto_lista" placeholder="➕ Añadir producto: escribe aquí…" oninput="anadirBuscar()" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-lpignore="true" data-form-type="other" style="width:100%; margin-bottom:6px;">
@@ -1009,7 +1094,7 @@
               <button class="btn btn-sm btn-accent" onclick="crearYAnadir()">Crear y añadir a la lista</button>
             </div></details>
           <button class="btn btn-sm btn-logout" onclick="cancelarEdicionLista()">Cancelar edición</button>
-          <span style="float:right; font-size:11px; color:#999;">versión 64</span>
+          <span style="float:right; font-size:11px; color:#999;">versión 66</span>
         </div>
         <div class="field">
           <label>Nombre del Cliente</label>
@@ -1050,7 +1135,7 @@
           <input type="search" id="buscarHist" placeholder="🔎 Buscar cliente..." oninput="_histLimite = 15; renderizarHistorico()">
         </div>
         <div id="contHist" class="count-txt"></div>
-        <div id="listaHistoricoCard">Cargando historial...</div>
+        <div id="listaHistoricoCard">Cargando listas...</div>
         <button id="btnMasHist" class="btn btn-logout" style="display:none; margin-top:8px;" onclick="_histLimite += 15; renderizarHistorico()">Ver más clientes</button>
       </div>
     </div>
@@ -1106,6 +1191,7 @@
             <button id="btnTemaMarino" class="btn btn-sm btn-logout" style="flex:1;" onclick="ponerTema('marino')">⚓ Marino</button>
           </div>
         </div>
+        <div class="field"><label>Modo de pantalla</label><select id="selModo" onchange="cambiarModo(this.value)"><option value="claro">☀️ Claro</option><option value="oscuro">🌙 Oscuro</option><option value="auto">📱 Automático (según tu móvil)</option></select></div>
         <div class="field"><label>Nombre de la Empresa</label><input type="text" id="cfgEmpresa" placeholder="Ej: EL ANCLA"></div>
         <div class="field"><label>Nombre del Comercial / Agente</label><input type="text" id="cfgComercial" placeholder="Ej: Désirée Guerrero"></div>
         <div class="field"><label>Teléfono / WhatsApp</label><input type="text" id="cfgTelefono" placeholder="Ej: 600 000 000"></div>
@@ -1337,10 +1423,11 @@
   </div>
 
   <div class="nav-bar no-print" id="adminBottomNav" style="display:none;">
-    <button class="nav-item active" data-tab="tabClientes" onclick="switchTab('tabClientes')"><span class="ni">👥</span><span>Clientes</span></button>
+    <button class="nav-item active" data-tab="tabHoy" onclick="switchTab('tabHoy')"><span class="ni">🏠</span><span>Hoy</span></button>
+    <button class="nav-item" data-tab="tabClientes" onclick="switchTab('tabClientes')"><span class="ni">👥</span><span>Clientes</span></button>
     <button class="nav-item" data-tab="tabCatalogo" onclick="switchTab('tabCatalogo')"><span class="ni">📦</span><span>Productos</span></button>
     <button class="nav-item" data-tab="tabCrear" onclick="switchTab('tabCrear')"><span class="ni">📝</span><span>Crear</span></button>
-    <button class="nav-item" data-tab="tabHistorial" onclick="switchTab('tabHistorial')"><span class="ni">📜</span><span>Historial</span></button>
+    <button class="nav-item" data-tab="tabHistorial" onclick="switchTab('tabHistorial')"><span class="ni">📜</span><span>Listas</span></button>
     <button class="nav-item" data-tab="tabCaja" onclick="switchTab('tabCaja')"><span class="ni">💰</span><span>Caja</span></button>
     <button class="nav-item" data-tab="tabAjustes" onclick="switchTab('tabAjustes')"><span class="ni">⚙️</span><span>Empresa</span></button>
   </div>
@@ -1532,8 +1619,9 @@
     }
 
     async function iniciarAdmin() {
+      aplicarModo();
       setMode('admin');
-      switchTab('tabClientes');
+      switchTab('tabHoy');
       await cargarConfiguracion();   // primero: la caja necesita tu % de comisión
       await Promise.all([cargarProductos(), cargarHistorico(), cargarCaja(), cargarClientes()]);
     }
@@ -1578,6 +1666,7 @@
       var navs = document.querySelectorAll('[data-tab]');
       for (var j = 0; j < navs.length; j++) navs[j].classList.toggle('active', navs[j].getAttribute('data-tab') === tabId);
       if (tabId === 'tabClienteView') renderizarGridCliente();
+      if (tabId === 'tabHoy') renderHoy();
     }
 
     /* ---------- imágenes ---------- */
@@ -2668,7 +2757,7 @@
         var prods = productosVisiblesCrear(cat);
         if (prods.length === 0) continue;
         var nSel = prods.filter(function (p) { return _sel[p.id]; }).length;
-        html += '<details class="cat-block"' + ((_forzar || _abiertas[cat]) ? ' open' : '') + ' ontoggle="togCat(' + k + ', this)">' +
+        html += '<details class="cat-block" data-cat="' + esc(cat) + '"' + ((_forzar || _abiertas[cat]) ? ' open' : '') + ' ontoggle="togCat(' + k + ', this)">' +
           '<summary>📂 ' + esc(cat) + ' <span class="muted">(' + prods.length + ')</span><span class="selcnt">' + (nSel ? ' · ' + nSel + ' ✔' : '') + '</span></summary>' +
           '<div class="cat-actions"><button class="btn btn-sm btn-logout" onclick="marcarCategoria(' + k + ', true)">Marcar todos</button>' +
           '<button class="btn btn-sm btn-logout" onclick="marcarCategoria(' + k + ', false)">Quitar</button></div><div class="inner product-grid">';
@@ -3102,6 +3191,7 @@
       poblarClientes();
       renderizarClientes();
       if (_historico.length) renderizarHistorico();
+      renderHoy();
     }
 
     function telWa(t) {
@@ -3312,6 +3402,50 @@
       } catch (e) { toast('No se pudo hacer la copia: ' + errMsg(e), 'err'); }
       finally { btns.forEach(function (b) { b.disabled = false; }); }
     }
+    /* ---------- pantalla HOY ---------- */
+    function irAClientes(tipo) {
+      switchTab('tabClientes');
+      if (tipo === 'LLAMAR' || tipo === 'REPARTIR') { _diaVer = codigoHoy(); if ($('selDiaCli')) $('selDiaCli').value = _diaVer; }
+      var idx = { TODOS: 0, LLAMAR: 1, REPARTIR: 2, SINPEDIR: 3 }[tipo] || 0;
+      filtrarClientes(tipo, document.querySelectorAll('#barraCli .cat-filter-btn')[idx]);
+    }
+    function renderHoy() {
+      var cont = $('hoyTarjetas'); if (!cont) return;
+      var h = new Date(), hr = h.getHours();
+      $('hoySaludo').textContent = (hr < 13 ? 'Buenos días' : hr < 21 ? 'Buenas tardes' : 'Buenas noches') + ' 👋';
+      var fd = h.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }); $('hoyFecha').textContent = fd.charAt(0).toUpperCase() + fd.slice(1);
+      if (!_clientesOk) { cont.innerHTML = '<div class="hoy-vacio">Cargando…</div>'; return; }
+      var hoy = hoyLocal(), cod = codigoHoy(), fh = fechaDelDia(cod), tarj = '';
+      var card = function (cls, ico, num, tit, sub, acc) {
+        return '<button class="hoy-card ' + cls + '" onclick="' + acc + '"><div class="hoy-ico">' + ico + '</div><div class="hoy-num">' + num + '</div><div class="hoy-tit">' + tit + '</div><div class="hoy-sub">' + sub + '</div></button>';
+      };
+      var llam = _diasOk ? _clientes.filter(function (c) { return tieneDia(c.dias_llamada, cod); }) : [];
+      var falt = llam.filter(function (c) { return !_llamadas[c.id + '|' + fh]; }).length;
+      tarj += card('c-llamar', '📞', _diasOk ? falt : '–', 'Llamadas de hoy', _diasOk ? (llam.length === 0 ? 'Hoy no toca llamar a nadie' : falt === 0 ? '✅ ¡Todas hechas!' : 'faltan de ' + llam.length) : 'Asigna días de llamada', "irAClientes('LLAMAR')");
+      if (_pedidosOk) {
+        var ent = _pedidos.filter(function (p) { return String(p.fecha_entrega).substring(0, 10) === hoy && !p.entregado; }).length;
+        var man = _pedidos.filter(function (p) { return String(p.fecha_entrega).substring(0, 10) === sumarDias(hoy, 1) && !p.entregado; }).length;
+        tarj += card('c-reparto', '🚚', ent, 'Entregas de hoy', man ? 'y ' + man + ' para mañana' : 'pedidos por entregar', 'abrirReparto()');
+        var pend = pedidosPendientes().length;
+        tarj += card('c-pedidos', '🛒', pend, 'Pedidos pendientes', 'sin marcar como entregados', "abrirReparto()");
+        var sp = _clientes.filter(function (c) { var i = infoSinPedir(c); return i && i.dias >= _diasSinPedir; }).length;
+        tarj += card('c-sinpedir', '⏰', sp, 'Sin pedir', 'más de ' + _diasSinPedir + ' días', "irAClientes('SINPEDIR')");
+      }
+      tarj += card('c-clientes', '👥', _clientes.length, 'Clientes', 'ver todos', "irAClientes('TODOS')");
+      var u = ultimaCopia(), dc = u ? Math.round((new Date(hoy) - new Date(u)) / 86400000) : 999;
+      if (dc >= 7) tarj += '<div class="hoy-aviso">💾 ' + (u ? 'Hace ' + dc + ' días' : 'Todavía') + ' sin copia de seguridad <button class="btn btn-sm btn-accent" onclick="copiaSeguridad()">Hacer copia</button></div>';
+      cont.innerHTML = tarj;
+    }
+
+    /* ---------- modo claro / oscuro ---------- */
+    function modoGuardado() { try { return localStorage.getItem('elancla_modo') || 'claro'; } catch (e) { return 'claro'; } }
+    function aplicarModo() {
+      var m = modoGuardado(), osc = m === 'oscuro' || (m === 'auto' && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.setAttribute('data-modo', osc ? 'oscuro' : 'claro');
+      var s = $('selModo'); if (s) s.value = m;
+    }
+    function cambiarModo(v) { try { localStorage.setItem('elancla_modo', v); } catch (e) {} aplicarModo(); }
+
     function masCli(id) { var e = $('masCli' + id); if (e) e.style.display = e.style.display === 'none' ? 'flex' : 'none'; }
 
     function filtrarClientes(tipo, btn) {
@@ -3396,6 +3530,12 @@
         var isp = infoSinPedir(c);
         var spTxt = (isp && isp.dias >= _diasSinPedir) ? '<div class="product-notes" style="color:#b45309; font-weight:700;">⏰ Hace ' + isp.dias + ' días sin pedir · último pedido ' + esc(fechaLarga(isp.ultima)) + '</div>' : '';
         var acc = esLl || sinP;
+        var PAL = [['#dbeee8', '#2d6b5e'], ['#e8e4f5', '#5a4a9a'], ['#fbe9d9', '#b0571c'], ['#e3eefb', '#2f66a8'], ['#fbe3e8', '#b0334f'], ['#eef2d6', '#68751a']];
+        var hh = 0; String(c.nombre || '').split('').forEach(function (ch) { hh = (hh * 31 + ch.charCodeAt(0)) % 997; });
+        var av = PAL[hh % PAL.length], inicial = esc(String(c.nombre || '?').trim().charAt(0).toUpperCase());
+        var pills = ((isp && isp.dias >= _diasSinPedir) ? '<span class="pill pill-warn">⏰ Hace ' + isp.dias + ' días sin pedir' + (sinP ? ' · último ' + esc(fechaLarga(isp.ultima)) : '') + '</span>' : '') +
+          (pend ? '<span class="pill pill-ok">🛒 ' + esc(fechaLarga(String(pend.fecha_entrega).substring(0, 10))) + ' · ' + totalLineas(pend.lineas || []).toFixed(2) + ' €</span>' : '') +
+          ((!c.telefono && !c.direccion && !c.cif) ? '<span class="pill pill-bad">⚠ Ficha incompleta</span>' : '');
         var hayTel = !!telWa(c.telefono);
         var llamar = hayTel ? '<button class="btn btn-sm btn-accent" onclick="llamarCliente(' + id + ')">📞 Llamar</button>' : '';
         var wa = hayTel ? '<button class="btn btn-wa btn-sm" onclick="abrirWhatsApp(' + id + (esLl ? ', true' : (sinP ? ', true, true' : '')) + ')">' + (acc ? '💬 Enviar mensaje' : '💬 WhatsApp') + '</button>' : '';
@@ -3405,11 +3545,11 @@
         var comoLlegar = (c.direccion && String(c.direccion).trim()) ? '<button class="btn btn-sm btn-accent" onclick="irACliente(' + id + ')">📍 Cómo llegar</button>' : '';
         var tel2 = (c.telefono ? '<div class="product-notes">📞 ' + esc(c.telefono) + '</div>' : '') + (lugar ? '<div class="product-notes">📍 ' + esc(lugar) + '</div>' : '');
         html += '<div class="product-item compact cli-row" style="margin-bottom:8px;' + (hecha ? ' background:#eef5f0;' : '') + '">' +
-          '<div style="min-width:0;">' + chkLl + '<div class="product-name">👤 ' + esc(c.nombre) + '</div>' + tel2 + spTxt + pedTxt + falta + '</div>' +
+          '<div class="cli-head"><div class="cli-av" style="background:' + av[0] + '; color:' + av[1] + ';">' + inicial + '</div><div style="min-width:0; flex:1;">' + chkLl + '<div class="product-name cli-nombre">' + esc(c.nombre) + '</div>' + tel2 + (pills ? '<div class="pills">' + pills + '</div>' : '') + '</div></div>' +
           '<div class="cli-acciones">' +
-            (acc ? (hayTel ? llamar + wa : '') + comoLlegar + '<button class="btn btn-accent btn-sm" onclick="abrirPedido(' + id + ')">🛒 Pedido</button>' :
+            (acc ? (hayTel ? llamar + wa : '') + comoLlegar + '<button class="btn btn-main btn-sm" onclick="abrirPedido(' + id + ')">🛒 Pedido</button>' :
               '<button class="btn btn-sm btn-logout" onclick="abrirFichaCliente(' + id + ')">👁 Ver cliente</button>' +
-              '<button class="btn btn-accent btn-sm" onclick="abrirPedido(' + id + ')">🛒 Pedido</button>' + pin) +
+              '<button class="btn btn-main btn-sm" onclick="abrirPedido(' + id + ')">🛒 Pedido</button>' + pin) +
             '<button class="btn btn-sm btn-logout" onclick="masCli(' + id + ')">⋯ Más</button>' +
           '</div>' +
           '<div class="cli-acciones" id="masCli' + id + '" style="display:none;">' +
@@ -4011,8 +4151,8 @@
         renderizarClientes();
         renderizarHistorico();
       } catch (e) {
-        container.innerHTML = '<div style="color:var(--danger); text-align:center; padding:12px;">No se pudo cargar el historial.</div>';
-        toast('Error al cargar el historial: ' + errMsg(e), 'err');
+        container.innerHTML = '<div style="color:var(--danger); text-align:center; padding:12px;">No se pudieron cargar las listas.</div>';
+        toast('Error al cargar las listas: ' + errMsg(e), 'err');
       }
     }
 
