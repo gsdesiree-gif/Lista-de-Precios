@@ -790,7 +790,13 @@
     .np-quien { margin-top:6px; color:#c8a45a; font-size:15px; }
     .np-lb { position:fixed; inset:0; z-index:10000; background:rgba(8,14,28,.88); display:none; align-items:center; justify-content:center; padding:16px; }
     .np-lbcard { position:relative; background:#fffaf0; border-radius:14px; overflow:hidden; max-width:520px; width:100%; max-height:94vh; display:flex; flex-direction:column; }
-    .np-lbcard img { width:100%; max-height:62vh; object-fit:contain; background:#efe6d2; display:block; }
+    .np-lbcard img { width:100%; max-height:58vh; object-fit:contain; background:#efe6d2; display:block; }
+    .np-gal { display:flex; overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; flex-shrink:0; scrollbar-width:none; }
+    .np-gal::-webkit-scrollbar { display:none; }
+    .np-sl { flex:0 0 100%; scroll-snap-align:center; position:relative; }
+    .np-sl .np-cap { padding:8px 16px; font-size:14px; line-height:1.35; color:#4a5266; background:#fffaf0; font-style:italic; text-align:center; }
+    .np-cnt { position:absolute; top:12px; left:12px; background:rgba(16,27,51,.75); color:#fff; font-size:12px; font-weight:700; padding:3px 9px; border-radius:10px; }
+    .np-hint { text-align:center; font-size:12px; color:#7d6224; padding:4px 0 0; }
     .np-lbtxt { padding:14px 18px 18px; overflow-y:auto; }
     .np-cat { font-size:12px; font-weight:700; color:#7d6224; }
     .np-lbnom { font-family:'Fraunces',Georgia,serif; font-weight:700; font-size:26px; line-height:1.1; color:#101b33; margin-top:2px; }
@@ -1122,6 +1128,13 @@
         <input type="file" id="editProdArchivoFoto" accept="image/*" onchange="procesarImagen(this, 'editProdFotoBase64')">
         <input type="hidden" id="editProdFotoBase64">
         <div id="previewEditFotoContainer" style="margin-top: 8px;"></div>
+      </div>
+      <div class="field">
+        <label>Más fotos (solo se ven en el catálogo interactivo)</label>
+        <div id="editFotosExtra"></div>
+        <input type="file" id="editExtraArchivo" accept="image/*" onchange="procesarImagen(this, 'editExtraFoto')">
+        <input type="hidden" id="editExtraFoto">
+        <div style="font-size:12px; color:var(--text-muted,#888); margin-top:4px;">La foto de arriba es la <b>principal</b> (la que sale en PDF y papel). Con ⭐ eliges otra como principal.</div>
       </div>
 
       <div style="display: flex; gap: 10px; margin-top: 20px;">
@@ -1508,8 +1521,9 @@
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(0, 0, width, height);
           ctx.drawImage(img, 0, 0, width, height);
-          var esProducto = (targetHiddenId === 'prodFotoBase64' || targetHiddenId === 'editProdFotoBase64');
+          var esProducto = (targetHiddenId === 'prodFotoBase64' || targetHiddenId === 'editProdFotoBase64' || targetHiddenId === 'editExtraFoto');
           function mostrar(valor) {
+            if (targetHiddenId === 'editExtraFoto') { _editFotos.push({ url: valor, nota: '' }); renderEditFotos(); input.value = ''; return; }
             $(targetHiddenId).value = valor;
             var prev = '<img src="' + imgSrc(valor) + '" alt="" style="max-height:60px; border-radius:8px;">';
             if (targetHiddenId === 'cfgLogoBase64') $('previewLogoContainer').innerHTML = prev;
@@ -1651,7 +1665,9 @@
     /* ---------- productos ---------- */
     async function cargarProductos() {
       try {
-        var data = chk(await _sb.from('productos').select('id,categoria,nombre,precio,notas,url_foto').order('id', { ascending: false }));
+        var rq = await _sb.from('productos').select('id,categoria,nombre,precio,notas,url_foto,fotos_extra').order('id', { ascending: false });
+        if (rq.error && /fotos_extra/.test(String(rq.error.message || ''))) rq = await _sb.from('productos').select('id,categoria,nombre,precio,notas,url_foto').order('id', { ascending: false });
+        var data = chk(rq);
         _productosCache = data || [];
         _catalogo = _productosCache.map(function (p) {
           return { id: p.id, categoria: p.categoria, nombre: p.nombre, notas: p.notas, url_foto: p.url_foto };
@@ -2233,14 +2249,22 @@
       h += '<div class="np-pie">' + (_navPub.tel ? '<div class="np-feliz">Feliz Navidad</div><a class="np-tel" href="tel:' + esc(telL) + '">Pedidos al ' + esc(_navPub.tel) + '</a>' : '<div class="np-feliz">Feliz Navidad</div>') +
         (_navPub.nombre ? '<div class="np-quien">' + esc(_navPub.nombre) + '</div>' : '') + '</div></div>' +
         '<div id="npLB" class="np-lb" onclick="if(event.target===this)navCerrarProducto()"><div class="np-lbcard"><button class="np-x" onclick="navCerrarProducto()">✕</button>' +
-        '<img id="npLBimg" alt=""><div class="np-lbtxt"><div id="npLBcat" class="np-cat"></div><div id="npLBnom" class="np-lbnom"></div><div id="npLBpre" class="np-pre"></div><div id="npLBdesc" class="np-desc"></div>' +
+        '<div id="npLBgal" class="np-gal"></div><div id="npLBhint" class="np-hint" style="display:none">← desliza para ver más fotos →</div><div class="np-lbtxt"><div id="npLBcat" class="np-cat"></div><div id="npLBnom" class="np-lbnom"></div><div id="npLBpre" class="np-pre"></div><div id="npLBdesc" class="np-desc"></div>' +
         '<a id="npLBwa" class="np-wa" target="_blank" rel="noopener">💬 Pedir por WhatsApp</a></div></div></div>';
       root.innerHTML = '<div class="np-snow"></div>' + h;
     }
     function navAbrirProducto(i) {
       var p = _navPub.prods[i]; if (!p) return;
-      var s = imgSrc(p.url_foto), im = $('npLBimg');
-      im.style.display = s ? '' : 'none'; im.src = s || '';
+      var fl = [], s0 = imgSrc(p.url_foto);
+      if (s0) fl.push({ s: s0, nota: '' });
+      fotosExtraDe(p).forEach(function (f) { fl.push({ s: imgSrc(f.url), nota: f.nota }); });
+      var g = $('npLBgal'), gh = '';
+      fl.forEach(function (f, k) {
+        gh += '<div class="np-sl"><img src="' + f.s + '" alt="">' + (fl.length > 1 ? '<span class="np-cnt">' + (k + 1) + ' / ' + fl.length + '</span>' : '') +
+          (f.nota ? '<div class="np-cap">' + esc(f.nota) + '</div>' : '') + '</div>';
+      });
+      g.innerHTML = gh; g.scrollLeft = 0; g.style.display = fl.length ? '' : 'none';
+      $('npLBhint').style.display = fl.length > 1 ? '' : 'none';
       $('npLBcat').textContent = p.categoria || '';
       $('npLBnom').textContent = p.nombre || '';
       $('npLBpre').textContent = p._precio !== undefined ? p._precio.toFixed(2) + ' €' : '';
@@ -2348,6 +2372,7 @@
         chk(await _sb.from('productos').delete().eq('id', id));
         if (_clientesOk) { try { await _sb.from('precios_cliente').delete().eq('producto_id', id); } catch (e) {} }
         borrarFotoStorage(prodBorrado && prodBorrado.url_foto);
+        fotosExtraDe(prodBorrado).forEach(function (f) { borrarFotoStorage(f.url); });
         delete _sel[id]; delete _precios[id];
         await cargarProductos();
         toast('Producto eliminado.');
@@ -2369,11 +2394,40 @@
       $('editProdNotas').value = prod.notas || '';
       $('editProdFotoBase64').value = prod.url_foto || '';
       $('editProdArchivoFoto').value = '';
+      _editFotos = fotosExtraDe(prod).map(function (f) { return { url: f.url, nota: f.nota }; });
+      renderEditFotos();
       var src = imgSrc(prod.url_foto);
       $('previewEditFotoContainer').innerHTML = src ? '<img src="' + src + '" alt="" style="max-height:60px; border-radius:8px;">' : '';
       $('modalEditarProducto').style.display = 'flex';
     }
 
+    var _editFotos = [];
+    function fotosExtraDe(p) {
+      var f = p && p.fotos_extra;
+      if (typeof f === 'string') { try { f = JSON.parse(f); } catch (e) { f = []; } }
+      if (!Array.isArray(f)) return [];
+      return f.filter(function (x) { return x && imgSrc(x.url); }).map(function (x) { return { url: x.url, nota: String(x.nota || '') }; });
+    }
+    function renderEditFotos() {
+      var h = '';
+      _editFotos.forEach(function (f, i) {
+        h += '<div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">' +
+          '<img src="' + imgSrc(f.url) + '" alt="" style="width:56px; height:56px; object-fit:cover; border-radius:8px; flex-shrink:0;">' +
+          '<input type="text" value="' + esc(f.nota) + '" placeholder="Comentario (opcional)" oninput="_editFotos[' + i + '].nota=this.value" style="flex:1; min-width:0;">' +
+          '<button type="button" class="btn btn-accent btn-sm" title="Hacer principal" onclick="editFotoPrincipal(' + i + ')">⭐</button>' +
+          '<button type="button" class="btn btn-danger btn-sm" onclick="editFotoQuitar(' + i + ')">🗑️</button></div>';
+      });
+      $('editFotosExtra').innerHTML = h;
+    }
+    function editFotoPrincipal(i) {
+      var vieja = $('editProdFotoBase64').value, nueva = _editFotos[i].url;
+      $('editProdFotoBase64').value = nueva;
+      if (vieja) _editFotos[i] = { url: vieja, nota: '' }; else _editFotos.splice(i, 1);
+      var src = imgSrc(nueva);
+      $('previewEditFotoContainer').innerHTML = src ? '<img src="' + src + '" alt="" style="max-height:60px; border-radius:8px;">' : '';
+      renderEditFotos();
+    }
+    function editFotoQuitar(i) { _editFotos.splice(i, 1); renderEditFotos(); }
     function cerrarModalEditar() { $('modalEditarProducto').style.display = 'none'; }
 
     async function actualizarProducto() {
@@ -2384,15 +2438,23 @@
         nombre: $('editProdNombre').value.trim(),
         precio: parseFloat($('editProdPrecio').value),
         notas: $('editProdNotas').value.trim(),
-        url_foto: $('editProdFotoBase64').value
+        url_foto: $('editProdFotoBase64').value,
+        fotos_extra: _editFotos.filter(function (f) { return f.url; }).map(function (f) { return { url: f.url, nota: String(f.nota || '').trim() }; })
       };
       if (!campos.nombre || isNaN(campos.precio) || campos.precio < 0) { toast('Escribe un nombre y un precio válido.', 'err'); return; }
       var btn = $('btnActualizarProd');
       btn.disabled = true;
       try {
         var antes = buscarEnCache(id), fotoAntes = antes ? antes.url_foto : '';
-        chk(await _sb.from('productos').update(campos).eq('id', id));
-        if (fotoAntes && fotoAntes !== campos.url_foto) borrarFotoStorage(fotoAntes);
+        var urlsAntes = [fotoAntes].concat(fotosExtraDe(antes).map(function (f) { return f.url; }));
+        var r = await _sb.from('productos').update(campos).eq('id', id);
+        if (r.error && /fotos_extra/.test(String(r.error.message || ''))) {
+          if (campos.fotos_extra.length) toast('Falta preparar la base de datos para varias fotos (ejecuta el SQL que te envié). El resto se guardó.', 'err');
+          delete campos.fotos_extra; r = await _sb.from('productos').update(campos).eq('id', id);
+        }
+        chk(r);
+        var urlsAhora = [campos.url_foto].concat((campos.fotos_extra || []).map(function (f) { return f.url; }));
+        urlsAntes.forEach(function (u) { if (u && urlsAhora.indexOf(u) === -1) borrarFotoStorage(u); });
         delete _precios[id];
         cerrarModalEditar();
         await cargarProductos();
