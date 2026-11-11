@@ -1119,7 +1119,7 @@
               <button class="btn btn-sm btn-accent" onclick="crearYAnadir()">Crear y añadir a la lista</button>
             </div></details>
           <button class="btn btn-sm btn-logout" onclick="cancelarEdicionLista()">Cancelar edición</button>
-          <span style="float:right; font-size:11px; color:#999;">versión 77</span>
+          <span style="float:right; font-size:11px; color:#999;">versión 79</span>
         </div>
         <div class="field">
           <label>Nombre del Cliente</label>
@@ -1491,6 +1491,7 @@
       <div class="field"><textarea id="impTexto" rows="8" autocomplete="off" oninput="prImpContar()" placeholder="Bar La Esquina&#10;Restaurante Mar 954 11 22 33&#10;Taberna El Rincón" style="width:100%; box-sizing:border-box; font:inherit; font-size:15px; padding:10px 12px; border:1.5px solid var(--border); border-radius:12px; background:var(--card); color:var(--text); resize:vertical;"></textarea></div>
       <div class="field" id="impTipoF"><label>Tipo</label><select id="impTipo"><option>Restaurante</option><option>Bar</option><option>Hotel</option><option>Catering</option><option>Cafetería</option><option>Otro</option></select></div>
       <div class="field"><label>Población</label><input type="text" id="impPob" autocomplete="off"></div>
+      <div class="field" id="impArchivoF" style="display:none;"><label>📄 O elige un archivo CSV con todos los datos</label><input type="file" id="impArchivo" accept=".csv,.txt,text/csv" onchange="impLeerArchivo(this)"></div>
       <div id="impCuenta" style="font-size:13px; color:var(--muted); margin-bottom:10px;"></div>
       <div style="display:flex; gap:10px;">
         <button class="btn btn-logout" style="flex:1;" onclick="cerrarImportPr()">Cancelar</button>
@@ -3740,13 +3741,62 @@
       var d = Math.round((new Date(+h[0], +h[1] - 1, +h[2]) - new Date(+a[0], +a[1] - 1, +a[2])) / 86400000);
       return d <= 0 ? 'hoy' : d === 1 ? 'ayer' : 'hace ' + d + ' días';
     }
-    var _impModo = 'pr';
+    var _impModo = 'pr', _impFilas = null;
+    function csvParse(txt) {
+      var prim = txt.split(/\r?\n/)[0] || '', sep = ';';
+      var cnt = { ';': (prim.match(/;/g) || []).length, ',': (prim.match(/,/g) || []).length, '\t': (prim.match(/\t/g) || []).length };
+      sep = cnt[';'] >= cnt[','] && cnt[';'] >= cnt['\t'] ? ';' : (cnt[','] >= cnt['\t'] ? ',' : '\t');
+      var rows = [], row = [], cur = '', q = false;
+      for (var i = 0; i < txt.length; i++) {
+        var ch = txt[i];
+        if (q) { if (ch === '"') { if (txt[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; }
+        else if (ch === '"') q = true;
+        else if (ch === sep) { row.push(cur); cur = ''; }
+        else if (ch === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+        else if (ch !== '\r') cur += ch;
+      }
+      if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+      return rows.filter(function (r) { return r.some(function (x) { return String(x).trim(); }); });
+    }
+    function impFilasDeCsv(txt) {
+      var rows = csvParse(txt.replace(/^\ufeff/, '')); if (rows.length < 2) return [];
+      var MAPA = { nombre: ['nombre', 'cliente', 'nombre comercial', 'nombre del cliente', 'local'], telefono: ['telefono', 'tel', 'movil', 'whatsapp', 'telefono movil'], contacto: ['persona de contacto', 'contacto', 'persona contacto', 'encargado'], email: ['email', 'e-mail', 'correo', 'mail', 'correo electronico'], direccion: ['direccion', 'calle', 'domicilio', 'calle y numero'], poblacion: ['poblacion', 'localidad', 'ciudad', 'municipio'], cp: ['cp', 'codigo postal', 'c.p.', 'c p'], razon_social: ['razon social', 'nombre fiscal', 'razon', 'nombre fiscal / razon social', 'denominacion'], cif: ['cif', 'nif', 'cif/nif', 'nif/cif', 'cif / nif'], dias_reparto: ['dias de reparto', 'dias reparto', 'reparto'], notas: ['notas', 'observaciones', 'nota'] };
+      var cab = rows[0].map(function (h) { return norm(h).replace(/[:.]+$/, '').trim(); }), col = {};
+      Object.keys(MAPA).forEach(function (k) { for (var i = 0; i < cab.length; i++) if (MAPA[k].indexOf(cab[i]) !== -1 && col[k] === undefined) col[k] = i; });
+      if (col.nombre === undefined) col.nombre = 0;
+      return rows.slice(1).map(function (r) {
+        var o = {}; Object.keys(col).forEach(function (k) { o[k] = String(r[col[k]] || '').trim(); });
+        if (o.cif) o.cif = o.cif.toUpperCase().replace(/\s+/g, '');
+        return o;
+      }).filter(function (o) { return o.nombre; });
+    }
+    function impDias(s) {
+      var n = norm(s), r = []; [['lun', 'lune'], ['mar', 'martes'], ['mie', 'miercoles'], ['jue', 'jueve'], ['vie', 'viernes'], ['sab', 'sabado'], ['dom', 'domingo']].forEach(function (d) { if (n.indexOf(d[1]) !== -1) r.push(d[0]); });
+      return r;
+    }
+    function impLeerArchivo(inp) {
+      var f = inp.files && inp.files[0]; if (!f) return;
+      var rd = new FileReader();
+      rd.onload = function () {
+        var txt = String(rd.result || '');
+        if (txt.indexOf('\ufffd') !== -1) { var rd2 = new FileReader(); rd2.onload = function () { impUsarCsv(String(rd2.result || '')); }; rd2.readAsText(f, 'windows-1252'); return; }
+        impUsarCsv(txt);
+      };
+      rd.readAsText(f, 'utf-8');
+    }
+    function impUsarCsv(txt) {
+      var filas = impFilasDeCsv(txt), vistos = {}, nuevos = [], rep = 0;
+      filas.forEach(function (o) { var k = o.nombre.toLowerCase(); var kc = claveCliente(o.nombre); if (vistos[kc] || buscarClientePorNombre(o.nombre) || buscarClientePorCif(o.cif)) { rep++; return; } vistos[kc] = 1; nuevos.push(o); });
+      _impFilas = { nuevos: nuevos, repetidos: rep };
+      $('impTexto').value = '';
+      $('impCuenta').textContent = filas.length ? 'Archivo leído: se crearán ' + nuevos.length + ' clientes' + (rep ? ' (' + rep + ' ya existen y se saltan)' : '') + '.' : 'No he encontrado clientes en el archivo. Debe tener una primera fila con los títulos (Nombre, Teléfono…).';
+    }
     function abrirImportPr(modo) {
       _impModo = modo === 'cli' ? 'cli' : 'pr';
       var cli = _impModo === 'cli';
       $('impTitulo').textContent = cli ? '📥 Importar lista de clientes' : '📥 Importar lista de locales';
       $('impAyuda').innerHTML = cli ? 'Pega los nombres de tus clientes, <strong>uno por línea</strong>. Si en la línea hay un teléfono, lo coge también. Los que ya existen se saltan. Luego completas cada ficha (días, dirección…).' : 'Pega los nombres, <strong>uno por línea</strong>. Si en la línea hay un teléfono, lo coge también. Se crean como "Por contactar" y los repetidos se saltan.';
-      $('impTipoF').style.display = cli ? 'none' : ''; $('btnImpPr').textContent = '📥 Importar';
+      $('impTipoF').style.display = cli ? 'none' : ''; $('impArchivoF').style.display = cli ? '' : 'none'; $('impArchivo').value = ''; _impFilas = null; $('btnImpPr').textContent = '📥 Importar';
       $('impTexto').value = ''; $('impPob').value = cli ? '' : prZona(); prImpContar(); $('modalImportPr').style.display = 'flex';
     }
     function cerrarImportPr() { $('modalImportPr').style.display = 'none'; }
@@ -3764,17 +3814,19 @@
       return { nuevos: res, repetidos: rep };
     }
     function prImpContar() {
+      if (_impFilas && !$('impTexto').value.trim()) return;
+      _impFilas = null;
       var r = prImpLineas();
       $('impCuenta').textContent = r.nuevos.length ? 'Se crearán ' + r.nuevos.length + (_impModo === 'cli' ? ' clientes' : ' locales') + (r.repetidos ? ' (' + r.repetidos + ' repetidos se saltan)' : '') + '.' : (r.repetidos ? 'Todos están ya en tu lista.' : '');
     }
     async function prImportar() {
       var cli = _impModo === 'cli';
       if (cli ? !_clientesOk : !_prospOk) { toast(cli ? 'Aún no está preparada la base de datos de clientes.' : 'Falta preparar la base de datos (prospectos-sql.txt).', 'err'); return; }
-      var r = prImpLineas(); if (!r.nuevos.length) { toast(cli ? 'No hay clientes nuevos que importar.' : 'No hay locales nuevos que importar.', 'err'); return; }
+      var r = (cli && _impFilas) ? _impFilas : prImpLineas(); if (!r.nuevos.length) { toast(cli ? 'No hay clientes nuevos que importar.' : 'No hay locales nuevos que importar.', 'err'); return; }
       var tipo = $('impTipo').value, pob = $('impPob').value.trim(), btn = $('btnImpPr'); btn.disabled = true;
       try {
         if (cli) {
-          chk(await _sb.from('clientes').insert(r.nuevos.map(function (x) { var c = { nombre: x.nombre, telefono: x.telefono, direccion: '' }; if (_diasOk && pob) c.poblacion = pob; return c; })));
+          chk(await _sb.from('clientes').insert(r.nuevos.map(function (x) { var c = { nombre: x.nombre, telefono: x.telefono || '', direccion: x.direccion || '' }; if (_diasOk) { c.poblacion = x.poblacion || pob || ''; c.cp = x.cp || ''; c.email = x.email || ''; c.contacto = x.contacto || ''; c.razon_social = x.razon_social || ''; c.cif = x.cif || ''; var dd = impDias(x.dias_reparto); if (dd.length) c.dias_reparto = dd; } if (x.notas) c.notas = x.notas; return c; })));
           cerrarImportPr(); await cargarClientes(); if (typeof renderizarClientes === 'function') renderizarClientes();
           toast('Importados ' + r.nuevos.length + ' clientes' + (r.repetidos ? ' (' + r.repetidos + ' repetidos saltados)' : '') + '.'); return;
         }
@@ -4533,7 +4585,9 @@
       if (_msgOk) datos.msg_whatsapp = $('cliMsg').value.trim();
       if (!datos.nombre) { toast('Escribe el nombre del cliente.', 'err'); return; }
       var dup = buscarClientePorNombre(datos.nombre);
-      if (dup && dup.id !== id) { toast('Ya existe un cliente con ese nombre.', 'err'); return; }
+      if (dup && dup.id !== id) { toast('Ya existe un cliente con ese nombre: ' + dup.nombre + '.', 'err'); return; }
+      var dupC = _diasOk ? buscarClientePorCif(datos.cif) : null;
+      if (dupC && dupC.id !== id) { toast('Ya existe un cliente con ese CIF: ' + dupC.nombre + '.', 'err'); return; }
       var btn = $('btnGuardarCliente');
       btn.disabled = true;
       try {
@@ -4564,7 +4618,12 @@
     var _histLimite = 15;
     var _histAbiertos = {};
 
-    function claveCliente(n) { return String(n || '').trim().toLowerCase(); }
+    function claveCliente(n) { return norm(n).replace(/\s+/g, ' ').trim(); }
+    function buscarClientePorCif(cif) {
+      var k = String(cif || '').replace(/[\s.-]/g, '').toUpperCase(); if (k.length < 6) return null;
+      for (var i = 0; i < _clientes.length; i++) if (String(_clientes[i].cif || '').replace(/[\s.-]/g, '').toUpperCase() === k) return _clientes[i];
+      return null;
+    }
     function togHist(el) { _histAbiertos[el.getAttribute('data-k')] = el.open; }
 
     async function cargarHistorico() {
