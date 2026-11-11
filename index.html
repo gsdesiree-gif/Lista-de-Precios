@@ -1119,7 +1119,7 @@
               <button class="btn btn-sm btn-accent" onclick="crearYAnadir()">Crear y añadir a la lista</button>
             </div></details>
           <button class="btn btn-sm btn-logout" onclick="cancelarEdicionLista()">Cancelar edición</button>
-          <span style="float:right; font-size:11px; color:#999;">versión 86</span>
+          <span style="float:right; font-size:11px; color:#999;">versión 87</span>
         </div>
         <div class="field">
           <label>Nombre del Cliente</label>
@@ -4879,6 +4879,48 @@
         if (txt) { b.textContent = txt; b.style.opacity = '.7'; } else { b.textContent = b.dataset.t; b.style.opacity = ''; delete b.dataset.t; }
       });
     }
+    // dibuja en el PDF las imágenes de una página (fotos redondeadas con borde, logo y marca de agua con su transparencia)
+    function imgAUrl(src, maxW, alfa, redondeo) {
+      return new Promise(function (res) {
+        var im = new Image(); im.crossOrigin = 'anonymous';
+        var ok = false, tm = setTimeout(function () { if (!ok) res(''); }, 8000);
+        im.onload = function () {
+          ok = true; clearTimeout(tm);
+          try {
+            var w = Math.min(im.naturalWidth, maxW || 900), h = Math.round(im.naturalHeight * w / im.naturalWidth), c = document.createElement('canvas'); c.width = w; c.height = h;
+            var x = c.getContext('2d');
+            if (redondeo) {
+              x.fillStyle = '#ffffff'; x.fillRect(0, 0, w, h); x.save();
+              var r = redondeo * w; x.beginPath(); x.moveTo(r, 0); x.arcTo(w, 0, w, h, r); x.arcTo(w, h, 0, h, r); x.arcTo(0, h, 0, 0, r); x.arcTo(0, 0, w, 0, r); x.closePath(); x.clip();
+              x.drawImage(im, 0, 0, w, h); x.restore();
+              x.strokeStyle = '#cbd5e1'; x.lineWidth = Math.max(2, w / 55); x.beginPath(); x.moveTo(r, 0); x.arcTo(w, 0, w, h, r); x.arcTo(w, h, 0, h, r); x.arcTo(0, h, 0, 0, r); x.arcTo(0, 0, w, 0, r); x.closePath(); x.stroke();
+              res({ url: c.toDataURL('image/jpeg', 0.9), tipo: 'JPEG' });
+            } else {
+              if (alfa) x.globalAlpha = alfa;
+              x.drawImage(im, 0, 0, w, h); res({ url: c.toDataURL('image/png'), tipo: 'PNG' });
+            }
+          } catch (e) { res(''); }
+        };
+        im.onerror = function () { ok = true; clearTimeout(tm); res(''); };
+        im.src = /^data:/i.test(src) ? src : src + (src.indexOf('?') > -1 ? '&' : '?') + 'cors=1';
+      });
+    }
+    async function dibujarCapasPDF(pdf, pagina) {
+      var pr = pagina.getBoundingClientRect(); if (!pr.width) return;
+      var k = 210 / pr.width, imgs = Array.prototype.slice.call(pagina.querySelectorAll('img')), marcas = [];
+      for (var n = 0; n < imgs.length; n++) {
+        var im = imgs[n], r = im.getBoundingClientRect(), src = im.getAttribute('src') || '';
+        if (!r.width || !r.height || !src) continue;
+        var x = (r.left - pr.left) * k, y = (r.top - pr.top) * k, w = r.width * k, h = r.height * k;
+        if (im.closest('.watermark-bg')) { marcas.push({ src: src, x: x, y: y, w: w, h: h, a: parseFloat(getComputedStyle(im.closest('.watermark-bg')).opacity) || 0.08 }); continue; }
+        var d = await imgAUrl(src, im.hasAttribute('data-prod') ? 320 : 700, 0, im.hasAttribute('data-prod') ? 6 / 55 : 0);
+        if (d) pdf.addImage(d.url, d.tipo, x, y, w, h);
+      }
+      for (var m = 0; m < marcas.length; m++) {
+        var q = marcas[m], dm = await imgAUrl(q.src, 700, q.a, 0);
+        if (dm) pdf.addImage(dm.url, dm.tipo, q.x, q.y, q.w, q.h);
+      }
+    }
     function diagPDF() {
       var d = window._pdfDiag, el = $('pdfInfo'); if (!d || !el) return;
       el.textContent = '🔍 Fotos: ' + (d.n === undefined ? '…' : d.n + ' (' + d.th + ' miniatura, ' + d.og + ' original, ' + d.sin + ' sin foto) en ' + (d.ms / 1000).toFixed(1) + ' s') + ' · Páginas: ' + (d.pag.length ? d.pag.join(' | ') : '…');
@@ -4950,25 +4992,23 @@
         await new Promise(function (r) { setTimeout(r, 30); });
         var rapido = !!_pdfNombre, canvas = null;
         paginas[i].setAttribute('data-pdfpg', String(i));
-        // en la copia que usa la captura se deja SOLO esta página (sin el resto de la app, que es enorme y la ralentiza)
         var aislar = (function (n) { return function (doc) {
-          try { var el = doc.querySelector('[data-pdfpg="' + n + '"]'); if (!el) return; var b = doc.body; while (b.firstChild) b.removeChild(b.firstChild); el.style.margin = '0'; el.style.boxShadow = 'none'; b.style.margin = '0'; b.style.padding = '0'; b.appendChild(el); } catch (e) {}
+          try { var el = doc.querySelector('[data-pdfpg="' + n + '"]'); if (!el) return; var b = doc.body; while (b.firstChild) b.removeChild(b.firstChild); el.style.margin = '0'; el.style.boxShadow = 'none'; el.style.borderRadius = '0'; b.style.margin = '0'; b.style.padding = '0'; b.appendChild(el); } catch (e) {}
         }; })(i);
-        var intentos = [
-          { n: 'completa', ms: 10000, ign: null },
-          { n: 'sin marca de agua', ms: 8000, ign: function (el) { return !!(el.classList && el.classList.contains('watermark-bg')); } },
-          { n: 'sin imágenes', ms: 20000, ign: function (el) { var n = String(el.tagName).toLowerCase(); return n === 'img' || n === 'svg'; } }
-        ], tp0 = Date.now(), ultimo = null;
-        for (var k = window._pdfIni || 0; k < intentos.length && !canvas; k++) {
-          var opc = { scale: rapido ? 1.25 : 2, useCORS: true, scrollY: 0, logging: false, imageTimeout: 4000, onclone: aislar };
-          if (intentos[k].ign) opc.ignoreElements = intentos[k].ign;
-          var tk0 = Date.now();
-          try { canvas = await conTiempo(html2canvas(paginas[i], opc), intentos[k].ms, 'tarda demasiado'); dg.pag.push((Date.now() - tk0) + ' ms (' + intentos[k].n + ')'); window._pdfIni = k; }
-          catch (e1) { ultimo = e1; dg.pag.push('✗ ' + intentos[k].n + ' ' + (Date.now() - tk0) + ' ms: ' + String(e1 && e1.message || e1).slice(0, 30)); }
+        // 1) el texto y el diseño se capturan SIN imágenes (rápido y fiable) ...
+        var tp0 = Date.now(), ultimo = null;
+        for (var k = 0; k < 2 && !canvas; k++) {
+          try {
+            canvas = await conTiempo(html2canvas(paginas[i], { scale: rapido ? 1.25 : 2, useCORS: true, scrollY: 0, logging: false, backgroundColor: '#ffffff', onclone: aislar,
+              ignoreElements: function (el) { var n = String(el.tagName).toLowerCase(); return n === 'img' || n === 'svg'; } }), 20000, 'tarda demasiado');
+            dg.pag.push((Date.now() - tp0) + ' ms');
+          } catch (e1) { ultimo = e1; dg.pag.push('✗ ' + (Date.now() - tp0) + ' ms: ' + String(e1 && e1.message || e1).slice(0, 30)); }
           diagPDF();
         }
         if (!canvas) throw (ultimo || new Error('No se pudo capturar la página ' + (i + 1)));
         pdf.addImage(canvas.toDataURL('image/jpeg', rapido ? 0.8 : 0.92), 'JPEG', 0, 0, 210, 297);
+        // 2) ... y las fotos, el logo y la marca de agua se colocan encima, una a una, en su posición exacta
+        try { await dibujarCapasPDF(pdf, paginas[i]); } catch (e2) { dg.pag.push('capas: ' + String(e2 && e2.message || e2).slice(0, 30)); diagPDF(); }
         canvas.width = canvas.height = 0;
         window._pdfSeg = Math.round((Date.now() - t0) / 100) / 10;
       }
