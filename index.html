@@ -1119,7 +1119,7 @@
               <button class="btn btn-sm btn-accent" onclick="crearYAnadir()">Crear y añadir a la lista</button>
             </div></details>
           <button class="btn btn-sm btn-logout" onclick="cancelarEdicionLista()">Cancelar edición</button>
-          <span style="float:right; font-size:11px; color:#999;">versión 85</span>
+          <span style="float:right; font-size:11px; color:#999;">versión 86</span>
         </div>
         <div class="field">
           <label>Nombre del Cliente</label>
@@ -4917,6 +4917,7 @@
       // espera a que carguen todas las fotos antes de hacer la captura (si no, salen en blanco)
       // las fotos de producto se bajan en versión pequeña (de 6 en 6) y se incrustan: así la captura no depende de la red
       var prods = Array.prototype.slice.call(document.querySelectorAll('.page-a4 img[data-prod]'));
+      window._pdfIni = 0;
       var turno = 0, sinFoto = 0, dg = { t0: Date.now(), th: 0, og: 0, ms: 0, pag: [] }; window._pdfDiag = dg;
       await Promise.all([0, 1, 2, 3, 4, 5].map(async function () {
         while (turno < prods.length) {
@@ -4947,15 +4948,26 @@
         if (i > 0) pdf.addPage();
         if (typeof _pdfProgreso === 'function') _pdfProgreso(i + 1, paginas.length);
         await new Promise(function (r) { setTimeout(r, 30); });
-        var rapido = !!_pdfNombre;
-        var opc = { scale: rapido ? 1.25 : 2, useCORS: true, scrollY: 0, logging: false, imageTimeout: 4000 }, canvas;
-        var tp0 = Date.now();
-        try { canvas = await conTiempo(html2canvas(paginas[i], opc), 15000, 'La página ' + (i + 1) + ' tarda demasiado'); dg.pag.push((Date.now() - tp0) + ' ms'); diagPDF(); }
-        catch (e1) {
-          dg.pag.push('FALLÓ tras ' + (Date.now() - tp0) + ' ms (' + String(e1 && e1.message || e1).slice(0, 40) + ')'); diagPDF();   // si las fotos dan problemas, se reintenta sin ellas para no quedarse colgado
-          opc.ignoreElements = function (el) { var n = String(el.tagName).toLowerCase(); return n === 'img' || n === 'svg'; };
-          canvas = await conTiempo(html2canvas(paginas[i], opc), 20000, 'No se pudo capturar la página ' + (i + 1));
+        var rapido = !!_pdfNombre, canvas = null;
+        paginas[i].setAttribute('data-pdfpg', String(i));
+        // en la copia que usa la captura se deja SOLO esta página (sin el resto de la app, que es enorme y la ralentiza)
+        var aislar = (function (n) { return function (doc) {
+          try { var el = doc.querySelector('[data-pdfpg="' + n + '"]'); if (!el) return; var b = doc.body; while (b.firstChild) b.removeChild(b.firstChild); el.style.margin = '0'; el.style.boxShadow = 'none'; b.style.margin = '0'; b.style.padding = '0'; b.appendChild(el); } catch (e) {}
+        }; })(i);
+        var intentos = [
+          { n: 'completa', ms: 10000, ign: null },
+          { n: 'sin marca de agua', ms: 8000, ign: function (el) { return !!(el.classList && el.classList.contains('watermark-bg')); } },
+          { n: 'sin imágenes', ms: 20000, ign: function (el) { var n = String(el.tagName).toLowerCase(); return n === 'img' || n === 'svg'; } }
+        ], tp0 = Date.now(), ultimo = null;
+        for (var k = window._pdfIni || 0; k < intentos.length && !canvas; k++) {
+          var opc = { scale: rapido ? 1.25 : 2, useCORS: true, scrollY: 0, logging: false, imageTimeout: 4000, onclone: aislar };
+          if (intentos[k].ign) opc.ignoreElements = intentos[k].ign;
+          var tk0 = Date.now();
+          try { canvas = await conTiempo(html2canvas(paginas[i], opc), intentos[k].ms, 'tarda demasiado'); dg.pag.push((Date.now() - tk0) + ' ms (' + intentos[k].n + ')'); window._pdfIni = k; }
+          catch (e1) { ultimo = e1; dg.pag.push('✗ ' + intentos[k].n + ' ' + (Date.now() - tk0) + ' ms: ' + String(e1 && e1.message || e1).slice(0, 30)); }
+          diagPDF();
         }
+        if (!canvas) throw (ultimo || new Error('No se pudo capturar la página ' + (i + 1)));
         pdf.addImage(canvas.toDataURL('image/jpeg', rapido ? 0.8 : 0.92), 'JPEG', 0, 0, 210, 297);
         canvas.width = canvas.height = 0;
         window._pdfSeg = Math.round((Date.now() - t0) / 100) / 10;
