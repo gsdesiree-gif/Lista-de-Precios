@@ -1119,7 +1119,7 @@
               <button class="btn btn-sm btn-accent" onclick="crearYAnadir()">Crear y añadir a la lista</button>
             </div></details>
           <button class="btn btn-sm btn-logout" onclick="cancelarEdicionLista()">Cancelar edición</button>
-          <span style="float:right; font-size:11px; color:#999;">versión 82</span>
+          <span style="float:right; font-size:11px; color:#999;">versión 83</span>
         </div>
         <div class="field">
           <label>Nombre del Cliente</label>
@@ -1248,6 +1248,9 @@
         <p style="font-size:13px; color:var(--muted); margin:0 0 12px;">Las fotos nuevas se guardan en un almacenamiento rápido. Las antiguas se pueden mover aquí para que la app cargue más deprisa.</p>
         <div id="migEstado" class="count-txt"></div>
         <button id="btnMigrar" onclick="migrarFotos()" class="btn btn-logout">Mover fotos antiguas</button>
+        <p style="font-size:13px; color:var(--muted); margin:16px 0 8px;">⚡ Las listas de precios cargan <strong>mucho más rápido</strong> si cada foto tiene una copia pequeña. Las fotos nuevas ya la crean solas; para las que ya tienes, pulsa aquí (solo una vez).</p>
+        <div id="miniEstado" class="count-txt"></div>
+        <button id="btnMini" onclick="crearMiniaturas()" class="btn btn-accent">⚡ Crear miniaturas</button>
       </div>
     </div>
   </div>
@@ -1799,8 +1802,9 @@
           if (!esProducto) { mostrar(canvas.toDataURL('image/jpeg', 0.8)); return; }
           _subiendo++;
           toast('Subiendo foto...');
-          canvas.toBlob(function (blob) {
-            subirFoto(blob).then(function (url) { mostrar(url); toast('Foto subida.'); })
+          canvas.toBlob(async function (blob) {
+            var mb = await blobMini(canvas, canvas.width, canvas.height);
+            subirFoto(blob, mb).then(function (url) { mostrar(url); toast('Foto subida.'); })
               .catch(function (e) {
                 // Si el almacenamiento aún no está preparado, se guarda como antes para no perder la foto
                 mostrar(canvas.toDataURL('image/jpeg', 0.8));
@@ -1815,10 +1819,51 @@
     }
 
     /* ---------- fotos en Supabase Storage ---------- */
-    async function subirFoto(blob) {
+    function urlMini(url) {
+      var m = String(url || '').match(/^(https:\/\/[^?]+\/storage\/v1\/object\/public\/fotos\/)([^/?]+)$/);
+      return m ? m[1] + 't_' + m[2] : '';
+    }
+    function blobMini(fuente, ancho, alto) {   // fuente: canvas o imagen ya cargada → JPEG cuadrado de 320 px
+      return new Promise(function (res) {
+        try {
+          var S = Math.min(ancho, alto), c = document.createElement('canvas'); c.width = c.height = 320;
+          var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 320, 320);
+          x.drawImage(fuente, (ancho - S) / 2, (alto - S) / 2, S, S, 0, 0, 320, 320);
+          c.toBlob(function (b) { res(b); }, 'image/jpeg', 0.88);
+        } catch (e) { res(null); }
+      });
+    }
+    async function subirMini(ruta, blob) {
+      var r = await _sb.storage.from('fotos').upload('t_' + ruta, blob, { contentType: 'image/jpeg', cacheControl: '31536000', upsert: false });
+      if (r.error && !/exist|duplicate/i.test(String(r.error.message || ''))) throw r.error;
+    }
+    async function crearMiniaturas() {
+      var lista = _productosCache.filter(function (p) { return urlMini(p.url_foto); });
+      if (!lista.length) { toast('No hay fotos en el almacenamiento rápido.'); return; }
+      var btn = $('btnMini'), hechas = 0, nuevas = 0, fallos = 0, turno = 0; btn.disabled = true;
+      await Promise.all([0, 1, 2, 3].map(async function () {
+        while (turno < lista.length) {
+          var p = lista[turno++], mu = urlMini(p.url_foto);
+          try {
+            var h = await fetch(mu, { method: 'HEAD', cache: 'no-store' });
+            if (!h.ok) {
+              var im = await new Promise(function (ok, ko) { var i = new Image(); i.crossOrigin = 'anonymous'; i.onload = function () { ok(i); }; i.onerror = ko; i.src = p.url_foto; });
+              var b = await blobMini(im, im.naturalWidth, im.naturalHeight); if (!b) throw new Error('no se pudo reducir');
+              await subirMini(rutaFoto(p.url_foto), b); nuevas++;
+            }
+          } catch (e) { fallos++; }
+          hechas++; $('miniEstado').textContent = 'Creando miniaturas… ' + hechas + ' de ' + lista.length;
+        }
+      }));
+      btn.disabled = false;
+      $('miniEstado').textContent = fallos ? nuevas + ' creadas, ' + fallos + ' con error (pulsa otra vez para reintentar).' : '¡Listo! ' + (nuevas ? nuevas + ' miniaturas creadas.' : 'Todas las fotos ya tenían miniatura.');
+      toast($('miniEstado').textContent, fallos ? 'err' : undefined);
+    }
+    async function subirFoto(blob, miniBlob) {
       var nombre = 'p' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.jpg';
       var r = await _sb.storage.from('fotos').upload(nombre, blob, { contentType: 'image/jpeg', cacheControl: '31536000', upsert: false });
       if (r.error) throw r.error;
+      if (miniBlob) { try { await subirMini(nombre, miniBlob); } catch (e) {} }
       return _sb.storage.from('fotos').getPublicUrl(nombre).data.publicUrl;
     }
     function rutaFoto(url) {
@@ -4767,7 +4812,8 @@
         }
         var prod = d.producto;
         var s = imgSrc(prod.url_foto);
-        var imgT = s ? '<img data-prod="1" src="' + s + '"' + corsAttr(s) + ' alt="" style="width: 55px; height: 55px; border-radius: 6px; object-fit: cover; border: 1px solid #cbd5e1;">'
+        var sm = s ? urlMini(prod.url_foto) : '';
+        var imgT = s ? '<img data-prod="1" data-orig="' + s + '" src="' + (sm || s) + '"' + (sm ? ' onerror="this.onerror=null;this.src=this.getAttribute(\'data-orig\')"' : '') + corsAttr(s) + ' alt="" style="width: 55px; height: 55px; border-radius: 6px; object-fit: cover; border: 1px solid #cbd5e1;">'
           : '<div style="width: 55px; height: 55px; background: #f1f5f9; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 1px solid #e2e8f0;">📦</div>';
         var notaT = prod.notas ? '<div style="font-size: 10px; color: #64748b; margin-top: 1px;">📌 ' + esc(prod.notas) + '</div>' : '';
         paginaHtml += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 3px 6px; border-bottom: 1px solid #e2e8f0; height: 64px;">' +
@@ -4862,7 +4908,7 @@
       if (!paginas || paginas.length === 0) throw new Error('No hay documento abierto.');
       // espera a que carguen todas las fotos antes de hacer la captura (si no, salen en blanco)
       // las fotos de producto se reducen a miniaturas (se descargan de 6 en 6): con listas largas, si no, muchas no llegan a tiempo y salen en blanco
-      var prods = Array.prototype.slice.call(document.querySelectorAll('.page-a4 img[data-prod]')).filter(function (im) { return /^https:/i.test(im.getAttribute('src') || ''); });
+      var prods = Array.prototype.slice.call(document.querySelectorAll('.page-a4 img[data-prod]')).filter(function (im) { return /^https:/i.test(im.getAttribute('src') || '') && !(im.complete && im.naturalWidth && im.naturalWidth <= 400); });
       var turno = 0;
       await Promise.all([0, 1, 2, 3, 4, 5].map(async function () {
         while (turno < prods.length) {
