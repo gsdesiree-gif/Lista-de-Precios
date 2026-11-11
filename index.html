@@ -1058,6 +1058,7 @@
           <input type="search" id="buscarCli" placeholder="🔎 Buscar cliente..." oninput="renderizarClientes()">
           <button class="btn btn-sm btn-accent" onclick="abrirModalCliente(0)" style="white-space:nowrap;">➕ Nuevo</button>
         </div>
+        <button class="btn btn-sm btn-logout" onclick="abrirImportPr('cli')" style="margin-bottom:10px;">📥 Importar lista de clientes</button>
         <button id="btnReparto" class="btn btn-accent" style="margin-bottom:10px;" onclick="abrirReparto()">🧾 Pedidos y hoja de reparto</button>
         <div class="cat-filter-bar" id="barraCli">
           <button class="cat-filter-btn active" onclick="filtrarClientes('TODOS', this)">Todos</button>
@@ -1118,7 +1119,7 @@
               <button class="btn btn-sm btn-accent" onclick="crearYAnadir()">Crear y añadir a la lista</button>
             </div></details>
           <button class="btn btn-sm btn-logout" onclick="cancelarEdicionLista()">Cancelar edición</button>
-          <span style="float:right; font-size:11px; color:#999;">versión 73</span>
+          <span style="float:right; font-size:11px; color:#999;">versión 75</span>
         </div>
         <div class="field">
           <label>Nombre del Cliente</label>
@@ -1383,11 +1384,15 @@
       <input type="hidden" id="cliId">
       <div class="field"><label>Nombre</label><input type="text" id="cliNombre" placeholder="Ej: Restaurante El Faro"></div>
       <div class="field"><label>Teléfono / WhatsApp</label><input type="text" id="cliTelefono" inputmode="tel" placeholder="Ej: 600 000 000"></div>
+      <div id="bloqueContacto">
+        <div class="field"><label>🙋 Persona de contacto</label><input type="text" id="cliContacto" placeholder="Ej: Juan (encargado)"></div>
+        <div class="field" id="fTelPed"><label>📲 Teléfono para pedidos (si es distinto)</label><input type="text" id="cliTelPed" inputmode="tel" placeholder="Ej: 600 000 000 (opcional)"></div>
+        <div id="avisoTelPed" style="display:none; font-size:12px; color:var(--muted); margin:-6px 0 12px;">Para guardar el teléfono de pedidos, pega una vez el script <strong>telefono-pedidos-sql.txt</strong> en Supabase.</div>
+      </div>
       <div id="bloqueFicha">
         <details class="cat-block" id="detFicha" style="margin-bottom:12px;">
           <summary>🧾 Datos de contacto y fiscales</summary>
           <div class="inner">
-            <div class="field"><label>Persona de contacto</label><input type="text" id="cliContacto" placeholder="Ej: Juan (encargado)"></div>
             <div class="field"><label>Email</label><input type="email" id="cliEmail" inputmode="email" placeholder="Opcional"></div>
             <div class="field"><label>Razón social</label><input type="text" id="cliRazon" placeholder="Ej: Hostelería El Faro S.L."></div>
             <div class="field"><label>CIF / NIF</label><input type="text" id="cliCif" autocapitalize="characters" placeholder="Ej: B12345678"></div>
@@ -1481,10 +1486,10 @@
 
   <div id="modalImportPr" class="modal-overlay no-print" onclick="if(event.target===this)cerrarImportPr()">
     <div class="modal-card" style="max-width:560px;">
-      <div class="card-header" style="margin-bottom:8px;">📥 Importar lista de locales</div>
-      <div style="font-size:13px; color:var(--muted); margin-bottom:10px;">Pega los nombres, <strong>uno por línea</strong>. Si en la línea hay un teléfono, lo coge también. Se crean como "Por contactar" y los repetidos se saltan.</div>
+      <div id="impTitulo" class="card-header" style="margin-bottom:8px;">📥 Importar lista de locales</div>
+      <div id="impAyuda" style="font-size:13px; color:var(--muted); margin-bottom:10px;"></div>
       <div class="field"><textarea id="impTexto" rows="8" autocomplete="off" oninput="prImpContar()" placeholder="Bar La Esquina&#10;Restaurante Mar 954 11 22 33&#10;Taberna El Rincón" style="width:100%; box-sizing:border-box; font:inherit; font-size:15px; padding:10px 12px; border:1.5px solid var(--border); border-radius:12px; background:var(--card); color:var(--text); resize:vertical;"></textarea></div>
-      <div class="field"><label>Tipo</label><select id="impTipo"><option>Restaurante</option><option>Bar</option><option>Hotel</option><option>Catering</option><option>Cafetería</option><option>Otro</option></select></div>
+      <div class="field" id="impTipoF"><label>Tipo</label><select id="impTipo"><option>Restaurante</option><option>Bar</option><option>Hotel</option><option>Catering</option><option>Cafetería</option><option>Otro</option></select></div>
       <div class="field"><label>Población</label><input type="text" id="impPob" autocomplete="off"></div>
       <div id="impCuenta" style="font-size:13px; color:var(--muted); margin-bottom:10px;"></div>
       <div style="display:flex; gap:10px;">
@@ -1548,6 +1553,7 @@
     var _nombresMeses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     var _toastTimer = null;
     var _subiendo = 0;             // fotos que se están subiendo ahora mismo
+    var _telPedOk = false;         // false = aún no existe la columna telefono_pedidos
     var _clientes = [];            // agenda de clientes
     var _clientesOk = false;       // false = aún no se ha ejecutado clientes.sql
     var _avisoClientes = false;
@@ -3266,6 +3272,7 @@
         try { chk(await _sb.from('clientes').select('dias_reparto,dias_llamada,forma_pago,razon_social,cif,email,contacto,poblacion,cp').limit(1)); _diasOk = true; }
         catch (e2) { _diasOk = false; }
         try { chk(await _sb.from('clientes').select('msg_whatsapp').limit(1)); _msgOk = true; } catch (e3) { _msgOk = false; }
+        try { chk(await _sb.from('clientes').select('telefono_pedidos').limit(1)); _telPedOk = true; } catch (e4) { _telPedOk = false; }
       } catch (e) {
         _clientes = []; _clientesOk = false;
         if (!_avisoClientes) { _avisoClientes = true; toast('Falta preparar la base de datos para clientes (script clientes.sql en Supabase).', 'err'); }
@@ -3386,7 +3393,7 @@
         (hayTel ? '<button class="btn btn-sm btn-accent" onclick="llamarCliente(' + id + ')">📞 Llamar</button><button class="btn btn-sm btn-wa" onclick="abrirWhatsApp(' + id + ')">💬 WhatsApp</button>' : '') +
         (dir ? '<button class="btn btn-sm btn-accent" onclick="irACliente(' + id + ')">📍 Cómo llegar</button>' : '') +
         '<button class="btn btn-sm btn-accent" onclick="cerrarFichaCliente(); abrirPedido(' + id + ')">🛒 Pedido</button></div>';
-      h += fila('📞', 'Teléfono', c.telefono ? esc(c.telefono) : '') + fila('🙋', 'Persona de contacto', esc(c.contacto || '')) +
+      h += fila('📞', 'Teléfono', c.telefono ? esc(c.telefono) : '') + fila('🙋', 'Persona de contacto', esc(c.contacto || '')) + fila('📲', 'Teléfono para pedidos', esc(c.telefono_pedidos || '')) +
         fila('✉️', 'Email', c.email ? '<a href="mailto:' + esc(c.email) + '">' + esc(c.email) + '</a>' : '') +
         fila('📍', 'Dirección', esc(dir)) +
         fila('🚚', 'Días de reparto', esc(diasTxt(c.dias_reparto))) + fila('📞', 'Días de llamada', esc(diasTxt(c.dias_llamada))) +
@@ -3682,30 +3689,44 @@
       var d = Math.round((new Date(+h[0], +h[1] - 1, +h[2]) - new Date(+a[0], +a[1] - 1, +a[2])) / 86400000);
       return d <= 0 ? 'hoy' : d === 1 ? 'ayer' : 'hace ' + d + ' días';
     }
-    function abrirImportPr() { $('impTexto').value = ''; $('impPob').value = prZona(); prImpContar(); $('modalImportPr').style.display = 'flex'; }
+    var _impModo = 'pr';
+    function abrirImportPr(modo) {
+      _impModo = modo === 'cli' ? 'cli' : 'pr';
+      var cli = _impModo === 'cli';
+      $('impTitulo').textContent = cli ? '📥 Importar lista de clientes' : '📥 Importar lista de locales';
+      $('impAyuda').innerHTML = cli ? 'Pega los nombres de tus clientes, <strong>uno por línea</strong>. Si en la línea hay un teléfono, lo coge también. Los que ya existen se saltan. Luego completas cada ficha (días, dirección…).' : 'Pega los nombres, <strong>uno por línea</strong>. Si en la línea hay un teléfono, lo coge también. Se crean como "Por contactar" y los repetidos se saltan.';
+      $('impTipoF').style.display = cli ? 'none' : ''; $('btnImpPr').textContent = '📥 Importar';
+      $('impTexto').value = ''; $('impPob').value = cli ? '' : prZona(); prImpContar(); $('modalImportPr').style.display = 'flex';
+    }
     function cerrarImportPr() { $('modalImportPr').style.display = 'none'; }
     function prImpLineas() {
-      var vistos = {}, ya = {}; _prosp.forEach(function (p) { ya[String(p.nombre || '').trim().toLowerCase()] = 1; });
+      var vistos = {}, ya = {}, cli = _impModo === 'cli'; if (!cli) _prosp.forEach(function (p) { ya[String(p.nombre || '').trim().toLowerCase()] = 1; });
       var res = [], rep = 0;
       $('impTexto').value.split(/\n/).forEach(function (l) {
         l = l.replace(/^\s*(?:[-•*·]|\d+[.)])\s*/, '').trim(); if (!l) return;
         var tel = '', m = /(?:\+34[\s.-]?)?[6-9]\d{2}[\s.-]?\d{2,3}[\s.-]?\d{2,3}[\s.-]?\d{0,2}/.exec(l);
         if (m && m[0].replace(/[^\d]/g, '').replace(/^34(?=\d{9}$)/, '').length === 9) { tel = m[0].trim(); l = l.replace(m[0], ''); }
         var nombre = l.replace(/[\s,;:\-–|]+$/, '').replace(/^[\s,;:\-–|]+/, '').trim(); if (!nombre) return;
-        var key = nombre.toLowerCase(); if (vistos[key] || ya[key]) { rep++; return; } vistos[key] = 1;
+        var key = nombre.toLowerCase(); if (vistos[key] || ya[key] || (cli && buscarClientePorNombre(nombre))) { rep++; return; } vistos[key] = 1;
         res.push({ nombre: nombre, telefono: tel });
       });
       return { nuevos: res, repetidos: rep };
     }
     function prImpContar() {
       var r = prImpLineas();
-      $('impCuenta').textContent = r.nuevos.length ? 'Se crearán ' + r.nuevos.length + ' locales' + (r.repetidos ? ' (' + r.repetidos + ' repetidos se saltan)' : '') + '.' : (r.repetidos ? 'Todos están ya en tu lista.' : '');
+      $('impCuenta').textContent = r.nuevos.length ? 'Se crearán ' + r.nuevos.length + (_impModo === 'cli' ? ' clientes' : ' locales') + (r.repetidos ? ' (' + r.repetidos + ' repetidos se saltan)' : '') + '.' : (r.repetidos ? 'Todos están ya en tu lista.' : '');
     }
     async function prImportar() {
-      if (!_prospOk) { toast('Falta preparar la base de datos (prospectos-sql.txt).', 'err'); return; }
-      var r = prImpLineas(); if (!r.nuevos.length) { toast('No hay locales nuevos que importar.', 'err'); return; }
+      var cli = _impModo === 'cli';
+      if (cli ? !_clientesOk : !_prospOk) { toast(cli ? 'Aún no está preparada la base de datos de clientes.' : 'Falta preparar la base de datos (prospectos-sql.txt).', 'err'); return; }
+      var r = prImpLineas(); if (!r.nuevos.length) { toast(cli ? 'No hay clientes nuevos que importar.' : 'No hay locales nuevos que importar.', 'err'); return; }
       var tipo = $('impTipo').value, pob = $('impPob').value.trim(), btn = $('btnImpPr'); btn.disabled = true;
       try {
+        if (cli) {
+          chk(await _sb.from('clientes').insert(r.nuevos.map(function (x) { var c = { nombre: x.nombre, telefono: x.telefono, direccion: '' }; if (_diasOk && pob) c.poblacion = pob; return c; })));
+          cerrarImportPr(); await cargarClientes(); if (typeof renderizarClientes === 'function') renderizarClientes();
+          toast('Importados ' + r.nuevos.length + ' clientes' + (r.repetidos ? ' (' + r.repetidos + ' repetidos saltados)' : '') + '.'); return;
+        }
         chk(await _sb.from('prospectos').insert(r.nuevos.map(function (x) { return { nombre: x.nombre, telefono: x.telefono, tipo: tipo, poblacion: pob, fuente: 'Lista importada', estado: 'pendiente', notas: [] }; })));
         cerrarImportPr(); _prFiltro = 'pendiente'; await cargarProspectos(); switchTab('tabTareas');
         toast('Importados ' + r.nuevos.length + ' locales' + (r.repetidos ? ' (' + r.repetidos + ' repetidos saltados)' : '') + '.');
@@ -4422,7 +4443,9 @@
       $('btnBorrarCliente').style.display = c ? '' : 'none';
       _modalDias = { rep: (c && c.dias_reparto) ? c.dias_reparto.slice() : [], lla: (c && c.dias_llamada) ? c.dias_llamada.slice() : [] };
       $('cliPago').value = c ? (c.forma_pago || '') : '';
-      var campos = { cliContacto: 'contacto', cliEmail: 'email', cliRazon: 'razon_social', cliCif: 'cif', cliPoblacion: 'poblacion', cliCp: 'cp' }, hayDatos = false;
+      var campos = { cliEmail: 'email', cliRazon: 'razon_social', cliCif: 'cif', cliPoblacion: 'poblacion', cliCp: 'cp' }, hayDatos = false;
+      $('cliContacto').value = c ? (c.contacto || '') : ''; $('cliTelPed').value = c ? (c.telefono_pedidos || '') : '';
+      $('bloqueContacto').style.display = _diasOk ? '' : 'none'; $('fTelPed').style.display = _telPedOk ? '' : 'none'; $('avisoTelPed').style.display = _telPedOk ? 'none' : '';
       for (var idc in campos) { var v = c ? (c[campos[idc]] || '') : ''; $(idc).value = v; if (v) hayDatos = true; }
       if (c && c.direccion) hayDatos = true;
       $('detFicha').open = hayDatos;
@@ -4451,7 +4474,7 @@
         notas: $('cliNotas').value.trim()
       };
       if (_diasOk) { datos.dias_reparto = _modalDias.rep; datos.dias_llamada = _modalDias.lla; datos.forma_pago = $('cliPago').value;
-        datos.contacto = $('cliContacto').value.trim(); datos.email = $('cliEmail').value.trim();
+        datos.contacto = $('cliContacto').value.trim(); if (_telPedOk) datos.telefono_pedidos = $('cliTelPed').value.trim(); datos.email = $('cliEmail').value.trim();
         datos.razon_social = $('cliRazon').value.trim(); datos.cif = $('cliCif').value.trim().toUpperCase();
         datos.poblacion = $('cliPoblacion').value.trim(); datos.cp = $('cliCp').value.trim();
       }
