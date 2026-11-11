@@ -1119,7 +1119,7 @@
               <button class="btn btn-sm btn-accent" onclick="crearYAnadir()">Crear y añadir a la lista</button>
             </div></details>
           <button class="btn btn-sm btn-logout" onclick="cancelarEdicionLista()">Cancelar edición</button>
-          <span style="float:right; font-size:11px; color:#999;">versión 79</span>
+          <span style="float:right; font-size:11px; color:#999;">versión 80</span>
         </div>
         <div class="field">
           <label>Nombre del Cliente</label>
@@ -3826,7 +3826,7 @@
       var tipo = $('impTipo').value, pob = $('impPob').value.trim(), btn = $('btnImpPr'); btn.disabled = true;
       try {
         if (cli) {
-          chk(await _sb.from('clientes').insert(r.nuevos.map(function (x) { var c = { nombre: x.nombre, telefono: x.telefono || '', direccion: x.direccion || '' }; if (_diasOk) { c.poblacion = x.poblacion || pob || ''; c.cp = x.cp || ''; c.email = x.email || ''; c.contacto = x.contacto || ''; c.razon_social = x.razon_social || ''; c.cif = x.cif || ''; var dd = impDias(x.dias_reparto); if (dd.length) c.dias_reparto = dd; } if (x.notas) c.notas = x.notas; return c; })));
+          chk(await _sb.from('clientes').insert(r.nuevos.map(function (x) { var c = { nombre: x.nombre, telefono: x.telefono || '', direccion: x.direccion || '' }; if (_diasOk) { c.poblacion = x.poblacion || pob || ''; c.cp = x.cp || ''; c.email = x.email || ''; c.contacto = x.contacto || ''; c.razon_social = x.razon_social || ''; c.cif = x.cif || ''; c.dias_reparto = impDias(x.dias_reparto); } c.notas = x.notas || ''; return c; })));
           cerrarImportPr(); await cargarClientes(); if (typeof renderizarClientes === 'function') renderizarClientes();
           toast('Importados ' + r.nuevos.length + ' clientes' + (r.repetidos ? ' (' + r.repetidos + ' repetidos saltados)' : '') + '.'); return;
         }
