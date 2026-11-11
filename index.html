@@ -1119,7 +1119,7 @@
               <button class="btn btn-sm btn-accent" onclick="crearYAnadir()">Crear y añadir a la lista</button>
             </div></details>
           <button class="btn btn-sm btn-logout" onclick="cancelarEdicionLista()">Cancelar edición</button>
-          <span style="float:right; font-size:11px; color:#999;">versión 83</span>
+          <span style="float:right; font-size:11px; color:#999;">versión 84</span>
         </div>
         <div class="field">
           <label>Nombre del Cliente</label>
@@ -1847,7 +1847,7 @@
           try {
             var h = await fetch(mu, { method: 'HEAD', cache: 'no-store' });
             if (!h.ok) {
-              var im = await new Promise(function (ok, ko) { var i = new Image(); i.crossOrigin = 'anonymous'; i.onload = function () { ok(i); }; i.onerror = ko; i.src = p.url_foto; });
+              var im = await new Promise(function (ok, ko) { var i = new Image(); i.crossOrigin = 'anonymous'; i.onload = function () { ok(i); }; i.onerror = ko; i.src = p.url_foto + '?cors=1'; });
               var b = await blobMini(im, im.naturalWidth, im.naturalHeight); if (!b) throw new Error('no se pudo reducir');
               await subirMini(rutaFoto(p.url_foto), b); nuevas++;
             }
@@ -4813,7 +4813,7 @@
         var prod = d.producto;
         var s = imgSrc(prod.url_foto);
         var sm = s ? urlMini(prod.url_foto) : '';
-        var imgT = s ? '<img data-prod="1" data-orig="' + s + '" src="' + (sm || s) + '"' + (sm ? ' onerror="this.onerror=null;this.src=this.getAttribute(\'data-orig\')"' : '') + corsAttr(s) + ' alt="" style="width: 55px; height: 55px; border-radius: 6px; object-fit: cover; border: 1px solid #cbd5e1;">'
+        var imgT = s ? '<img data-prod="1" data-orig="' + s + '" src="' + (sm || s) + '" alt="" style="width: 55px; height: 55px; border-radius: 6px; object-fit: cover; border: 1px solid #cbd5e1;">'
           : '<div style="width: 55px; height: 55px; background: #f1f5f9; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 1px solid #e2e8f0;">📦</div>';
         var notaT = prod.notas ? '<div style="font-size: 10px; color: #64748b; margin-top: 1px;">📌 ' + esc(prod.notas) + '</div>' : '';
         paginaHtml += '<div style="display: flex; align-items: center; justify-content: space-between; padding: 3px 6px; border-bottom: 1px solid #e2e8f0; height: 64px;">' +
@@ -4879,24 +4879,27 @@
       });
     }
     var _docMini = {};
-    function docMiniatura(url) {
+    // Descarga una foto "limpia" (con un parámetro distinto en la dirección, para no reutilizar copias sin permiso que Safari guarda) y la reduce a 320 px.
+    function docMiniatura(url, maxIntentos) {
       return new Promise(function (res) {
         if (_docMini[url]) return res(_docMini[url]);
-        var intentos = 0;
+        var intentos = 0, max = maxIntentos || 2;
         (function probar() {
           intentos++;
-          var hecho = false, fin = function (v) { if (hecho) return; hecho = true; if (v) { _docMini[url] = v; res(v); } else if (intentos < 2) probar(); else res(url); };
-          setTimeout(function () { fin(''); }, 12000);
+          var hecho = false, fin = function (v) { if (hecho) return; hecho = true; if (v) { _docMini[url] = v; res(v); } else if (intentos < max) probar(); else res(''); };
+          var tm = setTimeout(function () { fin(''); }, 15000);
           var im = new Image(); im.crossOrigin = 'anonymous';
           im.onload = function () {
+            clearTimeout(tm);
             try {
               var S = Math.min(im.naturalWidth, im.naturalHeight), c = document.createElement('canvas'); c.width = c.height = 320;
-              c.getContext('2d').drawImage(im, (im.naturalWidth - S) / 2, (im.naturalHeight - S) / 2, S, S, 0, 0, 320, 320);
+              var x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 320, 320);
+              x.drawImage(im, (im.naturalWidth - S) / 2, (im.naturalHeight - S) / 2, S, S, 0, 0, 320, 320);
               fin(c.toDataURL('image/jpeg', 0.9));
-            } catch (e) { hecho = true; res(url); }
+            } catch (e) { fin(''); }
           };
-          im.onerror = function () { fin(''); };
-          im.src = url + (intentos > 1 ? (url.indexOf('?') > -1 ? '&' : '?') + 'r=' + Date.now() : '');
+          im.onerror = function () { clearTimeout(tm); fin(''); };
+          im.src = /^data:/i.test(url) ? url : url + (url.indexOf('?') > -1 ? '&' : '?') + 'cors=' + (intentos > 1 ? Date.now() : 1);
         })();
       });
     }
@@ -4907,17 +4910,28 @@
       var paginas = document.querySelectorAll('.page-a4');
       if (!paginas || paginas.length === 0) throw new Error('No hay documento abierto.');
       // espera a que carguen todas las fotos antes de hacer la captura (si no, salen en blanco)
-      // las fotos de producto se reducen a miniaturas (se descargan de 6 en 6): con listas largas, si no, muchas no llegan a tiempo y salen en blanco
-      var prods = Array.prototype.slice.call(document.querySelectorAll('.page-a4 img[data-prod]')).filter(function (im) { return /^https:/i.test(im.getAttribute('src') || '') && !(im.complete && im.naturalWidth && im.naturalWidth <= 400); });
-      var turno = 0;
+      // las fotos de producto se bajan en versión pequeña (de 6 en 6) y se incrustan: así la captura no depende de la red
+      var prods = Array.prototype.slice.call(document.querySelectorAll('.page-a4 img[data-prod]'));
+      var turno = 0, sinFoto = 0;
       await Promise.all([0, 1, 2, 3, 4, 5].map(async function () {
         while (turno < prods.length) {
-          var im = prods[turno++], u = im.getAttribute('src');
-          var m = await docMiniatura(u);
-          if (m && m !== u) { im.removeAttribute('crossorigin'); im.src = m; }
+          var im = prods[turno++], orig = im.getAttribute('data-orig') || im.getAttribute('src') || '', m = '';
+          if (/^data:/i.test(orig)) m = await docMiniatura(orig, 1);
+          else {
+            var th = urlMini(orig);
+            if (th) m = await docMiniatura(th, 1);
+            if (!m) m = await docMiniatura(orig, 2);
+          }
+          if (m) { im.removeAttribute('crossorigin'); im.removeAttribute('onerror'); im.src = m; }
+          else {
+            sinFoto++;
+            var ph = document.createElement('div'); ph.style.cssText = 'width: 55px; height: 55px; background: #f1f5f9; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 1px solid #e2e8f0;'; ph.textContent = '📦';
+            if (im.parentNode) im.parentNode.replaceChild(ph, im);
+          }
           if (typeof _pdfProgreso === 'function') _pdfProgreso(0, paginas.length, turno, prods.length);
         }
       }));
+      window._pdfSinFoto = sinFoto;
       var imgs = Array.prototype.slice.call(document.querySelectorAll('.page-a4 img'));
       await Promise.all(imgs.map(function (im) {
         if (im.complete) return null;
@@ -4956,7 +4970,7 @@
         if (tok !== _pdfTok) return;
         _pdfProgreso = function (i, n, f, nf) { if (tok === _pdfTok) navBotonesPDF(i === 0 ? '⏳ Cargando fotos ' + f + '/' + nf + '…' : '⏳ Preparando ' + i + '/' + n + '…'); };
         var pr = generarPDF(); _pdfPromesa = pr;
-        pr.then(function (pdf) { if (tok === _pdfTok) { _pdfListo = { pdf: pdf, nombre: _pdfNombre }; navBotonesPDF(''); if (_pdfNombre) toast('✅ PDF listo (' + window._pdfSeg + ' s)'); } })
+        pr.then(function (pdf) { if (tok === _pdfTok) { _pdfListo = { pdf: pdf, nombre: _pdfNombre }; navBotonesPDF(''); if (window._pdfSinFoto) toast('⚠️ ' + window._pdfSinFoto + ' foto(s) no se pudieron cargar y salen con 📦.', 'err'); else if (_pdfNombre) toast('✅ PDF listo (' + window._pdfSeg + ' s)'); } })
           .catch(function () { if (tok === _pdfTok) { navBotonesPDF(''); _pdfPromesa = null; } })
           .then(function () { _pdfProgreso = null; });
       }, 600);
