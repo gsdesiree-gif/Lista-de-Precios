@@ -1040,6 +1040,7 @@
           <input type="search" id="buscarPr" placeholder="🔎 Buscar local..." oninput="renderTareas()" autocomplete="off">
           <button class="btn btn-sm btn-main" onclick="abrirProspecto(0)" style="white-space:nowrap;">➕ Nuevo local</button>
         </div>
+        <button class="btn btn-sm btn-logout" onclick="abrirImportPr()" style="margin:4px 0 8px;">📥 Importar lista de locales</button>
         <div class="cat-filter-bar" id="barraPr"></div>
         <details style="margin:8px 0;"><summary style="cursor:pointer; font-weight:700; font-size:13px; color:var(--muted);">⚙️ Ajustes de captación</summary>
           <div class="field" style="margin-top:8px;"><label>Zona donde buscas locales (se usa en las búsquedas)</label><input type="text" id="prZona" autocomplete="off" oninput="try{localStorage.setItem('elancla_zona',this.value)}catch(e){}"></div>
@@ -1117,7 +1118,7 @@
               <button class="btn btn-sm btn-accent" onclick="crearYAnadir()">Crear y añadir a la lista</button>
             </div></details>
           <button class="btn btn-sm btn-logout" onclick="cancelarEdicionLista()">Cancelar edición</button>
-          <span style="float:right; font-size:11px; color:#999;">versión 70</span>
+          <span style="float:right; font-size:11px; color:#999;">versión 73</span>
         </div>
         <div class="field">
           <label>Nombre del Cliente</label>
@@ -1457,6 +1458,15 @@
       <div class="field"><label>Estado</label><select id="prEstado"></select></div>
       <div class="field"><label>📅 Próxima acción</label>
         <div style="display:flex; gap:8px;"><input type="text" id="prAccion" autocomplete="off" placeholder="Ej: Llamar al jefe de cocina" style="flex:1;"><input type="date" id="prFecha" style="max-width:150px;"></div></div>
+      <div class="field"><label>🎁 Registrar visita o muestra</label>
+        <div class="cli-acciones">
+          <button class="btn btn-sm btn-accent" onclick="prRegistro('muestra')">🎁 Dejé muestra</button>
+          <button class="btn btn-sm btn-accent" onclick="prRegistro('visita')">🚪 Pasé por el local</button>
+          <button class="btn btn-sm btn-accent" onclick="prRegistro('hablado')">💬 Hablé con ellos</button>
+        </div>
+        <div style="display:flex; gap:8px; align-items:center; margin-top:8px; font-size:13px;"><span>Recordarme en</span>
+          <select id="prRecuerda" style="flex:1;"><option value="3">3 días</option><option value="7" selected>1 semana</option><option value="14">2 semanas</option><option value="30">1 mes</option><option value="0">No recordar</option></select></div>
+        <div style="font-size:12px; color:var(--muted); margin-top:4px;">Si escribes algo en la nota de abajo, se añade al registro. Luego pulsa 💾 Guardar.</div></div>
       <div class="field"><label>📝 Notas</label>
         <div style="display:flex; gap:8px;"><input type="text" id="prNotaNueva" autocomplete="off" placeholder="Escribe una nota…" style="flex:1;"><button class="btn btn-sm btn-accent" onclick="prAnadirNota()">➕</button></div>
         <div id="prNotas" style="margin-top:8px;"></div></div>
@@ -1466,6 +1476,21 @@
       </div>
       <button id="btnConvertirPr" class="btn btn-accent" style="margin-top:10px;" onclick="convertirProspecto()">✅ Convertir en cliente</button>
       <button id="btnBorrarPr" class="btn btn-danger" style="margin-top:10px;" onclick="borrarProspecto()">🗑️ Borrar</button>
+    </div>
+  </div>
+
+  <div id="modalImportPr" class="modal-overlay no-print" onclick="if(event.target===this)cerrarImportPr()">
+    <div class="modal-card" style="max-width:560px;">
+      <div class="card-header" style="margin-bottom:8px;">📥 Importar lista de locales</div>
+      <div style="font-size:13px; color:var(--muted); margin-bottom:10px;">Pega los nombres, <strong>uno por línea</strong>. Si en la línea hay un teléfono, lo coge también. Se crean como "Por contactar" y los repetidos se saltan.</div>
+      <div class="field"><textarea id="impTexto" rows="8" autocomplete="off" oninput="prImpContar()" placeholder="Bar La Esquina&#10;Restaurante Mar 954 11 22 33&#10;Taberna El Rincón" style="width:100%; box-sizing:border-box; font:inherit; font-size:15px; padding:10px 12px; border:1.5px solid var(--border); border-radius:12px; background:var(--card); color:var(--text); resize:vertical;"></textarea></div>
+      <div class="field"><label>Tipo</label><select id="impTipo"><option>Restaurante</option><option>Bar</option><option>Hotel</option><option>Catering</option><option>Cafetería</option><option>Otro</option></select></div>
+      <div class="field"><label>Población</label><input type="text" id="impPob" autocomplete="off"></div>
+      <div id="impCuenta" style="font-size:13px; color:var(--muted); margin-bottom:10px;"></div>
+      <div style="display:flex; gap:10px;">
+        <button class="btn btn-logout" style="flex:1;" onclick="cerrarImportPr()">Cancelar</button>
+        <button id="btnImpPr" class="btn btn-success" style="flex:1;" onclick="prImportar()">📥 Importar</button>
+      </div>
     </div>
   </div>
 
@@ -3505,7 +3530,7 @@
           ((p.proxima_accion || fecha) && prAbierto(p) ? '<span class="pill ' + (venc ? 'pill-warn' : 'pill-ok') + '">📅 ' + (fecha ? esc(fechaLarga(fecha)) + ' · ' : '') + esc(p.proxima_accion || 'Seguimiento') + '</span>' : '');
         var sub = [p.tipo, p.poblacion].filter(Boolean).join(' · ');
         return '<div class="product-item compact cli-row" style="margin-bottom:8px;"><div class="cli-head"><div class="cli-av" style="background:' + col[0] + '; color:' + col[1] + ';">' + esc(String(p.nombre || '?').trim().charAt(0).toUpperCase()) + '</div><div style="min-width:0; flex:1;"><div class="product-name cli-nombre">' + esc(p.nombre) + '</div>' +
-          (sub ? '<div class="product-notes">' + esc(sub) + '</div>' : '') + (p.telefono ? '<div class="product-notes">📞 ' + esc(p.telefono) + '</div>' : '') + '<div class="pills">' + pill + '</div></div></div>' +
+          (sub ? '<div class="product-notes">' + esc(sub) + '</div>' : '') + (p.telefono ? '<div class="product-notes">📞 ' + esc(p.telefono) + '</div>' : '') + prLineaReg(p) + '<div class="pills">' + pill + '</div></div></div>' +
           '<div class="cli-acciones">' + prTokens(p.web).map(function (k) { return '<a class="btn btn-sm btn-logout" target="_blank" rel="noopener" href="' + esc(k.u) + '">' + (k.t === 'insta' ? '📷 Instagram' : '🌐 Web') + '</a>'; }).join('') + (hayTel ? '<button class="btn btn-sm btn-accent" onclick="prLlamar(' + id + ')">📞 Llamar</button><button class="btn btn-wa btn-sm" onclick="prWhatsApp(' + id + ')">💬 Mensaje</button>' : '') +
           '<button class="btn btn-sm btn-logout" onclick="prBuscarId(' + id + ')">🔎 Buscar datos</button><button class="btn btn-main btn-sm" onclick="abrirProspecto(' + id + ')">📝 Abrir ficha</button></div></div>';
       }).join('');
@@ -3519,7 +3544,7 @@
       return 'https://www.google.com/search?q=' + encodeURIComponent(nombre + ' ' + (pob || prZona()) + ' teléfono contacto');
     }
     function ponerBotonesCerrar() {
-      var m = { modalEditarProducto: cerrarModalEditar, modalNavidad: cerrarCatalogoNavidad, modalPedido: cerrarPedido, modalReparto: cerrarReparto, modalCliente: cerrarModalCliente, modalProsp: cerrarProspecto, modalFicha: cerrarFichaCliente };
+      var m = { modalEditarProducto: cerrarModalEditar, modalNavidad: cerrarCatalogoNavidad, modalPedido: cerrarPedido, modalReparto: cerrarReparto, modalCliente: cerrarModalCliente, modalProsp: cerrarProspecto, modalImportPr: cerrarImportPr, modalFicha: cerrarFichaCliente };
       Object.keys(m).forEach(function (id) {
         var ov = $(id); if (!ov) return; var card = ov.querySelector('.modal-card'); if (!card || card.querySelector('.btn-x-cerrar')) return;
         var b = document.createElement('button'); b.type = 'button'; b.className = 'btn-x-cerrar'; b.setAttribute('aria-label', 'Cerrar'); b.textContent = '✕';
@@ -3527,6 +3552,34 @@
       });
     }
     ponerBotonesCerrar();
+    function prAplicar(l) {
+      var hecho = [];
+      function poner(id, v, nombre) { if (v && !$(id).value.trim()) { $(id).value = v; hecho.push(nombre); } }
+      var dir = (l.direccion || '').replace(/,\s*España\s*$/i, '');
+      poner('prDireccion', dir, 'dirección'); poner('prTelefono', l.telefono, 'teléfono');
+      if (l.web) { var w = $('prWeb').value.trim(); if (w.toLowerCase().indexOf(l.web.toLowerCase().replace(/^https?:\/\//, '').replace(/\/$/, '')) < 0) { $('prWeb').value = (w + ' ' + l.web.replace(/^https?:\/\//, '').replace(/\/$/, '')).trim(); hecho.push('web'); prEnlaces(); } }
+      if (!$('prFuente').value.trim()) $('prFuente').value = 'Google';
+      toast(hecho.length ? 'Rellenado: ' + hecho.join(', ') + '. Revísalo.' : 'Google no tiene datos nuevos de este local.', hecho.length ? undefined : 'err');
+    }
+    async function prAuto() {
+      var n = $('prNombre').value.trim(); if (!n) { toast('Escribe primero el nombre del local.', 'err'); return; }
+      var btn = $('btnAutoPr'), txt = btn.textContent; btn.disabled = true; btn.textContent = '⏳ Buscando…';
+      try {
+        var r = await _sb.functions.invoke('buscar-local', { body: { consulta: n + ' ' + ($('prPoblacion').value.trim() || prZona()) } });
+        if (r.error) throw r.error;
+        var ls = (r.data && r.data.lugares) || [];
+        if (r.data && r.data.error) throw new Error(r.data.error);
+        if (!ls.length) { toast('Google no ha encontrado ese local. Prueba con otro nombre.', 'err'); return; }
+        window._prLugares = ls;
+        if (ls.length === 1) { prAplicar(ls[0]); return; }
+        $('prAutoLista').innerHTML = '<div style="font-size:13px; color:var(--muted); margin-bottom:6px;">¿Cuál es? Toca el correcto:</div>' + ls.map(function (l, i) {
+          return '<button class="btn btn-logout" style="text-align:left; margin-bottom:6px; width:100%;" onclick="prAplicar(window._prLugares[' + i + '])"><strong>' + esc(l.nombre) + '</strong><br><span style="font-size:12px;">' + esc(l.direccion) + '</span></button>';
+        }).join('');
+      } catch (e) {
+        var m = errMsg(e);
+        toast(/not found|404|Failed to send|FunctionsFetch|FunctionsRelay/i.test(m) ? 'Falta activar la búsqueda automática (guía buscar-local-funcion.txt). Mientras, usa el cuadro de pegar.' : 'No se pudo buscar: ' + m, 'err');
+      } finally { btn.disabled = false; btn.textContent = txt; }
+    }
     function prTokens(s) {
       return String(s || '').split(/[\s,;]+/).filter(Boolean).map(function (x) {
         var ig = /instagram\.com\/([\w.]+)/i.exec(x);
@@ -3606,6 +3659,58 @@
         var idx = _prNotasTmp.length - 1 - i;
         return '<div style="display:flex; gap:8px; padding:6px 0; border-top:1px solid var(--border); font-size:14px;"><div style="flex:1;"><div style="font-size:11px; color:var(--muted);">' + esc(fechaLarga(n.f)) + '</div>' + esc(n.t) + '</div><button class="btn btn-sm btn-danger" onclick="prQuitarNota(' + idx + ')">✕</button></div>';
       }).join('');
+    }
+    function prRegistro(k) {
+      var T = { muestra: ['🎁 Dejé muestra', 'Volver a pasar / preguntar por la muestra'], visita: ['🚪 Pasé por el local', 'Volver a pasar'], hablado: ['💬 Hablé con ellos', 'Seguimiento'] }[k];
+      var extra = $('prNotaNueva').value.trim(); $('prNotaNueva').value = '';
+      _prNotasTmp.push({ f: hoyLocal(), t: T[0] + (extra ? ': ' + extra : ''), k: k }); pintarNotasPr();
+      var dias = Number($('prRecuerda').value) || 0;
+      if (dias) { $('prFecha').value = sumarDias(hoyLocal(), dias); $('prAccion').value = T[1]; }
+      if ($('prEstado').value === 'pendiente') $('prEstado').value = 'contactado';
+      toast('Anotado' + (dias ? ' y recordatorio puesto.' : '.') + ' Pulsa 💾 Guardar.');
+    }
+    function prLineaReg(p) {
+      var out = [], m = prUltimoReg(p, 'muestra'), v = prUltimoReg(p, 'visita');
+      if (m) out.push('🎁 Muestra ' + prHace(m)); if (v) out.push('🚪 Visita ' + prHace(v));
+      return out.length ? '<div class="product-notes">' + esc(out.join(' · ')) + '</div>' : '';
+    }
+    function prUltimoReg(p, k) {
+      var u = null; prNotasDe(p).forEach(function (n) { if (n.k === k && (!u || n.f >= u)) u = n.f; }); return u;
+    }
+    function prHace(iso) {
+      var a = iso.split('-'), h = hoyLocal().split('-');
+      var d = Math.round((new Date(+h[0], +h[1] - 1, +h[2]) - new Date(+a[0], +a[1] - 1, +a[2])) / 86400000);
+      return d <= 0 ? 'hoy' : d === 1 ? 'ayer' : 'hace ' + d + ' días';
+    }
+    function abrirImportPr() { $('impTexto').value = ''; $('impPob').value = prZona(); prImpContar(); $('modalImportPr').style.display = 'flex'; }
+    function cerrarImportPr() { $('modalImportPr').style.display = 'none'; }
+    function prImpLineas() {
+      var vistos = {}, ya = {}; _prosp.forEach(function (p) { ya[String(p.nombre || '').trim().toLowerCase()] = 1; });
+      var res = [], rep = 0;
+      $('impTexto').value.split(/\n/).forEach(function (l) {
+        l = l.replace(/^\s*(?:[-•*·]|\d+[.)])\s*/, '').trim(); if (!l) return;
+        var tel = '', m = /(?:\+34[\s.-]?)?[6-9]\d{2}[\s.-]?\d{2,3}[\s.-]?\d{2,3}[\s.-]?\d{0,2}/.exec(l);
+        if (m && m[0].replace(/[^\d]/g, '').replace(/^34(?=\d{9}$)/, '').length === 9) { tel = m[0].trim(); l = l.replace(m[0], ''); }
+        var nombre = l.replace(/[\s,;:\-–|]+$/, '').replace(/^[\s,;:\-–|]+/, '').trim(); if (!nombre) return;
+        var key = nombre.toLowerCase(); if (vistos[key] || ya[key]) { rep++; return; } vistos[key] = 1;
+        res.push({ nombre: nombre, telefono: tel });
+      });
+      return { nuevos: res, repetidos: rep };
+    }
+    function prImpContar() {
+      var r = prImpLineas();
+      $('impCuenta').textContent = r.nuevos.length ? 'Se crearán ' + r.nuevos.length + ' locales' + (r.repetidos ? ' (' + r.repetidos + ' repetidos se saltan)' : '') + '.' : (r.repetidos ? 'Todos están ya en tu lista.' : '');
+    }
+    async function prImportar() {
+      if (!_prospOk) { toast('Falta preparar la base de datos (prospectos-sql.txt).', 'err'); return; }
+      var r = prImpLineas(); if (!r.nuevos.length) { toast('No hay locales nuevos que importar.', 'err'); return; }
+      var tipo = $('impTipo').value, pob = $('impPob').value.trim(), btn = $('btnImpPr'); btn.disabled = true;
+      try {
+        chk(await _sb.from('prospectos').insert(r.nuevos.map(function (x) { return { nombre: x.nombre, telefono: x.telefono, tipo: tipo, poblacion: pob, fuente: 'Lista importada', estado: 'pendiente', notas: [] }; })));
+        cerrarImportPr(); _prFiltro = 'pendiente'; await cargarProspectos(); switchTab('tabTareas');
+        toast('Importados ' + r.nuevos.length + ' locales' + (r.repetidos ? ' (' + r.repetidos + ' repetidos saltados)' : '') + '.');
+      } catch (e) { toast('No se pudo importar: ' + errMsg(e), 'err'); }
+      finally { btn.disabled = false; }
     }
     function prAnadirNota() {
       var v = $('prNotaNueva').value.trim(); if (!v) return;
