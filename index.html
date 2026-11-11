@@ -1119,7 +1119,7 @@
               <button class="btn btn-sm btn-accent" onclick="crearYAnadir()">Crear y añadir a la lista</button>
             </div></details>
           <button class="btn btn-sm btn-logout" onclick="cancelarEdicionLista()">Cancelar edición</button>
-          <span style="float:right; font-size:11px; color:#999;">versión 84</span>
+          <span style="float:right; font-size:11px; color:#999;">versión 85</span>
         </div>
         <div class="field">
           <label>Nombre del Cliente</label>
@@ -1536,6 +1536,7 @@
         <button id="btnDescargarPDF" onclick="descargarPDF()" class="btn btn-accent btn-sm">📄 Descargar PDF</button>
       </div>
     </div>
+    <div id="pdfInfo" class="no-print" style="font-size:12px; color:#64748b; padding:4px 12px; font-family:monospace;"></div>
     <div class="page-a4-wrapper" id="contenedorPaginasA4"></div>
   </div>
 
@@ -4878,6 +4879,10 @@
         if (txt) { b.textContent = txt; b.style.opacity = '.7'; } else { b.textContent = b.dataset.t; b.style.opacity = ''; delete b.dataset.t; }
       });
     }
+    function diagPDF() {
+      var d = window._pdfDiag, el = $('pdfInfo'); if (!d || !el) return;
+      el.textContent = '🔍 Fotos: ' + (d.n === undefined ? '…' : d.n + ' (' + d.th + ' miniatura, ' + d.og + ' original, ' + d.sin + ' sin foto) en ' + (d.ms / 1000).toFixed(1) + ' s') + ' · Páginas: ' + (d.pag.length ? d.pag.join(' | ') : '…');
+    }
     var _docMini = {};
     // Descarga una foto "limpia" (con un parámetro distinto en la dirección, para no reutilizar copias sin permiso que Safari guarda) y la reduce a 320 px.
     function docMiniatura(url, maxIntentos) {
@@ -4912,15 +4917,15 @@
       // espera a que carguen todas las fotos antes de hacer la captura (si no, salen en blanco)
       // las fotos de producto se bajan en versión pequeña (de 6 en 6) y se incrustan: así la captura no depende de la red
       var prods = Array.prototype.slice.call(document.querySelectorAll('.page-a4 img[data-prod]'));
-      var turno = 0, sinFoto = 0;
+      var turno = 0, sinFoto = 0, dg = { t0: Date.now(), th: 0, og: 0, ms: 0, pag: [] }; window._pdfDiag = dg;
       await Promise.all([0, 1, 2, 3, 4, 5].map(async function () {
         while (turno < prods.length) {
           var im = prods[turno++], orig = im.getAttribute('data-orig') || im.getAttribute('src') || '', m = '';
           if (/^data:/i.test(orig)) m = await docMiniatura(orig, 1);
           else {
             var th = urlMini(orig);
-            if (th) m = await docMiniatura(th, 1);
-            if (!m) m = await docMiniatura(orig, 2);
+            if (th) { m = await docMiniatura(th, 1); if (m) dg.th++; }
+            if (!m) { m = await docMiniatura(orig, 2); if (m) dg.og++; }
           }
           if (m) { im.removeAttribute('crossorigin'); im.removeAttribute('onerror'); im.src = m; }
           else {
@@ -4931,7 +4936,7 @@
           if (typeof _pdfProgreso === 'function') _pdfProgreso(0, paginas.length, turno, prods.length);
         }
       }));
-      window._pdfSinFoto = sinFoto;
+      window._pdfSinFoto = sinFoto; dg.ms = Date.now() - dg.t0; dg.n = prods.length; dg.sin = sinFoto; diagPDF();
       var imgs = Array.prototype.slice.call(document.querySelectorAll('.page-a4 img'));
       await Promise.all(imgs.map(function (im) {
         if (im.complete) return null;
@@ -4944,8 +4949,10 @@
         await new Promise(function (r) { setTimeout(r, 30); });
         var rapido = !!_pdfNombre;
         var opc = { scale: rapido ? 1.25 : 2, useCORS: true, scrollY: 0, logging: false, imageTimeout: 4000 }, canvas;
-        try { canvas = await conTiempo(html2canvas(paginas[i], opc), 15000, 'La página ' + (i + 1) + ' tarda demasiado'); }
-        catch (e1) {   // si las fotos dan problemas, se reintenta sin ellas para no quedarse colgado
+        var tp0 = Date.now();
+        try { canvas = await conTiempo(html2canvas(paginas[i], opc), 15000, 'La página ' + (i + 1) + ' tarda demasiado'); dg.pag.push((Date.now() - tp0) + ' ms'); diagPDF(); }
+        catch (e1) {
+          dg.pag.push('FALLÓ tras ' + (Date.now() - tp0) + ' ms (' + String(e1 && e1.message || e1).slice(0, 40) + ')'); diagPDF();   // si las fotos dan problemas, se reintenta sin ellas para no quedarse colgado
           opc.ignoreElements = function (el) { var n = String(el.tagName).toLowerCase(); return n === 'img' || n === 'svg'; };
           canvas = await conTiempo(html2canvas(paginas[i], opc), 20000, 'No se pudo capturar la página ' + (i + 1));
         }
