@@ -1119,7 +1119,7 @@
               <button class="btn btn-sm btn-accent" onclick="crearYAnadir()">Crear y añadir a la lista</button>
             </div></details>
           <button class="btn btn-sm btn-logout" onclick="cancelarEdicionLista()">Cancelar edición</button>
-          <span style="float:right; font-size:11px; color:#999;">versión 75</span>
+          <span style="float:right; font-size:11px; color:#999;">versión 77</span>
         </div>
         <div class="field">
           <label>Nombre del Cliente</label>
@@ -3094,25 +3094,58 @@
       return res;
     }
 
+    var _habEdit = false, _habAdd = false;
     function pintarProductosCliente(cid) {
       var lista = cid ? habitualesDe(cid) : [];
       $('cntProdCli').textContent = '(' + lista.length + ')';
+      var html = '';
+      if (cid) {
+        html += '<div style="display:flex; gap:8px; flex-wrap:wrap; margin:4px 0 8px;">' +
+          '<button type="button" class="btn btn-sm ' + (_habEdit ? 'btn-success' : 'btn-accent') + '" onclick="habModoEditar(' + Number(cid) + ')">' + (_habEdit ? '💾 Guardar precios' : '✏️ Editar precios') + '</button>' +
+          (_habEdit ? '<button type="button" class="btn btn-sm btn-logout" onclick="_habEdit=false; pintarProductosCliente(' + Number(cid) + ')">Cancelar</button>' : '') +
+          '<button type="button" class="btn btn-sm btn-accent" onclick="_habAdd=!_habAdd; pintarProductosCliente(' + Number(cid) + ')">➕ Añadir producto</button></div>';
+        if (_habAdd) html += '<div style="margin:0 0 10px;"><input type="text" id="habBuscar" autocomplete="off" name="hab-buscar-xyz" placeholder="Escribe para buscar un producto…" oninput="habBuscarProd(' + Number(cid) + ')" style="width:100%; box-sizing:border-box;"><div id="habRes"></div></div>';
+      }
       if (lista.length === 0) {
-        $('listaProdCli').innerHTML = '<div style="color:var(--muted); padding:8px 4px; font-size:13px;">Este cliente aún no tiene productos habituales. Se añaden solos al generar su primera lista.</div>';
+        $('listaProdCli').innerHTML = html + '<div style="color:var(--muted); padding:8px 4px; font-size:13px;">Este cliente aún no tiene productos. Pulsa ➕ Añadir producto, o se añaden solos al generar su primera lista.</div>';
+        if (_habAdd && $('habBuscar')) $('habBuscar').focus();
         return;
       }
-      var html = '<button class="btn btn-sm btn-accent" style="margin:4px 0 8px;" onclick="cerrarModalCliente(); nuevaListaCliente(' + Number(cid) + ')">📝 Nueva lista con estos productos</button>';
+      if (!_habEdit) html += '<button class="btn btn-sm btn-logout" style="margin:0 0 8px;" onclick="cerrarModalCliente(); nuevaListaCliente(' + Number(cid) + ')">📝 Nueva lista con estos productos</button>';
       for (var i = 0; i < lista.length; i++) {
         var p = lista[i].p, esp = (lista[i].precio !== null && lista[i].precio !== undefined);
         var precio = esp ? num(lista[i].precio) : num(p.precio);
         html += '<div style="display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--border);">' +
           '<div style="flex:1; min-width:0;"><div style="font-weight:600; font-size:14px;">' + esc(p.nombre) + '</div>' +
-          '<div style="font-size:11px; color:var(--muted);">' + esc(p.categoria || 'Varios') + '</div></div>' +
-          '<div style="text-align:right;"><div style="font-weight:700; color:var(--accent);">' + precio.toFixed(2) + ' €</div>' +
-          (esp ? '<div style="font-size:10px; color:var(--muted);">especial · base ' + num(p.precio).toFixed(2) + ' €</div>' : '<div style="font-size:10px; color:var(--muted);">precio base</div>') + '</div>' +
-          '<button class="btn btn-sm btn-danger" title="Quitar de este cliente" onclick="quitarHabitual(' + Number(cid) + ', ' + Number(p.id) + ')">✖</button></div>';
+          '<div style="font-size:11px; color:var(--muted);">' + esc(p.categoria || 'Varios') + (esp ? ' · precio especial (base ' + num(p.precio).toFixed(2) + ' €)' : ' · precio base') + '</div></div>' +
+          (_habEdit
+            ? '<input type="number" step="0.01" min="0" inputmode="decimal" class="hab-precio" data-pid="' + Number(p.id) + '" data-base="' + num(p.precio) + '" value="' + precio.toFixed(2) + '" style="width:86px; text-align:right; font-weight:700;"><span style="font-size:13px;">€</span>'
+            : '<div style="font-weight:700; color:var(--accent); white-space:nowrap;">' + precio.toFixed(2) + ' €</div>') +
+          '<button type="button" class="btn btn-sm btn-danger" title="Quitar de este cliente" onclick="quitarHabitual(' + Number(cid) + ', ' + Number(p.id) + ')">🗑️</button></div>';
       }
       $('listaProdCli').innerHTML = html;
+      if (_habAdd && $('habBuscar')) $('habBuscar').focus();
+    }
+    async function habModoEditar(cid) {
+      if (!_habEdit) { _habEdit = true; pintarProductosCliente(cid); return; }
+      var filas = [], cambios = [];
+      Array.prototype.forEach.call(document.querySelectorAll('.hab-precio'), function (inp) {
+        var pid = Number(inp.getAttribute('data-pid')), base = Number(inp.getAttribute('data-base')), v = parseFloat(String(inp.value).replace(',', '.'));
+        if (isNaN(v) || v < 0) return;
+        var nuevo = Math.abs(v - base) < 0.005 ? null : Math.round(v * 100) / 100;
+        var actual = null; _hab.forEach(function (r) { if (r.cliente_id === cid && Number(r.producto_id) === pid) actual = (r.precio === null || r.precio === undefined) ? null : Number(r.precio); });
+        if (nuevo !== actual) { filas.push({ cliente_id: cid, producto_id: pid, precio: nuevo }); cambios.push([pid, nuevo]); }
+      });
+      if (!filas.length) { _habEdit = false; pintarProductosCliente(cid); toast('No has cambiado ningún precio.'); return; }
+      try {
+        chk(await _sb.from('precios_cliente').upsert(filas, { onConflict: 'cliente_id,producto_id' }));
+        cambios.forEach(function (c) {
+          _hab.forEach(function (r) { if (r.cliente_id === cid && Number(r.producto_id) === c[0]) r.precio = c[1]; });
+          if (_clienteSel && _clienteSel.id === cid) { if (c[1] === null) delete _preciosCli[c[0]]; else _preciosCli[c[0]] = c[1]; }
+        });
+        _habEdit = false; pintarProductosCliente(cid); renderizarClientes();
+        toast('Precios guardados (' + filas.length + ').');
+      } catch (e) { toast('No se pudieron guardar los precios: ' + errMsg(e), 'err'); }
     }
 
     /* ---------- imprimir ficha del cliente (PDF) ---------- */
@@ -3196,6 +3229,24 @@
       finally { if (btn) { btn.disabled = false; btn.textContent = txt; } }
     }
 
+    function habBuscarProd(cid) {
+      var q = norm($('habBuscar').value.trim()), out = $('habRes');
+      if (!q) { out.innerHTML = ''; return; }
+      var ya = {}; habitualesDe(cid).forEach(function (x) { ya[x.p.id] = 1; });
+      var res = _productosCache.filter(function (p) { return !ya[p.id] && norm(p.nombre).indexOf(q) !== -1; }).slice(0, 8);
+      out.innerHTML = res.length ? res.map(function (p) {
+        return '<button type="button" class="btn btn-logout" style="width:100%; text-align:left; margin-top:4px; display:flex; justify-content:space-between; gap:8px;" onclick="habAnadir(' + Number(cid) + ',' + Number(p.id) + ')"><span>➕ ' + esc(p.nombre) + '</span><span style="font-weight:700;">' + num(p.precio).toFixed(2) + ' €</span></button>';
+      }).join('') : '<div style="font-size:13px; color:var(--muted); padding:6px 2px;">No hay ningún producto con ese nombre (o ya está en la lista).</div>';
+    }
+    async function habAnadir(cid, pid) {
+      var p = buscarEnCache(pid); if (!p) return;
+      try {
+        chk(await _sb.from('precios_cliente').upsert([{ cliente_id: cid, producto_id: pid, precio: null }], { onConflict: 'cliente_id,producto_id' }));
+        _hab.push({ cliente_id: cid, producto_id: pid, precio: null });
+        _habAdd = false; pintarProductosCliente(cid); $('detProdCli').open = true; renderizarClientes();
+        toast('«' + p.nombre + '» añadido a este cliente.');
+      } catch (e) { toast('No se pudo añadir: ' + errMsg(e), 'err'); }
+    }
     async function quitarHabitual(cid, pid) {
       var p = buscarEnCache(pid), c = buscarCliente(cid);
       if (!confirm('¿Quitar «' + (p ? p.nombre : 'este producto') + '» de la lista habitual de ' + (c ? c.nombre : 'este cliente') + '? Seguirá en tus productos y podrás volver a añadirlo.')) return;
@@ -4458,6 +4509,7 @@
       pintarDias('diasLlamada', _modalDias.lla, 'lla');
       _cliModalId = c ? c.id : 0;
       $('btnImprimirFicha').style.display = c ? '' : 'none';
+      _habEdit = false; _habAdd = false;
       $('bloqueProductosCli').style.display = (c && _clientesOk) ? '' : 'none';
       pintarProductosCliente(c ? c.id : 0);
       $('detProdCli').open = !!verProductos;
