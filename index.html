@@ -862,6 +862,16 @@
     /* ===== Modo oscuro ===== */
     html[data-modo="oscuro"] { color-scheme: dark; --bg: #0f1514; --card: #18211f; --text: #e8f0ec; --muted: #9bada5; --border: #2a3935; --primary: #8fc9b8; --accent: #5fb3ac; --success: #6fc08d; --danger: #ff8b8b; }
     html[data-modo="oscuro"] body { background: var(--bg); color: var(--text); }
+    /* ===== Impresión: siempre fondo blanco (aunque esté el modo oscuro) y sin páginas en blanco intercaladas ===== */
+    @media print {
+      html, html[data-modo="oscuro"], html[data-modo="oscuro"] body, body { background: #ffffff !important; color: #000000 !important; color-scheme: light !important; height: auto !important; min-height: 0 !important; overflow: visible !important; }
+      body { padding: 0 !important; margin: 0 !important; }
+      #mainContainer, #topBar, #adminBottomNav, .nav-bar, .top-bar, .toast, .sticky-action, .modal-overlay, #pdfInfo { display: none !important; }
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      #vistaDocumento, #contenedorPaginasA4 { display: block !important; width: 210mm !important; margin: 0 !important; padding: 0 !important; background: #ffffff !important; }
+      .page-a4 { width: 210mm !important; height: 296mm !important; max-height: 296mm !important; overflow: hidden !important; margin: 0 !important; background: #ffffff !important; box-shadow: none !important; page-break-inside: avoid !important; break-inside: avoid !important; page-break-after: always !important; break-after: page !important; }
+      .page-a4:last-child { page-break-after: auto !important; break-after: auto !important; }
+    }
     html[data-modo="oscuro"] .top-bar, html[data-tema="fresco"][data-modo="oscuro"] .top-bar { background: var(--card); border-color: var(--border); }
     html[data-modo="oscuro"] .nav-bar { background: rgba(24,33,31,.94); }
     html[data-modo="oscuro"] .card, html[data-modo="oscuro"] .product-item, html[data-modo="oscuro"] .cat-block, html[data-modo="oscuro"] .modal-card, html[data-modo="oscuro"] .hoy-card, html[data-modo="oscuro"] .cat-filter-btn, html[data-modo="oscuro"] .web-nav-btn { background: var(--card); color: var(--text); border-color: var(--border); }
@@ -1119,7 +1129,7 @@
               <button class="btn btn-sm btn-accent" onclick="crearYAnadir()">Crear y añadir a la lista</button>
             </div></details>
           <button class="btn btn-sm btn-logout" onclick="cancelarEdicionLista()">Cancelar edición</button>
-          <span style="float:right; font-size:11px; color:#999;">versión 88</span>
+          <span style="float:right; font-size:11px; color:#999;">versión 89</span>
         </div>
         <div class="field">
           <label>Nombre del Cliente</label>
